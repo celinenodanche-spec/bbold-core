@@ -3,19 +3,20 @@ import Anthropic from '@anthropic-ai/sdk'
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(request) {
-  const { agentId, systemPrompt, userPrompt } = await request.json()
+  const { agentId, systemPrompt, userPrompt, max_tokens: reqMaxTokens } = await request.json()
 
   const models = {
-    stratege:     'claude-opus-4-5',
-    analyste:     'claude-opus-4-5',
-    createur:     'claude-sonnet-4-5',
-    designer:     'claude-sonnet-4-5',
-    presentateur: 'claude-sonnet-4-5',
+    orchestrateur: 'claude-opus-4-5',
+    stratege:      'claude-opus-4-5',
+    analyste:      'claude-opus-4-5',
+    createur:      'claude-sonnet-4-5',
+    designer:      'claude-sonnet-4-5',
+    presentateur:  'claude-sonnet-4-5',
   }
 
   const stream = await client.messages.stream({
     model: models[agentId] || 'claude-sonnet-4-5',
-    max_tokens: 2048,
+    max_tokens: reqMaxTokens || 2048,
     system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }],
   })

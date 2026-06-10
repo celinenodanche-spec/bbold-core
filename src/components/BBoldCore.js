@@ -16,12 +16,12 @@ const AGENTS = [
 ]
 
 const SUPPORT_AGENTS = [
-  { id:'gmail',      emoji:'📧', name:'Gmail',             subtitle:'Email professionnel — objet + corps + CTA en 30 secondes.',          color:'#3b82f6', accent:'#93c5fd' },
-  { id:'fireflies',  emoji:'🔥', name:'Fireflies',         subtitle:'Extrait un brief structuré depuis un transcript de réunion.',        color:'#10b981', accent:'#6ee7b7' },
-  { id:'cv',         emoji:'📁', name:'Content Vault',     subtitle:'Archive et versionne tes livrables avec frontmatter YAML.',          color:'#f97316', accent:'#fdba74' },
-  { id:'debelvoix',  emoji:'🔍', name:'Debelvoix',         subtitle:'Analyse la voix de marque existante et génère le guide brand voice.', color:'#0d9488', accent:'#5eead4' },
-  { id:'repurpose',  emoji:'♻️', name:'Repurpose',         subtitle:'1 post validé → 5 formats natifs (LinkedIn, Insta, FB, Story, NL).', color:'#f59e0b', accent:'#fde68a' },
-  { id:'calendrier', emoji:'📅', name:'Calendrier',        subtitle:'Génère un calendrier éditorial 30 jours depuis ta stratégie.',       color:'#4f46e5', accent:'#a5b4fc' },
+  { id:'gmail',      emoji:'📧', name:'Gmail',         subtitle:'Email professionnel — objet + corps + CTA en 30 secondes.',          color:'#3b82f6', accent:'#93c5fd' },
+  { id:'fireflies',  emoji:'🔥', name:'Fireflies',     subtitle:'Extrait un brief structuré depuis un transcript de réunion.',        color:'#10b981', accent:'#6ee7b7' },
+  { id:'cv',         emoji:'📁', name:'Content Vault', subtitle:'Archive et versionne tes livrables avec frontmatter YAML.',          color:'#f97316', accent:'#fdba74' },
+  { id:'debelvoix',  emoji:'🔍', name:'Debelvoix',     subtitle:'Analyse la voix de marque existante et génère le guide brand voice.', color:'#0d9488', accent:'#5eead4' },
+  { id:'repurpose',  emoji:'♻️', name:'Repurpose',     subtitle:'1 post validé → 5 formats natifs (LinkedIn, Insta, FB, Story, NL).', color:'#f59e0b', accent:'#fde68a' },
+  { id:'calendrier', emoji:'📅', name:'Calendrier',    subtitle:'Génère un calendrier éditorial 30 jours depuis ta stratégie.',       color:'#4f46e5', accent:'#a5b4fc' },
 ]
 
 const PIPELINE_STEPS = [
@@ -31,6 +31,37 @@ const PIPELINE_STEPS = [
   { id:'analyste',     prenom:'Inès',  emoji:'📊', folder:'analytics/',      color:B.magenta    },
   { id:'presentateur', prenom:'Naïa',  emoji:'🎤', folder:'decks/',          color:B.violetDeep },
 ]
+
+const URL_FIELDS = [
+  { key:'site_web',  label:'Site web',  placeholder:'https://...' },
+  { key:'instagram', label:'Instagram', placeholder:'https://instagram.com/...' },
+  { key:'facebook',  label:'Facebook',  placeholder:'https://facebook.com/...' },
+  { key:'linkedin',  label:'LinkedIn',  placeholder:'https://linkedin.com/...' },
+  { key:'tiktok',    label:'TikTok',    placeholder:'https://tiktok.com/...' },
+]
+
+const ORCH_SYSTEM = `Tu es l'Orchestrateur de B.BOLD Core, chef de projet multi-agents. Tu reçois un brief de projet pour une marque et tu décides quels agents activer, dans quel ordre, et pourquoi.
+
+LES 5 AGENTS DISPONIBLES :
+- stratege (Maeva) : Stratège & Brief — positionnement, Value Proposition Canvas, piliers éditoriaux. Indispensable pour tout nouveau client ou nouveau projet de marque.
+- createur (Lola) : Créatrice Contenu — posts, hooks, scripts, captions pour les réseaux sociaux. Nécessite la stratégie de Maeva en amont.
+- designer (Zara) : Designer — prompts génératifs Midjourney/Flux/DALL-E pour les visuels. Utile uniquement si des visuels doivent être produits.
+- analyste (Inès) : Analyste & Plan 3D — KPIs, plan de publication 4 semaines, budget ads. Idéal si un plan de croissance mesurable est attendu.
+- presentateur (Naïa) : Présentatrice — deck pitch slide-par-slide avec notes speaker. Uniquement si une présentation client est prévue.
+
+RÈGLES DE SÉLECTION :
+1. Ne sélectionne QUE les agents vraiment utiles pour CE projet spécifique.
+2. Maeva est presque toujours nécessaire — elle pose la base stratégique.
+3. Lola est nécessaire si du contenu doit être produit.
+4. Zara uniquement si des visuels sont explicitement demandés.
+5. Inès si un plan de publication ou des KPIs sont attendus.
+6. Naïa uniquement si une présentation formelle est prévue.
+
+Analyse le brief, justifie tes choix en 2-3 phrases claires, puis termine OBLIGATOIREMENT par ce bloc JSON exact, sans exception :
+
+\`\`\`json
+{"selected_agents": ["stratege", "createur"], "rationale": "résumé en 1 phrase"}
+\`\`\``
 
 function getAvatarPath(id) {
   const map = { stratege:'maeva', createur:'lola', designer:'zara', analyste:'ines', presentateur:'naia' }
@@ -64,10 +95,7 @@ function deleteFromHistory(id) {
 function buildMarkdown(brief, steps) {
   const date = new Date().toISOString().split('T')[0]
   let md = `# Campagne B.BOLD — ${brief.client || '—'}\n`
-  md += `**Date :** ${date}  \n`
-  md += `**Objectif :** ${brief.objectif || '—'}  \n`
-  md += `**Plateformes :** ${brief.plateformes || '—'}  \n`
-  md += `**Budget :** ${brief.budget || '—'}  \n\n---\n\n`
+  md += `**Date :** ${date}  \n**Objectif :** ${brief.objectif || '—'}  \n**Plateformes :** ${brief.plateformes || '—'}  \n**Budget :** ${brief.budget || '—'}  \n\n---\n\n`
   steps.filter(s => s.status === 'done').forEach(s => {
     md += `## ${s.emoji} ${s.prenom} → ${s.folder}\n\n${s.output}\n\n---\n\n`
   })
@@ -81,9 +109,7 @@ function downloadMd(brief, steps) {
   const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
-  a.href = url
-  a.download = `bbold-${slug}-${date}.md`
-  a.click()
+  a.href = url; a.download = `bbold-${slug}-${date}.md`; a.click()
   URL.revokeObjectURL(url)
 }
 
@@ -179,8 +205,8 @@ const SUPPORT_FORMS = {
   debelvoix: {
     title: 'Debelvoix — Brand Voice', subtitle: "Colle du contenu existant, Debelvoix sort le guide brand voice complet.",
     fields: [
-      { key:'client',  label:'Client / Marque',          type:'text',     placeholder:'Ex: Debeliou Agency' },
-      { key:'secteur', label:'Secteur',                   type:'text',     placeholder:'Ex: Agence communication, Martinique' },
+      { key:'client',  label:'Client / Marque',             type:'text',     placeholder:'Ex: Debeliou Agency' },
+      { key:'secteur', label:'Secteur',                     type:'text',     placeholder:'Ex: Agence communication, Martinique' },
       { key:'contenu', label:'Contenu existant à analyser', type:'textarea', placeholder:'Colle ici 5 à 10 posts, captions, emails ou textes existants de la marque...' },
     ],
   },
@@ -196,12 +222,12 @@ const SUPPORT_FORMS = {
   calendrier: {
     title: 'Calendrier Éditorial 30 jours', subtitle: 'Donne tes piliers, Calendrier génère un plan mois complet.',
     fields: [
-      { key:'client',     label:'Client',                  type:'text',     placeholder:'Ex: Debeliou Agency' },
-      { key:'plateformes',label:'Plateformes',             type:'select',   options:['Instagram + Facebook','LinkedIn + Meta','Instagram seul','LinkedIn seul','Tous les canaux'] },
-      { key:'objectif',   label:'Objectif principal',      type:'select',   options:['Notoriété de marque','Génération de leads','Augmenter les ventes','Fidéliser la communauté'] },
-      { key:'frequence',  label:'Fréquence de publication',type:'select',   options:['1 fois par semaine','3 fois par semaine','5 fois par semaine','Quotidien'] },
-      { key:'piliers',    label:'Piliers éditoriaux',      type:'textarea', placeholder:'Ex:\nPilier 1 — Preuve sociale (résultats, témoignages)\nPilier 2 — Éducation (conseils, tips)\nPilier 3 — Culture de marque (coulisses, opinion)' },
-      { key:'contexte',   label:'Contexte / Infos utiles', type:'textarea', placeholder:'Ex: Mois de juillet, saison cyclonique, lancement produit prévu le 15...' },
+      { key:'client',      label:'Client',                   type:'text',     placeholder:'Ex: Debeliou Agency' },
+      { key:'plateformes', label:'Plateformes',              type:'select',   options:['Instagram + Facebook','LinkedIn + Meta','Instagram seul','LinkedIn seul','Tous les canaux'] },
+      { key:'objectif',    label:'Objectif principal',       type:'select',   options:['Notoriété de marque','Génération de leads','Augmenter les ventes','Fidéliser la communauté'] },
+      { key:'frequence',   label:'Fréquence de publication', type:'select',   options:['1 fois par semaine','3 fois par semaine','5 fois par semaine','Quotidien'] },
+      { key:'piliers',     label:'Piliers éditoriaux',       type:'textarea', placeholder:'Ex:\nPilier 1 — Preuve sociale\nPilier 2 — Éducation\nPilier 3 — Culture de marque' },
+      { key:'contexte',    label:'Contexte / Infos utiles',  type:'textarea', placeholder:'Ex: Mois de juillet, saison cyclonique, lancement produit prévu le 15...' },
     ],
   },
 }
@@ -245,14 +271,14 @@ function FieldGroup({ field, value, onChange, accentColor }) {
         {field.label}
       </label>
       {field.type === 'select' ? (
-        <select value={value||''} onChange={e=>onChange(e.target.value)}
-          style={{ ...baseStyle, cursor:'pointer' }}>
+        <select value={value||''} onChange={e=>onChange(e.target.value)} style={{ ...baseStyle, cursor:'pointer' }}>
           <option value="" style={{background:'#120010'}}>Choisir…</option>
           {field.options.map(o=><option key={o} value={o} style={{background:'#120010'}}>{o}</option>)}
         </select>
       ) : field.type === 'textarea' ? (
         <textarea value={value||''} onChange={e=>onChange(e.target.value)}
-          placeholder={field.placeholder} rows={field.key==='transcript' || field.key==='contenu' || field.key==='piliers' ? 8 : 3}
+          placeholder={field.placeholder}
+          rows={field.key==='transcript' || field.key==='contenu' || field.key==='piliers' ? 8 : 3}
           style={{ ...baseStyle, resize:'vertical', fontFamily:'system-ui,sans-serif', lineHeight:'1.5' }}/>
       ) : (
         <input type="text" value={value||''} onChange={e=>onChange(e.target.value)}
@@ -276,19 +302,14 @@ function Modal({ agent, onClose }) {
     setLoading(true); setResponse(''); setError('')
     try {
       const res = await fetch('/api/brief', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId: agent.id, systemPrompt: form.system, userPrompt: form.userPrompt(data) }),
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ agentId:agent.id, systemPrompt:form.system, userPrompt:form.userPrompt(data) }),
       })
       if (!res.ok) throw new Error(`Erreur ${res.status}`)
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      let text = ''
+      const reader = res.body.getReader(); const decoder = new TextDecoder(); let text = ''
       while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        text += decoder.decode(value, { stream: true })
-        setResponse(text)
+        const { done, value } = await reader.read(); if (done) break
+        text += decoder.decode(value, { stream:true }); setResponse(text)
       }
     } catch (e) { setError(e.message || 'Erreur inconnue') }
     finally { setLoading(false) }
@@ -305,23 +326,20 @@ function Modal({ agent, onClose }) {
         <button onClick={onClose} style={{ position:'absolute', top:'16px', right:'16px',
           background:'transparent', border:'1px solid rgba(250,248,251,0.15)', borderRadius:'8px',
           color:'rgba(250,248,251,0.5)', width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
-
         <div style={{ display:'flex', alignItems:'center', gap:'16px', marginBottom:'24px' }}>
           <img src={getAvatarPath(agent.id)} alt={agent.prenom}
-            style={{ width:'56px', height:'56px', borderRadius:'50%', objectFit:'cover', objectPosition:'top',
-              border:`2px solid ${agent.color}66` }}/>
+            style={{ width:'56px', height:'56px', borderRadius:'50%', objectFit:'cover', objectPosition:'top', border:`2px solid ${agent.color}66` }}/>
           <div>
             <div style={{ fontFamily:'Georgia,serif', fontSize:'20px', fontWeight:'900', color:B.white }}>{form.title}</div>
             <div style={{ fontSize:'12px', color:'rgba(250,248,251,0.45)' }}>{form.subtitle}</div>
           </div>
         </div>
         <div style={{ height:'1px', background:`linear-gradient(90deg,transparent,${agent.color}88,transparent)`, marginBottom:'24px' }}/>
-
         {!response && !loading && (
           <>
             {form.fields.map(field => (
               <FieldGroup key={field.key} field={field} value={data[field.key]}
-                onChange={v => setData({...data,[field.key]:v})} accentColor={agent.accent}/>
+                onChange={v=>setData({...data,[field.key]:v})} accentColor={agent.accent}/>
             ))}
             {error && <div style={{ color:'#ff6b6b', fontSize:'12px', marginBottom:'12px' }}>⚠ {error}</div>}
             <button onClick={generate} style={{ width:'100%', padding:'14px',
@@ -343,14 +361,12 @@ function Modal({ agent, onClose }) {
         {response && (
           <>
             <div style={{ marginBottom:'16px' }}>
-              <div style={{ fontSize:'11px', fontWeight:'700', color:agent.accent,
-                letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'10px' }}>
+              <div style={{ fontSize:'11px', fontWeight:'700', color:agent.accent, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'10px' }}>
                 Réponse de {agent.prenom}
               </div>
               <div style={{ background:'rgba(10,0,8,0.5)', border:`1px solid ${agent.color}33`,
                 borderRadius:'12px', padding:'18px', fontSize:'13px', color:'rgba(250,248,251,0.85)',
-                lineHeight:'1.75', whiteSpace:'pre-wrap', maxHeight:'360px', overflowY:'auto',
-                fontFamily:'system-ui,sans-serif' }}>
+                lineHeight:'1.75', whiteSpace:'pre-wrap', maxHeight:'360px', overflowY:'auto', fontFamily:'system-ui,sans-serif' }}>
                 {response}
               </div>
             </div>
@@ -389,19 +405,14 @@ function SupportModal({ agent, onClose }) {
     setLoading(true); setResponse(''); setError('')
     try {
       const res = await fetch('/api/agents/support', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId: agent.id, ...data }),
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ agentId:agent.id, ...data }),
       })
       if (!res.ok) throw new Error(`Erreur ${res.status}`)
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      let text = ''
+      const reader = res.body.getReader(); const decoder = new TextDecoder(); let text = ''
       while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        text += decoder.decode(value, { stream: true })
-        setResponse(text)
+        const { done, value } = await reader.read(); if (done) break
+        text += decoder.decode(value, { stream:true }); setResponse(text)
       }
     } catch (e) { setError(e.message || 'Erreur inconnue') }
     finally { setLoading(false) }
@@ -418,11 +429,9 @@ function SupportModal({ agent, onClose }) {
         <button onClick={onClose} style={{ position:'absolute', top:'16px', right:'16px',
           background:'transparent', border:'1px solid rgba(250,248,251,0.15)', borderRadius:'8px',
           color:'rgba(250,248,251,0.5)', width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
-
         <div style={{ display:'flex', alignItems:'center', gap:'16px', marginBottom:'24px' }}>
           <div style={{ width:'56px', height:'56px', borderRadius:'50%', display:'flex', alignItems:'center',
-            justifyContent:'center', fontSize:'26px', background:`${agent.color}18`,
-            border:`2px solid ${agent.color}55`, flexShrink:0 }}>
+            justifyContent:'center', fontSize:'26px', background:`${agent.color}18`, border:`2px solid ${agent.color}55`, flexShrink:0 }}>
             {agent.emoji}
           </div>
           <div>
@@ -431,12 +440,11 @@ function SupportModal({ agent, onClose }) {
           </div>
         </div>
         <div style={{ height:'1px', background:`linear-gradient(90deg,transparent,${agent.color}88,transparent)`, marginBottom:'24px' }}/>
-
         {!response && !loading && (
           <>
             {form.fields.map(field => (
               <FieldGroup key={field.key} field={field} value={data[field.key]}
-                onChange={v => setData({...data,[field.key]:v})} accentColor={agent.accent}/>
+                onChange={v=>setData({...data,[field.key]:v})} accentColor={agent.accent}/>
             ))}
             {error && <div style={{ color:'#ff6b6b', fontSize:'12px', marginBottom:'12px' }}>⚠ {error}</div>}
             <button onClick={generate} style={{ width:'100%', padding:'14px',
@@ -458,14 +466,12 @@ function SupportModal({ agent, onClose }) {
         {response && (
           <>
             <div style={{ marginBottom:'16px' }}>
-              <div style={{ fontSize:'11px', fontWeight:'700', color:agent.accent,
-                letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'10px' }}>
+              <div style={{ fontSize:'11px', fontWeight:'700', color:agent.accent, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'10px' }}>
                 Résultat — {agent.name}
               </div>
               <div style={{ background:'rgba(10,0,8,0.5)', border:`1px solid ${agent.color}33`,
                 borderRadius:'12px', padding:'18px', fontSize:'13px', color:'rgba(250,248,251,0.85)',
-                lineHeight:'1.75', whiteSpace:'pre-wrap', maxHeight:'420px', overflowY:'auto',
-                fontFamily:'system-ui,sans-serif' }}>
+                lineHeight:'1.75', whiteSpace:'pre-wrap', maxHeight:'420px', overflowY:'auto', fontFamily:'system-ui,sans-serif' }}>
                 {response}
               </div>
             </div>
@@ -498,36 +504,20 @@ function HistoryModal({ campaign, onClose }) {
   const [copiedAll, setCopiedAll] = useState(false)
 
   const stepsWithOutput = PIPELINE_STEPS.map(step => ({
-    ...step,
-    status: campaign.outputs[step.id] ? 'done' : 'pending',
-    output: campaign.outputs[step.id] || '',
+    ...step, status: campaign.outputs[step.id] ? 'done' : 'pending', output: campaign.outputs[step.id] || '',
   }))
-
-  function handleDownload() {
-    downloadMd(campaign, stepsWithOutput)
-  }
-
-  function handleCopyAll() {
-    const md = buildMarkdown(campaign, stepsWithOutput)
-    navigator.clipboard.writeText(md).then(() => { setCopiedAll(true); setTimeout(()=>setCopiedAll(false),2000) })
-  }
 
   return (
     <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(10,0,8,0.96)', backdropFilter:'blur(16px)',
       display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
-      <div style={{ background:'linear-gradient(160deg,#120010 0%,#0a0008 60%)',
-        border:`1px solid ${B.gold}44`, borderRadius:'20px',
-        width:'100%', maxWidth:'900px', maxHeight:'92vh', overflow:'hidden',
+      <div style={{ background:'linear-gradient(160deg,#120010 0%,#0a0008 60%)', border:`1px solid ${B.gold}44`,
+        borderRadius:'20px', width:'100%', maxWidth:'900px', maxHeight:'92vh', overflow:'hidden',
         display:'flex', flexDirection:'column', boxShadow:`0 0 80px ${B.magenta}10` }}>
-
-        {/* Header */}
         <div style={{ padding:'20px 24px 0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
             <Eye size={26}/>
             <div>
-              <div style={{ fontFamily:'Georgia,serif', fontSize:'17px', fontWeight:'900', color:B.white }}>
-                {campaign.client}
-              </div>
+              <div style={{ fontFamily:'Georgia,serif', fontSize:'17px', fontWeight:'900', color:B.white }}>{campaign.client}</div>
               <div style={{ fontSize:'9px', color:B.gold, letterSpacing:'0.18em', marginTop:'2px' }}>
                 {campaign.date} · {campaign.objectif || '—'} · {campaign.plateformes || '—'}
               </div>
@@ -537,21 +527,16 @@ function HistoryModal({ campaign, onClose }) {
             borderRadius:'8px', color:'rgba(250,248,251,0.5)', width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
         </div>
         <div style={{ height:'1px', background:`linear-gradient(90deg,transparent,${B.gold}66,transparent)`, margin:'16px 0 0' }}/>
-
-        {/* Body */}
         <div style={{ flex:1, overflowY:'auto', padding:'16px 24px 24px', display:'flex', flexDirection:'column', gap:'10px' }}>
-          {stepsWithOutput.filter(s => s.status === 'done').map((step) => {
-            const idx = stepsWithOutput.indexOf(step)
+          {stepsWithOutput.filter(s => s.status === 'done').map((step, idx) => {
             const isOpen = expandedStep === idx
             const wordCount = step.output ? step.output.trim().split(/\s+/).length : 0
             return (
               <div key={step.id} style={{ border:`1px solid ${step.color}33`, borderRadius:'12px', overflow:'hidden' }}>
                 <div onClick={() => setExpandedStep(isOpen ? null : idx)}
-                  style={{ padding:'12px 16px', display:'flex', alignItems:'center', gap:'10px',
-                    cursor:'pointer', background:`${step.color}0d` }}>
+                  style={{ padding:'12px 16px', display:'flex', alignItems:'center', gap:'10px', cursor:'pointer', background:`${step.color}0d` }}>
                   <img src={getAvatarPath(step.id)} alt={step.prenom}
-                    style={{ width:'30px', height:'30px', borderRadius:'50%', objectFit:'cover', objectPosition:'top',
-                      border:`1.5px solid ${step.color}55`, flexShrink:0 }}/>
+                    style={{ width:'30px', height:'30px', borderRadius:'50%', objectFit:'cover', objectPosition:'top', border:`1.5px solid ${step.color}55`, flexShrink:0 }}/>
                   <div style={{ flex:1 }}>
                     <span style={{ fontSize:'13px', fontWeight:'700', color:B.white }}>{step.prenom}</span>
                     <span style={{ fontSize:'10px', color:step.color, marginLeft:'8px' }}>→ {step.folder}</span>
@@ -563,38 +548,31 @@ function HistoryModal({ campaign, onClose }) {
                   <div style={{ padding:'0 16px 14px' }}>
                     <div style={{ background:'rgba(10,0,8,0.45)', borderRadius:'10px', padding:'14px',
                       fontSize:'12px', color:'rgba(250,248,251,0.8)', lineHeight:'1.78',
-                      whiteSpace:'pre-wrap', maxHeight:'340px', overflowY:'auto', marginBottom:'8px',
-                      fontFamily:'system-ui,sans-serif' }}>
+                      whiteSpace:'pre-wrap', maxHeight:'340px', overflowY:'auto', marginBottom:'8px', fontFamily:'system-ui,sans-serif' }}>
                       {step.output}
                     </div>
-                    <button onClick={() => {
-                      navigator.clipboard.writeText(step.output).then(() => {
-                        setCopied(idx); setTimeout(()=>setCopied(null),2000)
-                      })
-                    }} style={{ padding:'7px 14px',
-                      background: copied === idx ? `${step.color}18` : 'rgba(107,15,110,0.2)',
-                      border:`1px solid ${step.color}44`, borderRadius:'8px',
-                      color: copied === idx ? step.color : B.white, fontSize:'11px', cursor:'pointer' }}>
-                      {copied === idx ? '✓ Copié' : '📋 Copier'}
+                    <button onClick={() => { navigator.clipboard.writeText(step.output).then(() => { setCopied(idx); setTimeout(()=>setCopied(null),2000) }) }}
+                      style={{ padding:'7px 14px', background: copied===idx ? `${step.color}18` : 'rgba(107,15,110,0.2)',
+                        border:`1px solid ${step.color}44`, borderRadius:'8px',
+                        color: copied===idx ? step.color : B.white, fontSize:'11px', cursor:'pointer' }}>
+                      {copied===idx ? '✓ Copié' : '📋 Copier'}
                     </button>
                   </div>
                 )}
               </div>
             )
           })}
-
-          {/* Footer actions */}
           <div style={{ display:'flex', gap:'10px', marginTop:'6px', flexWrap:'wrap' }}>
-            <button onClick={handleDownload} style={{ flex:1, minWidth:'180px', padding:'10px 20px',
-              background:`linear-gradient(135deg,${B.gold}cc,${B.goldLight}88)`,
-              border:`1px solid ${B.gold}88`, borderRadius:'10px',
-              color:B.black, fontSize:'12px', fontWeight:'800', cursor:'pointer' }}>
+            <button onClick={() => downloadMd(campaign, stepsWithOutput)} style={{ flex:1, minWidth:'180px', padding:'10px 20px',
+              background:`linear-gradient(135deg,${B.gold}cc,${B.goldLight}88)`, border:`1px solid ${B.gold}88`,
+              borderRadius:'10px', color:B.black, fontSize:'12px', fontWeight:'800', cursor:'pointer' }}>
               ⬇ Télécharger (.md)
             </button>
-            <button onClick={handleCopyAll} style={{ flex:1, minWidth:'180px', padding:'10px 20px',
-              background: copiedAll ? `${B.gold}18` : 'rgba(107,15,110,0.25)',
-              border:`1px solid ${copiedAll ? B.gold : B.border}`, borderRadius:'10px',
-              color: copiedAll ? B.goldLight : B.white, fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>
+            <button onClick={() => { const md = buildMarkdown(campaign, stepsWithOutput); navigator.clipboard.writeText(md).then(() => { setCopiedAll(true); setTimeout(()=>setCopiedAll(false),2000) }) }}
+              style={{ flex:1, minWidth:'180px', padding:'10px 20px',
+                background: copiedAll ? `${B.gold}18` : 'rgba(107,15,110,0.25)',
+                border:`1px solid ${copiedAll ? B.gold : B.border}`, borderRadius:'10px',
+                color: copiedAll ? B.goldLight : B.white, fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>
               {copiedAll ? '✓ Copié !' : '📋 Copier tout (.md)'}
             </button>
           </div>
@@ -604,15 +582,214 @@ function HistoryModal({ campaign, onClose }) {
   )
 }
 
+// ─── OrchestratorModal ────────────────────────────────────────────────────────
+
+function OrchestratorModal({ onClose, onLaunch }) {
+  const ORCH_FIELDS = [
+    { key:'client',   label:'Nom du client / marque', type:'text',     placeholder:'Ex: Caraïb Ediprint' },
+    { key:'projet',   label:'Décris le projet',        type:'textarea', placeholder:'Ex: Refonte complète de la présence digitale pour une imprimerie martiniquaise. Objectif : générer des leads B2B via LinkedIn et Instagram...' },
+    { key:'objectif', label:'Objectif principal',      type:'select',   options:['Notoriété de marque','Génération de leads','Augmenter les ventes','Fidéliser la communauté','Lancement produit/service'] },
+    { key:'budget',   label:'Budget mensuel',          type:'text',     placeholder:'Ex: 1 500€/mois' },
+    { key:'urgence',  label:'Urgence',                 type:'select',   options:["Lancement immédiat","Sous 2 semaines","Sous 1 mois","Pas d'urgence"] },
+  ]
+
+  const [data, setData] = useState({})
+  const [response, setResponse] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [parsedAgents, setParsedAgents] = useState(null)
+  const [rationale, setRationale] = useState('')
+
+  async function analyse() {
+    if (!data.client || !data.projet) return
+    setLoading(true); setResponse(''); setError(''); setParsedAgents(null); setRationale('')
+
+    const userPrompt = `CLIENT : ${data.client || '—'}
+PROJET : ${data.projet || '—'}
+OBJECTIF : ${data.objectif || '—'}
+BUDGET : ${data.budget || '—'}
+URGENCE : ${data.urgence || '—'}
+
+Analyse ce projet et sélectionne les agents B.BOLD les plus adaptés.`
+
+    try {
+      const res = await fetch('/api/brief', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ agentId:'orchestrateur', systemPrompt:ORCH_SYSTEM, userPrompt, max_tokens:3500 }),
+      })
+      if (!res.ok) throw new Error(`Erreur ${res.status}`)
+      const reader = res.body.getReader(); const decoder = new TextDecoder(); let text = ''
+      while (true) {
+        const { done, value } = await reader.read(); if (done) break
+        text += decoder.decode(value, { stream:true }); setResponse(text)
+      }
+      const match = text.match(/```json\s*([\s\S]*?)\s*```/)
+      if (match) {
+        try {
+          const parsed = JSON.parse(match[1])
+          setParsedAgents(parsed.selected_agents || [])
+          setRationale(parsed.rationale || '')
+        } catch (_) {}
+      }
+    } catch (e) { setError(e.message || 'Erreur inconnue') }
+    finally { setLoading(false) }
+  }
+
+  const displayText = response.replace(/```json[\s\S]*?```/g, '').trim()
+
+  function handleLaunch() {
+    if (!parsedAgents) return
+    onLaunch({
+      brief: { client:data.client, objectif:data.objectif, budget:data.budget, secteur:'', plateformes:'', ton:'', cible:data.projet },
+      selectedAgents: parsedAgents,
+    })
+    onClose()
+  }
+
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(10,0,8,0.95)', backdropFilter:'blur(16px)',
+      display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}
+      onClick={e => e.target === e.currentTarget && !loading && onClose()}>
+      <div style={{ background:'linear-gradient(160deg,#120010 0%,#0a0008 60%)',
+        border:`1px solid ${B.gold}55`, borderRadius:'20px', padding:'32px',
+        width:'100%', maxWidth:'700px', maxHeight:'92vh', overflowY:'auto',
+        position:'relative', boxShadow:`0 0 80px ${B.gold}18` }}>
+
+        {!loading && (
+          <button onClick={onClose} style={{ position:'absolute', top:'16px', right:'16px',
+            background:'transparent', border:'1px solid rgba(250,248,251,0.15)', borderRadius:'8px',
+            color:'rgba(250,248,251,0.5)', width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
+        )}
+
+        <div style={{ display:'flex', alignItems:'center', gap:'16px', marginBottom:'8px' }}>
+          <Eye size={44}/>
+          <div>
+            <div style={{ fontFamily:'Georgia,serif', fontSize:'22px', fontWeight:'900', color:B.white }}>Orchestrateur</div>
+            <div style={{ fontSize:'11px', color:B.gold, letterSpacing:'0.12em' }}>CHEF DE PROJET · CLAUDE OPUS</div>
+          </div>
+        </div>
+        <p style={{ fontSize:'12px', color:'rgba(250,248,251,0.45)', marginBottom:'24px', lineHeight:'1.6' }}>
+          Décris ton projet. L'Orchestrateur analyse le brief et sélectionne les agents les plus adaptés.
+        </p>
+        <div style={{ height:'1px', background:`linear-gradient(90deg,transparent,${B.gold}77,transparent)`, marginBottom:'24px' }}/>
+
+        {!response && !loading && (
+          <>
+            {ORCH_FIELDS.map(field => (
+              <FieldGroup key={field.key} field={field} value={data[field.key]}
+                onChange={v=>setData({...data,[field.key]:v})} accentColor={B.goldLight}/>
+            ))}
+            {error && <div style={{ color:'#ff6b6b', fontSize:'12px', marginBottom:'12px' }}>⚠ {error}</div>}
+            <button onClick={analyse} disabled={!data.client || !data.projet} style={{
+              width:'100%', padding:'15px',
+              background: (data.client && data.projet) ? `linear-gradient(135deg,${B.gold}cc,${B.goldLight}88)` : 'rgba(201,168,76,0.1)',
+              border:`1px solid ${(data.client && data.projet) ? B.gold+'88' : 'rgba(201,168,76,0.15)'}`,
+              borderRadius:'12px', color: (data.client && data.projet) ? B.black : 'rgba(250,248,251,0.25)',
+              fontSize:'14px', fontWeight:'800', cursor: (data.client && data.projet) ? 'pointer' : 'not-allowed',
+            }}>
+              ✦ Analyser le projet →
+            </button>
+          </>
+        )}
+
+        {loading && (
+          <div style={{ textAlign:'center', padding:'32px 0' }}>
+            <div style={{ width:'44px', height:'44px', borderRadius:'50%', margin:'0 auto 16px',
+              border:`2px solid ${B.gold}22`, borderTop:`2px solid ${B.gold}`,
+              animation:'spin 0.8s linear infinite' }}/>
+            <p style={{ color:'rgba(250,248,251,0.5)', fontSize:'13px' }}>L'Orchestrateur analyse le projet…</p>
+          </div>
+        )}
+
+        {response && !loading && (
+          <>
+            <div style={{ background:'rgba(10,0,8,0.5)', border:`1px solid ${B.gold}28`,
+              borderRadius:'12px', padding:'16px', fontSize:'12.5px', color:'rgba(250,248,251,0.82)',
+              lineHeight:'1.78', whiteSpace:'pre-wrap', maxHeight:'260px', overflowY:'auto',
+              fontFamily:'system-ui,sans-serif', marginBottom:'20px' }}>
+              {displayText || <span style={{opacity:0.3}}>Analyse en cours…</span>}
+            </div>
+
+            {parsedAgents && (
+              <>
+                <div style={{ fontSize:'10px', fontWeight:'700', color:B.goldLight, letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:'12px' }}>
+                  Agents sélectionnés
+                </div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:'8px', marginBottom:'16px' }}>
+                  {PIPELINE_STEPS.map(step => {
+                    const selected = parsedAgents.includes(step.id)
+                    return (
+                      <div key={step.id} style={{
+                        padding:'7px 14px', borderRadius:'20px', fontSize:'12px', fontWeight:'700',
+                        background: selected ? `${step.color}28` : 'rgba(250,248,251,0.04)',
+                        border:`1px solid ${selected ? step.color+'77' : 'rgba(250,248,251,0.1)'}`,
+                        color: selected ? B.white : 'rgba(250,248,251,0.25)',
+                        display:'flex', alignItems:'center', gap:'6px',
+                      }}>
+                        {selected && <span style={{ color:step.color, fontSize:'14px' }}>{step.emoji}</span>}
+                        {step.prenom}
+                        {selected && <span style={{ fontSize:'9px', color:step.color, marginLeft:'2px' }}>✓</span>}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {rationale && (
+                  <div style={{ padding:'10px 14px', background:`${B.gold}0a`, border:`1px solid ${B.gold}22`,
+                    borderRadius:'10px', fontSize:'12px', color:'rgba(250,248,251,0.6)', marginBottom:'20px', lineHeight:'1.6' }}>
+                    💡 {rationale}
+                  </div>
+                )}
+
+                <button onClick={handleLaunch} style={{
+                  width:'100%', padding:'15px',
+                  background:`linear-gradient(135deg,${B.magenta},${B.violetDeep})`,
+                  border:`1px solid ${B.magenta}88`, borderRadius:'12px',
+                  color:B.white, fontSize:'14px', fontWeight:'800', cursor:'pointer',
+                  boxShadow:`0 4px 20px ${B.magenta}33`,
+                }}>
+                  🚀 Lancer ces {parsedAgents.length} agent{parsedAgents.length > 1 ? 's' : ''} →
+                </button>
+              </>
+            )}
+
+            <button onClick={() => { setResponse(''); setParsedAgents(null); setRationale('') }}
+              style={{ width:'100%', padding:'10px', marginTop:'10px',
+                background:'transparent', border:'1px solid rgba(250,248,251,0.1)', borderRadius:'10px',
+                color:'rgba(250,248,251,0.35)', fontSize:'12px', cursor:'pointer' }}>
+              ← Modifier le brief
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── CampaignModal ────────────────────────────────────────────────────────────
 
-function CampaignModal({ onClose, onSaved }) {
+function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }) {
   const [phase, setPhase] = useState('form')
-  const [brief, setBrief] = useState({})
+  const [brief, setBrief] = useState(initialBrief || {})
+  const [activeSelectedAgents] = useState(initialSelectedAgents || null)
+  const [showUrlFields, setShowUrlFields] = useState(false)
+
+  const effectiveSteps = (activeSelectedAgents && activeSelectedAgents.length > 0)
+    ? PIPELINE_STEPS.filter(s => activeSelectedAgents.includes(s.id))
+    : PIPELINE_STEPS
+
   const [stepStatuses, setStepStatuses] = useState(
-    PIPELINE_STEPS.map(s => ({ ...s, status:'pending', output:'' }))
+    Object.fromEntries(PIPELINE_STEPS.map(s => [s.id, { ...s, status:'pending', output:'' }]))
   )
-  const [currentStepIndex, setCurrentStepIndex] = useState(-1)
+
+  const [preStepStatus, setPreStepStatus] = useState('idle')
+  const [preStepText, setPreStepText] = useState('')
+  const [preStepOutput, setPreStepOutput] = useState('')
+  const [preStepExpanded, setPreStepExpanded] = useState(false)
+  const preStepTextRef = useRef('')
+  const preStepRef = useRef(null)
+
+  const [currentActiveAgent, setCurrentActiveAgent] = useState(null)
   const [currentStreamText, setCurrentStreamText] = useState('')
   const [expandedStep, setExpandedStep] = useState(null)
   const [error, setError] = useState('')
@@ -622,53 +799,82 @@ function CampaignModal({ onClose, onSaved }) {
   const currentOutputRef = useRef('')
   const allOutputsRef = useRef({})
 
+  const hasUrls = !!(brief.site_web || brief.instagram || brief.facebook || brief.linkedin || brief.tiktok)
+
   async function launch() {
     if (!brief.client) return
     setPhase('running')
     setError('')
     currentOutputRef.current = ''
     allOutputsRef.current = {}
-    setStepStatuses(PIPELINE_STEPS.map(s => ({ ...s, status:'pending', output:'' })))
-    setCurrentStepIndex(-1)
+    preStepTextRef.current = ''
+    setPreStepStatus('idle')
+    setPreStepText('')
+    setPreStepOutput('')
+    setCurrentActiveAgent(null)
     setCurrentStreamText('')
+    setStepStatuses(Object.fromEntries(PIPELINE_STEPS.map(s => [s.id, { ...s, status:'pending', output:'' }])))
 
     try {
       const res = await fetch('/api/orchestrate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(brief),
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          ...brief,
+          selected_agents: (activeSelectedAgents && activeSelectedAgents.length > 0) ? activeSelectedAgents : undefined,
+        }),
       })
       if (!res.ok) throw new Error(`Erreur API ${res.status}`)
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
+      const reader = res.body.getReader(); const decoder = new TextDecoder(); let buffer = ''
       while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() ?? ''
+        const { done, value } = await reader.read(); if (done) break
+        buffer += decoder.decode(value, { stream:true })
+        const lines = buffer.split('\n'); buffer = lines.pop() ?? ''
         for (const line of lines) {
           if (!line.trim()) continue
           try { processEvent(JSON.parse(line)) } catch (_) {}
         }
       }
     } catch (e) {
-      setError(e.message || 'Erreur inconnue')
-      setPhase('done')
+      setError(e.message || 'Erreur inconnue'); setPhase('done')
     }
   }
 
   function processEvent(event) {
     switch (event.type) {
+      case 'pre_step_start':
+        setPreStepStatus('active')
+        preStepTextRef.current = ''
+        setPreStepText('')
+        break
+
+      case 'pre_step_chunk':
+        preStepTextRef.current += event.text
+        setPreStepText(preStepTextRef.current)
+        if (preStepRef.current) preStepRef.current.scrollTop = preStepRef.current.scrollHeight
+        break
+
+      case 'pre_step_done':
+        setPreStepStatus('done')
+        setPreStepOutput(event.output || preStepTextRef.current)
+        break
+
+      case 'pre_step_error':
+        setPreStepStatus('error')
+        break
+
       case 'step_start':
-        setCurrentStepIndex(event.index)
+        setCurrentActiveAgent(event.agent)
         currentOutputRef.current = ''
         setCurrentStreamText('')
-        setStepStatuses(prev => prev.map((s, i) =>
-          i === event.index ? { ...s, status:'active' } :
-          i < event.index  ? { ...s, status:'done' } : s
-        ))
+        setStepStatuses(prev => {
+          const next = { ...prev }
+          const idx = effectiveSteps.findIndex(s => s.id === event.agent)
+          effectiveSteps.slice(0, idx).forEach(s => {
+            if (next[s.id]?.status === 'active') next[s.id] = { ...next[s.id], status:'done' }
+          })
+          next[event.agent] = { ...next[event.agent], status:'active' }
+          return next
+        })
         break
 
       case 'step_chunk':
@@ -680,51 +886,40 @@ function CampaignModal({ onClose, onSaved }) {
       case 'step_done': {
         const out = currentOutputRef.current
         allOutputsRef.current[event.agent] = out
-        setStepStatuses(prev => prev.map((s, i) =>
-          i === event.index ? { ...s, status:'done', output: out } : s
-        ))
+        setStepStatuses(prev => ({ ...prev, [event.agent]: { ...prev[event.agent], status:'done', output:out } }))
         break
       }
 
       case 'step_error':
-        setStepStatuses(prev => prev.map((s, i) =>
-          i === event.index ? { ...s, status:'error' } : s
-        ))
+        setStepStatuses(prev => ({ ...prev, [event.agent]: { ...prev[event.agent], status:'error' } }))
         setError(event.error || 'Erreur inconnue')
         setPhase('done')
         break
 
       case 'pipeline_done': {
-        // Save to history
         const entry = {
           id: Date.now(),
           date: new Date().toISOString().split('T')[0],
-          client: brief.client,
-          objectif: brief.objectif,
-          plateformes: brief.plateformes,
-          budget: brief.budget,
-          secteur: brief.secteur,
+          client: brief.client, objectif: brief.objectif,
+          plateformes: brief.plateformes, budget: brief.budget, secteur: brief.secteur,
           outputs: { ...allOutputsRef.current },
         }
         saveToHistory(entry)
         if (onSaved) onSaved()
-
         setPhase('done')
-        setCurrentStepIndex(-1)
-        setExpandedStep(0)
+        setCurrentActiveAgent(null)
+        setExpandedStep(effectiveSteps[0]?.id || null)
         break
       }
     }
   }
 
-  const activeStep = currentStepIndex >= 0 ? PIPELINE_STEPS[currentStepIndex] : null
+  const activeStepInfo = currentActiveAgent ? PIPELINE_STEPS.find(s => s.id === currentActiveAgent) : null
+  const allEffectiveDone = effectiveSteps.every(s => stepStatuses[s.id]?.status === 'done')
 
-  function handleDownload() {
-    downloadMd(brief, stepStatuses)
-  }
-
+  function handleDownload() { downloadMd(brief, effectiveSteps.map(s => stepStatuses[s.id] || s)) }
   function handleCopyAll() {
-    const md = buildMarkdown(brief, stepStatuses)
+    const md = buildMarkdown(brief, effectiveSteps.map(s => stepStatuses[s.id] || s))
     navigator.clipboard.writeText(md).then(() => { setCopiedAll(true); setTimeout(()=>setCopiedAll(false),2000) })
   }
 
@@ -734,13 +929,11 @@ function CampaignModal({ onClose, onSaved }) {
       <div style={{
         background:'linear-gradient(160deg,#120010 0%,#0a0008 60%)',
         border:`1px solid ${B.gold}44`, borderRadius:'20px',
-        width:'100%', maxWidth: phase === 'form' ? '620px' : '1060px',
+        width:'100%', maxWidth: phase === 'form' ? '640px' : '1060px',
         maxHeight:'92vh', overflow:'hidden', display:'flex', flexDirection:'column',
-        boxShadow:`0 0 100px ${B.magenta}12`,
-        transition:'max-width 0.4s ease',
+        boxShadow:`0 0 100px ${B.magenta}12`, transition:'max-width 0.4s ease',
       }}>
 
-        {/* Header */}
         <div style={{ padding:'20px 24px 0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
             <Eye size={26}/>
@@ -751,9 +944,9 @@ function CampaignModal({ onClose, onSaved }) {
                 {phase === 'done' && `✓ Terminé — ${brief.client || ''}`}
               </div>
               <div style={{ fontSize:'9px', color:B.gold, letterSpacing:'0.18em', marginTop:'2px' }}>
-                {phase === 'form' && '5 AGENTS · PIPELINE SÉQUENTIEL · 5 LIVRABLES'}
-                {phase === 'running' && `AGENT ${currentStepIndex + 1} / 5 EN COURS`}
-                {phase === 'done' && 'PIPELINE COMPLET · SAUVEGARDÉ DANS L\'HISTORIQUE'}
+                {phase === 'form' && (activeSelectedAgents ? `${effectiveSteps.length} AGENTS SÉLECTIONNÉS PAR L'ORCHESTRATEUR` : `${effectiveSteps.length} AGENTS · PIPELINE SÉQUENTIEL`)}
+                {phase === 'running' && 'PIPELINE EN COURS'}
+                {phase === 'done' && "PIPELINE COMPLET · SAUVEGARDÉ DANS L'HISTORIQUE"}
               </div>
             </div>
           </div>
@@ -764,58 +957,116 @@ function CampaignModal({ onClose, onSaved }) {
         </div>
         <div style={{ height:'1px', background:`linear-gradient(90deg,transparent,${B.gold}66,transparent)`, margin:'16px 0 0' }}/>
 
-        {/* Body */}
         <div style={{ flex:1, overflow:'hidden', display:'flex' }}>
 
-          {/* ── PHASE : FORM ──────────────────────────────────── */}
+          {/* ── PHASE FORM ── */}
           {phase === 'form' && (
             <div style={{ flex:1, padding:'20px 24px 24px', overflowY:'auto' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'22px', padding:'12px 14px',
-                background:B.surface, border:`1px solid ${B.border}`, borderRadius:'12px', overflowX:'auto' }}>
-                {PIPELINE_STEPS.map((step, i) => (
+              <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'20px', padding:'10px 14px',
+                background:B.surface, border:`1px solid ${B.border}`, borderRadius:'12px', flexWrap:'wrap' }}>
+                {effectiveSteps.map((step, i) => (
                   <div key={step.id} style={{ display:'flex', alignItems:'center', gap:'6px', flexShrink:0 }}>
                     <span style={{ padding:'4px 10px', borderRadius:'20px', fontSize:'10px', fontWeight:'700',
                       background:`${step.color}18`, border:`1px solid ${step.color}44`, color:B.white }}>
                       {step.emoji} {step.prenom}
                     </span>
-                    {i < PIPELINE_STEPS.length - 1 && <span style={{ fontSize:'10px', color:B.gold, opacity:0.45 }}>→</span>}
+                    {i < effectiveSteps.length - 1 && <span style={{ fontSize:'10px', color:B.gold, opacity:0.45 }}>→</span>}
                   </div>
                 ))}
+                {activeSelectedAgents && (
+                  <span style={{ marginLeft:'auto', fontSize:'8px', color:B.gold, opacity:0.6, flexShrink:0 }}>via Orchestrateur</span>
+                )}
               </div>
 
               {CAMPAIGN_FIELDS.map(field => (
                 <FieldGroup key={field.key} field={field} value={brief[field.key]}
-                  onChange={v => setBrief({...brief,[field.key]:v})} accentColor={B.goldLight}/>
+                  onChange={v=>setBrief({...brief,[field.key]:v})} accentColor={B.goldLight}/>
               ))}
 
+              <div style={{ marginBottom:'18px' }}>
+                <button onClick={() => setShowUrlFields(!showUrlFields)} style={{
+                  width:'100%', padding:'10px 14px', borderRadius:'10px', cursor:'pointer',
+                  background: showUrlFields ? 'rgba(13,148,136,0.12)' : 'rgba(13,148,136,0.06)',
+                  border:`1px solid ${showUrlFields ? '#0d948888' : '#0d948833'}`,
+                  color:'#5eead4', fontSize:'12px', fontWeight:'600', textAlign:'left',
+                  display:'flex', alignItems:'center', justifyContent:'space-between',
+                }}>
+                  <span>🔍 Analyse présence digitale existante (optionnel)</span>
+                  <span style={{ fontSize:'10px', opacity:0.7 }}>{showUrlFields ? '▲ masquer' : '▼ ajouter des URLs'}</span>
+                </button>
+                {showUrlFields && (
+                  <div style={{ marginTop:'10px', padding:'16px', borderRadius:'12px',
+                    background:'rgba(13,148,136,0.07)', border:'1px solid #0d948833' }}>
+                    <p style={{ fontSize:'11px', color:'#5eead4', marginBottom:'14px', lineHeight:'1.6' }}>
+                      🔍 <strong>Debelvoix</strong> analysera la présence digitale avant de lancer le pipeline.
+                    </p>
+                    {URL_FIELDS.map(f => (
+                      <div key={f.key} style={{ marginBottom:'10px' }}>
+                        <label style={{ display:'block', fontSize:'10px', fontWeight:'700', color:'#5eead4',
+                          letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'4px' }}>{f.label}</label>
+                        <input type="text" value={brief[f.key]||''} onChange={e=>setBrief({...brief,[f.key]:e.target.value})}
+                          placeholder={f.placeholder}
+                          style={{ width:'100%', padding:'9px 12px', borderRadius:'8px',
+                            background:'rgba(13,148,136,0.1)', border:'1px solid #0d948844',
+                            color:B.white, fontSize:'12px', outline:'none' }}/>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <button onClick={launch} disabled={!brief.client} style={{
-                width:'100%', padding:'15px', marginTop:'8px',
+                width:'100%', padding:'15px',
                 background: brief.client ? `linear-gradient(135deg,${B.magenta},${B.violetDeep})` : 'rgba(107,15,110,0.15)',
                 border:`1px solid ${brief.client ? B.magenta+'88' : 'rgba(250,248,251,0.08)'}`,
                 borderRadius:'12px', color:B.white, fontSize:'15px', fontWeight:'800',
-                cursor: brief.client ? 'pointer' : 'not-allowed', letterSpacing:'0.04em',
-                opacity: brief.client ? 1 : 0.45,
+                cursor: brief.client ? 'pointer' : 'not-allowed', opacity: brief.client ? 1 : 0.45,
               }}>
-                🚀 Lancer la Campagne Complète →
+                🚀 Lancer le Pipeline →
               </button>
             </div>
           )}
 
-          {/* ── PHASE : RUNNING / DONE ────────────────────────── */}
+          {/* ── PHASE RUNNING / DONE ── */}
           {(phase === 'running' || phase === 'done') && (
             <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
 
               {/* Sidebar */}
               <div style={{ width:'210px', flexShrink:0, borderRight:`1px solid ${B.border}`,
                 padding:'14px 10px', overflowY:'auto', display:'flex', flexDirection:'column', gap:'5px' }}>
-                {stepStatuses.map((step, i) => {
-                  const isActive  = step.status === 'active'
-                  const isDone    = step.status === 'done'
-                  const isPending = step.status === 'pending'
-                  const isError   = step.status === 'error'
+
+                {/* Debelvoix pre-step row */}
+                {(hasUrls && preStepStatus !== 'idle') && (
+                  <div onClick={() => preStepStatus === 'done' && setPreStepExpanded(!preStepExpanded)}
+                    style={{ padding:'10px 11px', borderRadius:'10px', marginBottom:'2px',
+                      background: preStepStatus === 'active' ? 'rgba(13,148,136,0.18)' : preStepStatus === 'done' ? 'rgba(13,148,136,0.1)' : 'transparent',
+                      border:`1px solid ${preStepStatus === 'active' ? '#0d948866' : preStepStatus === 'done' ? '#0d948833' : 'rgba(250,248,251,0.05)'}`,
+                      cursor: preStepStatus === 'done' ? 'pointer' : 'default',
+                    }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                      <div style={{ width:'28px', height:'28px', borderRadius:'50%', display:'flex', alignItems:'center',
+                        justifyContent:'center', fontSize:'13px', background:'rgba(13,148,136,0.2)',
+                        border:'1.5px solid #0d948866', flexShrink:0 }}>🔍</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:'11px', fontWeight:'700', color:B.white }}>Debelvoix</div>
+                        <div style={{ fontSize:'8px', color:'#0d9488', opacity:0.8 }}>brand analysis</div>
+                      </div>
+                      <div style={{ fontSize:'11px', flexShrink:0, color: preStepStatus === 'done' ? '#4ade80' : preStepStatus === 'error' ? '#f87171' : '#0d9488' }}>
+                        {preStepStatus === 'done' ? '✓' : preStepStatus === 'error' ? '✕' : <span style={{ animation:'bpulse 1s infinite', display:'inline-block' }}>●</span>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {effectiveSteps.map(step => {
+                  const s = stepStatuses[step.id] || step
+                  const isActive  = s.status === 'active'
+                  const isDone    = s.status === 'done'
+                  const isPending = s.status === 'pending'
+                  const isError   = s.status === 'error'
                   return (
                     <div key={step.id}
-                      onClick={() => isDone && setExpandedStep(expandedStep === i ? null : i)}
+                      onClick={() => isDone && setExpandedStep(expandedStep === step.id ? null : step.id)}
                       style={{ padding:'10px 11px', borderRadius:'10px',
                         background: isActive ? `${step.color}22` : isDone ? `${step.color}10` : 'transparent',
                         border:`1px solid ${isActive ? step.color+'66' : isDone ? step.color+'28' : 'rgba(250,248,251,0.05)'}`,
@@ -841,9 +1092,9 @@ function CampaignModal({ onClose, onSaved }) {
                 {phase === 'done' && (
                   <button onClick={() => {
                     setPhase('form')
-                    setStepStatuses(PIPELINE_STEPS.map(s=>({...s,status:'pending',output:''})))
-                    setExpandedStep(null)
-                    setError('')
+                    setStepStatuses(Object.fromEntries(PIPELINE_STEPS.map(s => [s.id, {...s,status:'pending',output:''}])))
+                    setPreStepStatus('idle'); setPreStepText(''); setPreStepOutput('')
+                    setExpandedStep(null); setCurrentActiveAgent(null); setError('')
                     allOutputsRef.current = {}
                   }} style={{ marginTop:'10px', padding:'9px 11px', background:'transparent',
                     border:`1px solid ${B.border}`, borderRadius:'10px',
@@ -857,21 +1108,44 @@ function CampaignModal({ onClose, onSaved }) {
               <div style={{ flex:1, padding:'16px 20px', overflowY:'auto', display:'flex', flexDirection:'column', gap:'12px' }}
                 ref={phase === 'running' ? outputRef : null}>
 
-                {phase === 'running' && activeStep && (
+                {phase === 'running' && preStepStatus === 'active' && (
                   <div>
                     <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'14px' }}>
-                      <img src={getAvatarPath(activeStep.id)} alt={activeStep.prenom}
-                        style={{ width:'38px', height:'38px', borderRadius:'50%', objectFit:'cover', objectPosition:'top',
-                          border:`2px solid ${activeStep.color}88`, flexShrink:0 }}/>
+                      <div style={{ width:'38px', height:'38px', borderRadius:'50%', display:'flex', alignItems:'center',
+                        justifyContent:'center', fontSize:'18px', background:'rgba(13,148,136,0.2)',
+                        border:'2px solid #0d948888', flexShrink:0 }}>🔍</div>
                       <div style={{ flex:1 }}>
-                        <div style={{ fontSize:'14px', fontWeight:'700', color:B.white }}>{activeStep.prenom} génère…</div>
-                        <div style={{ fontSize:'10px', color:activeStep.color }}>→ {activeStep.folder}</div>
+                        <div style={{ fontSize:'14px', fontWeight:'700', color:B.white }}>Debelvoix analyse la présence digitale…</div>
+                        <div style={{ fontSize:'10px', color:'#0d9488' }}>brand voice analysis</div>
                       </div>
                       <div style={{ width:'18px', height:'18px', borderRadius:'50%', flexShrink:0,
-                        border:`2px solid ${activeStep.color}22`, borderTop:`2px solid ${activeStep.color}`,
+                        border:'2px solid #0d948822', borderTop:'2px solid #0d9488',
                         animation:'spin 0.8s linear infinite' }}/>
                     </div>
-                    <div style={{ background:'rgba(10,0,8,0.5)', border:`1px solid ${activeStep.color}33`,
+                    <div style={{ background:'rgba(10,0,8,0.5)', border:'1px solid #0d948833',
+                      borderRadius:'12px', padding:'16px', fontSize:'12.5px',
+                      color:'rgba(250,248,251,0.82)', lineHeight:'1.78', whiteSpace:'pre-wrap',
+                      fontFamily:'system-ui,sans-serif', minHeight:'140px' }} ref={preStepRef}>
+                      {preStepText || <span style={{opacity:0.25}}>Initialisation…</span>}
+                    </div>
+                  </div>
+                )}
+
+                {phase === 'running' && preStepStatus !== 'active' && activeStepInfo && (
+                  <div>
+                    <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'14px' }}>
+                      <img src={getAvatarPath(activeStepInfo.id)} alt={activeStepInfo.prenom}
+                        style={{ width:'38px', height:'38px', borderRadius:'50%', objectFit:'cover', objectPosition:'top',
+                          border:`2px solid ${activeStepInfo.color}88`, flexShrink:0 }}/>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:'14px', fontWeight:'700', color:B.white }}>{activeStepInfo.prenom} génère…</div>
+                        <div style={{ fontSize:'10px', color:activeStepInfo.color }}>→ {activeStepInfo.folder}</div>
+                      </div>
+                      <div style={{ width:'18px', height:'18px', borderRadius:'50%', flexShrink:0,
+                        border:`2px solid ${activeStepInfo.color}22`, borderTop:`2px solid ${activeStepInfo.color}`,
+                        animation:'spin 0.8s linear infinite' }}/>
+                    </div>
+                    <div style={{ background:'rgba(10,0,8,0.5)', border:`1px solid ${activeStepInfo.color}33`,
                       borderRadius:'12px', padding:'16px', fontSize:'12.5px',
                       color:'rgba(250,248,251,0.82)', lineHeight:'1.78', whiteSpace:'pre-wrap',
                       fontFamily:'system-ui,sans-serif', minHeight:'180px' }}>
@@ -889,18 +1163,48 @@ function CampaignModal({ onClose, onSaved }) {
                       </div>
                     )}
 
-                    {stepStatuses.filter(s => s.status === 'done').map((step) => {
-                      const idx = stepStatuses.indexOf(step)
-                      const isOpen = expandedStep === idx
-                      const wordCount = step.output ? step.output.trim().split(/\s+/).length : 0
+                    {preStepStatus === 'done' && preStepOutput && (
+                      <div style={{ border:'1px solid #0d948833', borderRadius:'12px', overflow:'hidden' }}>
+                        <div onClick={() => setPreStepExpanded(!preStepExpanded)}
+                          style={{ padding:'12px 16px', display:'flex', alignItems:'center', gap:'10px', cursor:'pointer', background:'rgba(13,148,136,0.08)' }}>
+                          <div style={{ width:'30px', height:'30px', borderRadius:'50%', display:'flex', alignItems:'center',
+                            justifyContent:'center', fontSize:'14px', background:'rgba(13,148,136,0.2)',
+                            border:'1.5px solid #0d948855', flexShrink:0 }}>🔍</div>
+                          <div style={{ flex:1 }}>
+                            <span style={{ fontSize:'13px', fontWeight:'700', color:B.white }}>Debelvoix</span>
+                            <span style={{ fontSize:'10px', color:'#0d9488', marginLeft:'8px' }}>brand analysis</span>
+                          </div>
+                          <span style={{ fontSize:'9px', color:'#0d9488', opacity:0.7 }}>✓ analyse complète</span>
+                          <span style={{ fontSize:'11px', color:'rgba(250,248,251,0.25)', marginLeft:'6px' }}>{preStepExpanded ? '▲' : '▼'}</span>
+                        </div>
+                        {preStepExpanded && (
+                          <div style={{ padding:'0 16px 14px' }}>
+                            <div style={{ background:'rgba(10,0,8,0.45)', borderRadius:'10px', padding:'14px',
+                              fontSize:'12px', color:'rgba(250,248,251,0.8)', lineHeight:'1.78',
+                              whiteSpace:'pre-wrap', maxHeight:'340px', overflowY:'auto', marginBottom:'8px', fontFamily:'system-ui,sans-serif' }}>
+                              {preStepOutput}
+                            </div>
+                            <button onClick={() => { navigator.clipboard.writeText(preStepOutput).then(() => { setCopied('debelvoix'); setTimeout(()=>setCopied(null),2000) }) }}
+                              style={{ padding:'7px 14px', background: copied==='debelvoix' ? 'rgba(13,148,136,0.18)' : 'rgba(107,15,110,0.2)',
+                                border:`1px solid ${copied==='debelvoix' ? '#0d948877' : '#0d948844'}`, borderRadius:'8px',
+                                color: copied==='debelvoix' ? '#5eead4' : B.white, fontSize:'11px', cursor:'pointer' }}>
+                              {copied==='debelvoix' ? '✓ Copié' : '📋 Copier'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {effectiveSteps.filter(step => stepStatuses[step.id]?.status === 'done').map(step => {
+                      const s = stepStatuses[step.id]
+                      const isOpen = expandedStep === step.id
+                      const wordCount = s.output ? s.output.trim().split(/\s+/).length : 0
                       return (
                         <div key={step.id} style={{ border:`1px solid ${step.color}33`, borderRadius:'12px', overflow:'hidden' }}>
-                          <div onClick={() => setExpandedStep(isOpen ? null : idx)}
-                            style={{ padding:'12px 16px', display:'flex', alignItems:'center', gap:'10px',
-                              cursor:'pointer', background:`${step.color}0d` }}>
+                          <div onClick={() => setExpandedStep(isOpen ? null : step.id)}
+                            style={{ padding:'12px 16px', display:'flex', alignItems:'center', gap:'10px', cursor:'pointer', background:`${step.color}0d` }}>
                             <img src={getAvatarPath(step.id)} alt={step.prenom}
-                              style={{ width:'30px', height:'30px', borderRadius:'50%', objectFit:'cover', objectPosition:'top',
-                                border:`1.5px solid ${step.color}55`, flexShrink:0 }}/>
+                              style={{ width:'30px', height:'30px', borderRadius:'50%', objectFit:'cover', objectPosition:'top', border:`1.5px solid ${step.color}55`, flexShrink:0 }}/>
                             <div style={{ flex:1 }}>
                               <span style={{ fontSize:'13px', fontWeight:'700', color:B.white }}>{step.prenom}</span>
                               <span style={{ fontSize:'10px', color:step.color, marginLeft:'8px' }}>→ {step.folder}</span>
@@ -912,20 +1216,14 @@ function CampaignModal({ onClose, onSaved }) {
                             <div style={{ padding:'0 16px 14px' }}>
                               <div style={{ background:'rgba(10,0,8,0.45)', borderRadius:'10px', padding:'14px',
                                 fontSize:'12px', color:'rgba(250,248,251,0.8)', lineHeight:'1.78',
-                                whiteSpace:'pre-wrap', maxHeight:'340px', overflowY:'auto', marginBottom:'8px',
-                                fontFamily:'system-ui,sans-serif' }}>
-                                {step.output}
+                                whiteSpace:'pre-wrap', maxHeight:'340px', overflowY:'auto', marginBottom:'8px', fontFamily:'system-ui,sans-serif' }}>
+                                {s.output}
                               </div>
-                              <button onClick={() => {
-                                navigator.clipboard.writeText(step.output).then(() => {
-                                  setCopied(idx); setTimeout(()=>setCopied(null),2000)
-                                })
-                              }} style={{ padding:'7px 14px',
-                                background: copied === idx ? `${step.color}18` : 'rgba(107,15,110,0.2)',
-                                border:`1px solid ${step.color}44`, borderRadius:'8px',
-                                color: copied === idx ? step.color : B.white,
-                                fontSize:'11px', cursor:'pointer' }}>
-                                {copied === idx ? '✓ Copié' : '📋 Copier'}
+                              <button onClick={() => { navigator.clipboard.writeText(s.output).then(() => { setCopied(step.id); setTimeout(()=>setCopied(null),2000) }) }}
+                                style={{ padding:'7px 14px', background: copied===step.id ? `${step.color}18` : 'rgba(107,15,110,0.2)',
+                                  border:`1px solid ${step.color}44`, borderRadius:'8px',
+                                  color: copied===step.id ? step.color : B.white, fontSize:'11px', cursor:'pointer' }}>
+                                {copied===step.id ? '✓ Copié' : '📋 Copier'}
                               </button>
                             </div>
                           )}
@@ -933,29 +1231,24 @@ function CampaignModal({ onClose, onSaved }) {
                       )
                     })}
 
-                    {stepStatuses.every(s => s.status === 'done') && (
-                      <div style={{ textAlign:'center', padding:'18px', background:`${B.gold}07`,
-                        border:`1px solid ${B.gold}28`, borderRadius:'12px' }}>
+                    {allEffectiveDone && (
+                      <div style={{ textAlign:'center', padding:'18px', background:`${B.gold}07`, border:`1px solid ${B.gold}28`, borderRadius:'12px' }}>
                         <div style={{ fontSize:'22px', marginBottom:'6px' }}>✦</div>
                         <div style={{ fontSize:'13px', fontWeight:'700', color:B.goldLight }}>Pipeline complet · Sauvegardé dans l'historique</div>
                         <div style={{ fontSize:'11px', color:'rgba(250,248,251,0.4)', marginTop:'4px', marginBottom:'14px' }}>
                           Clique sur chaque agente pour lire et copier son output
                         </div>
                         <div style={{ display:'flex', gap:'10px', justifyContent:'center', flexWrap:'wrap' }}>
-                          <button onClick={handleDownload} style={{
-                            padding:'10px 24px',
+                          <button onClick={handleDownload} style={{ padding:'10px 24px',
                             background:`linear-gradient(135deg,${B.gold}cc,${B.goldLight}88)`,
                             border:`1px solid ${B.gold}88`, borderRadius:'10px',
-                            color:B.black, fontSize:'13px', fontWeight:'800', cursor:'pointer',
-                          }}>
+                            color:B.black, fontSize:'13px', fontWeight:'800', cursor:'pointer' }}>
                             ⬇ Télécharger (.md)
                           </button>
-                          <button onClick={handleCopyAll} style={{
-                            padding:'10px 24px',
+                          <button onClick={handleCopyAll} style={{ padding:'10px 24px',
                             background: copiedAll ? `${B.gold}18` : 'rgba(107,15,110,0.3)',
                             border:`1px solid ${copiedAll ? B.gold : B.border}`, borderRadius:'10px',
-                            color: copiedAll ? B.goldLight : B.white, fontSize:'13px', fontWeight:'700', cursor:'pointer',
-                          }}>
+                            color: copiedAll ? B.goldLight : B.white, fontSize:'13px', fontWeight:'700', cursor:'pointer' }}>
                             {copiedAll ? '✓ Copié !' : '📋 Copier tout'}
                           </button>
                         </div>
@@ -1028,8 +1321,7 @@ function SupportCard({ agent, onActivate }) {
         boxShadow: hovered ? `0 6px 20px ${agent.color}18` : 'none' }}>
       <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'10px' }}>
         <div style={{ width:'46px', height:'46px', borderRadius:'50%', display:'flex', alignItems:'center',
-          justifyContent:'center', fontSize:'20px', background:`${agent.color}15`,
-          border:`1.5px solid ${agent.color}44`, flexShrink:0 }}>
+          justifyContent:'center', fontSize:'20px', background:`${agent.color}15`, border:`1.5px solid ${agent.color}44`, flexShrink:0 }}>
           {agent.emoji}
         </div>
         <div>
@@ -1058,21 +1350,32 @@ export default function BBoldCore() {
   const [activeAgent, setActiveAgent] = useState(null)
   const [activeSupportAgent, setActiveSupportAgent] = useState(null)
   const [showCampaign, setShowCampaign] = useState(false)
+  const [showOrchestrator, setShowOrchestrator] = useState(false)
+  const [campaignInitialBrief, setCampaignInitialBrief] = useState(null)
+  const [campaignSelectedAgents, setCampaignSelectedAgents] = useState(null)
   const [historyItems, setHistoryItems] = useState([])
   const [viewingHistory, setViewingHistory] = useState(null)
 
   useEffect(() => { document.title = 'B.BOLD Core — Multi-Agent Platform' }, [])
-
-  // Load history when switching to history tab
-  useEffect(() => {
-    if (tab === 'historique') setHistoryItems(loadHistory())
-  }, [tab])
+  useEffect(() => { if (tab === 'historique') setHistoryItems(loadHistory()) }, [tab])
 
   function refreshHistory() { setHistoryItems(loadHistory()) }
 
   function handleDeleteHistory(id) {
-    deleteFromHistory(id)
-    setHistoryItems(loadHistory())
+    deleteFromHistory(id); setHistoryItems(loadHistory())
+  }
+
+  function handleOrchestratorLaunch({ brief, selectedAgents }) {
+    setCampaignInitialBrief(brief)
+    setCampaignSelectedAgents(selectedAgents)
+    setShowOrchestrator(false)
+    setShowCampaign(true)
+  }
+
+  function handleCloseCampaign() {
+    setShowCampaign(false)
+    setCampaignInitialBrief(null)
+    setCampaignSelectedAgents(null)
   }
 
   return (
@@ -1091,16 +1394,17 @@ export default function BBoldCore() {
         @keyframes spin    { to{transform:rotate(360deg)} }
       `}</style>
 
-      {activeAgent        && <Modal         agent={activeAgent}         onClose={()=>setActiveAgent(null)}/>}
-      {activeSupportAgent && <SupportModal  agent={activeSupportAgent}  onClose={()=>setActiveSupportAgent(null)}/>}
-      {showCampaign       && <CampaignModal onClose={()=>setShowCampaign(false)} onSaved={refreshHistory}/>}
-      {viewingHistory     && <HistoryModal  campaign={viewingHistory}   onClose={()=>setViewingHistory(null)}/>}
+      {activeAgent        && <Modal             agent={activeAgent}        onClose={()=>setActiveAgent(null)}/>}
+      {activeSupportAgent && <SupportModal       agent={activeSupportAgent} onClose={()=>setActiveSupportAgent(null)}/>}
+      {showOrchestrator   && <OrchestratorModal  onClose={()=>setShowOrchestrator(false)} onLaunch={handleOrchestratorLaunch}/>}
+      {showCampaign       && <CampaignModal       onClose={handleCloseCampaign} onSaved={refreshHistory}
+                               initialBrief={campaignInitialBrief} initialSelectedAgents={campaignSelectedAgents}/>}
+      {viewingHistory     && <HistoryModal        campaign={viewingHistory}   onClose={()=>setViewingHistory(null)}/>}
 
-      {/* ── Header ─────────────────────────────────────────── */}
+      {/* Header */}
       <header style={{ borderBottom:`1px solid ${B.border}`, padding:'0 28px', height:'68px',
         display:'flex', alignItems:'center', justifyContent:'space-between',
-        background:'rgba(10,0,8,0.88)', backdropFilter:'blur(16px)',
-        position:'sticky', top:0, zIndex:100 }}>
+        background:'rgba(10,0,8,0.88)', backdropFilter:'blur(16px)', position:'sticky', top:0, zIndex:100 }}>
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
           <Eye size={36}/>
           <div>
@@ -1126,21 +1430,22 @@ export default function BBoldCore() {
         </nav>
       </header>
 
-      {/* ── Main ───────────────────────────────────────────── */}
+      {/* Main */}
       <main style={{ padding:'32px', maxWidth:'1200px', margin:'0 auto' }}>
 
-        {/* ── TAB : AGENTS ──────────────────────────────────── */}
+        {/* ── TAB : AGENTS ── */}
         {tab === 'agents' && (
           <div style={{ animation:'bfadein 0.35s ease' }}>
 
             {/* Orchestrateur banner */}
-            <div style={{ background:`linear-gradient(135deg,rgba(107,15,110,0.2),rgba(201,168,76,0.07))`,
-              border:`1px solid ${B.gold}40`, borderRadius:'18px', padding:'20px 24px', marginBottom:'24px' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'20px', flexWrap:'wrap' }}>
-                <Eye size={40}/>
-                <div style={{ flex:1, minWidth:'220px' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'5px', flexWrap:'wrap' }}>
-                    <span style={{ fontFamily:'Georgia,serif', fontSize:'19px', fontWeight:'700', color:B.white }}>Orchestrateur</span>
+            <div style={{ background:`linear-gradient(135deg,rgba(201,168,76,0.1),rgba(107,15,110,0.18))`,
+              border:`1px solid ${B.gold}55`, borderRadius:'18px', padding:'22px 28px', marginBottom:'24px',
+              display:'flex', alignItems:'center', justifyContent:'space-between', gap:'20px', flexWrap:'wrap' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'20px', flex:1, minWidth:'220px' }}>
+                <Eye size={44}/>
+                <div>
+                  <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'6px', flexWrap:'wrap' }}>
+                    <span style={{ fontFamily:'Georgia,serif', fontSize:'20px', fontWeight:'900', color:B.white }}>Orchestrateur</span>
                     <span style={{ padding:'2px 9px', background:`${B.gold}18`, border:`1px solid ${B.gold}50`,
                       borderRadius:'20px', fontSize:'9px', color:B.goldLight, fontWeight:'600', letterSpacing:'0.12em' }}>
                       CLAUDE OPUS
@@ -1151,14 +1456,22 @@ export default function BBoldCore() {
                       <span style={{ fontSize:'9px', color:B.gold, fontWeight:'600' }}>ACTIF</span>
                     </div>
                   </div>
-                  <p style={{ fontSize:'12px', color:'rgba(250,248,251,0.55)', lineHeight:'1.65' }}>
-                    Route, consolide, enchaîne. <strong style={{ color:B.goldLight }}>Répond directement dans l'interface.</strong> Zéro copier-coller.
+                  <p style={{ fontSize:'12px', color:'rgba(250,248,251,0.55)', lineHeight:'1.65', margin:0 }}>
+                    Chef de projet IA. Soumets ton projet, il sélectionne les agents adaptés et déclenche le pipeline sur mesure.
                   </p>
                 </div>
               </div>
+              <button onClick={() => setShowOrchestrator(true)} style={{
+                padding:'12px 28px', flexShrink:0,
+                background:`linear-gradient(135deg,${B.gold}cc,${B.goldLight}88)`,
+                border:`1px solid ${B.gold}88`, borderRadius:'12px',
+                color:B.black, fontSize:'13px', fontWeight:'800', cursor:'pointer',
+                boxShadow:`0 4px 20px ${B.gold}33`,
+              }}>
+                Confier un projet →
+              </button>
             </div>
 
-            {/* Les 5 agentes */}
             <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'14px' }}>
               <div style={{ height:'1px', flex:1, background:`linear-gradient(90deg,transparent,${B.gold}55)` }}/>
               <span style={{ fontSize:'9px', color:B.gold, fontWeight:'600', letterSpacing:'0.2em' }}>LES 5 AGENTES</span>
@@ -1168,7 +1481,6 @@ export default function BBoldCore() {
               {AGENTS.map(agent => <AgentCard key={agent.id} agent={agent} onActivate={setActiveAgent}/>)}
             </div>
 
-            {/* Campaign CTA */}
             <div style={{ background:`linear-gradient(135deg,rgba(192,0,192,0.12),rgba(107,15,110,0.18))`,
               border:`1px solid ${B.magenta}44`, borderRadius:'18px', padding:'22px 28px', marginBottom:'28px',
               display:'flex', alignItems:'center', justifyContent:'space-between', gap:'20px', flexWrap:'wrap' }}>
@@ -1180,10 +1492,10 @@ export default function BBoldCore() {
                     borderRadius:'20px', fontSize:'8px', color:B.lilas, fontWeight:'600' }}>PIPELINE 5 AGENTS</span>
                 </div>
                 <p style={{ fontSize:'12px', color:'rgba(250,248,251,0.5)', margin:0 }}>
-                  Un brief → 5 agents en séquence → 5 livrables · Sauvegardé automatiquement dans l'historique
+                  Un brief → 5 agents en séquence → 5 livrables · Analyse brand voice optionnelle via Debelvoix
                 </p>
               </div>
-              <button onClick={() => setShowCampaign(true)} style={{
+              <button onClick={() => { setCampaignInitialBrief(null); setCampaignSelectedAgents(null); setShowCampaign(true) }} style={{
                 padding:'12px 28px', flexShrink:0,
                 background:`linear-gradient(135deg,${B.magenta},${B.violetDeep})`,
                 border:`1px solid ${B.magenta}88`, borderRadius:'12px',
@@ -1194,7 +1506,6 @@ export default function BBoldCore() {
               </button>
             </div>
 
-            {/* Agents support */}
             <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'14px' }}>
               <div style={{ height:'1px', flex:1, background:`linear-gradient(90deg,transparent,rgba(250,248,251,0.15))` }}/>
               <span style={{ fontSize:'9px', color:'rgba(250,248,251,0.4)', fontWeight:'600', letterSpacing:'0.2em' }}>AGENTS SUPPORT</span>
@@ -1206,7 +1517,7 @@ export default function BBoldCore() {
           </div>
         )}
 
-        {/* ── TAB : HISTORIQUE ──────────────────────────────── */}
+        {/* ── TAB : HISTORIQUE ── */}
         {tab === 'historique' && (
           <div style={{ animation:'bfadein 0.35s ease' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'24px' }}>
@@ -1227,32 +1538,28 @@ export default function BBoldCore() {
                 </button>
               )}
             </div>
-
             {historyItems.length === 0 && (
               <div style={{ textAlign:'center', padding:'60px 0', color:'rgba(250,248,251,0.2)', fontSize:'14px' }}>
                 <div style={{ fontSize:'36px', marginBottom:'12px' }}>📭</div>
                 Lance une campagne complète pour la voir apparaître ici.
               </div>
             )}
-
             <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-              {historyItems.map((item) => (
+              {historyItems.map(item => (
                 <div key={item.id} style={{ background:B.surface, border:`1px solid ${B.border}`,
-                  borderRadius:'14px', padding:'16px 20px',
-                  display:'flex', alignItems:'center', gap:'16px', flexWrap:'wrap' }}>
+                  borderRadius:'14px', padding:'16px 20px', display:'flex', alignItems:'center', gap:'16px', flexWrap:'wrap' }}>
                   <div style={{ flex:1, minWidth:'200px' }}>
                     <div style={{ fontFamily:'Georgia,serif', fontSize:'16px', fontWeight:'800', color:B.white, marginBottom:'3px' }}>
                       {item.client}
                     </div>
                     <div style={{ fontSize:'11px', color:'rgba(250,248,251,0.4)' }}>
                       {item.date}
-                      {item.objectif && <span style={{ marginLeft:'10px', color:B.gold }}>{item.objectif}</span>}
+                      {item.objectif   && <span style={{ marginLeft:'10px', color:B.gold }}>{item.objectif}</span>}
                       {item.plateformes && <span style={{ marginLeft:'10px', color:'rgba(250,248,251,0.3)' }}>{item.plateformes}</span>}
-                      {item.secteur && <span style={{ marginLeft:'10px', color:'rgba(250,248,251,0.25)' }}>{item.secteur}</span>}
+                      {item.secteur    && <span style={{ marginLeft:'10px', color:'rgba(250,248,251,0.25)' }}>{item.secteur}</span>}
                     </div>
                   </div>
                   <div style={{ display:'flex', gap:'8px', flexShrink:0 }}>
-                    {/* Indicators — which agents ran */}
                     <div style={{ display:'flex', gap:'4px', alignItems:'center' }}>
                       {PIPELINE_STEPS.map(step => (
                         <div key={step.id} title={step.prenom}
@@ -1282,21 +1589,24 @@ export default function BBoldCore() {
           </div>
         )}
 
-        {/* ── TAB : STACK ───────────────────────────────────── */}
+        {/* ── TAB : STACK ── */}
         {tab === 'stack' && (
           <div style={{ animation:'bfadein 0.35s ease' }}>
             <h2 style={{ fontFamily:'Georgia,serif', fontSize:'26px', fontWeight:'900', margin:'0 0 8px', color:B.white }}>
               Stack <code style={{ fontFamily:'monospace', fontSize:'18px', color:B.gold, background:`${B.gold}10`, padding:'2px 9px', borderRadius:'5px' }}>naïom-platform</code>
             </h2>
-            <p style={{ fontSize:'13px', color:'rgba(250,248,251,0.45)', margin:'0 0 24px' }}>11 agents · 3 API routes · streaming · pipeline orchestré · historique localStorage</p>
+            <p style={{ fontSize:'13px', color:'rgba(250,248,251,0.45)', margin:'0 0 24px' }}>
+              13 agents · 3 API routes · streaming NDJSON · pipeline orchestré · Debelvoix pre-step · historique localStorage
+            </p>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:'12px' }}>
               {[
-                { n:'Next.js 14',             r:'Framework · App Router · React 18 · deploy Vercel' },
-                { n:'Anthropic SDK',           r:'claude-opus-4-5 (Stratège, Analyste, Debelvoix, Calendrier) · claude-sonnet-4-5 (Lola, Zara, Naïa, Gmail, Repurpose, CV)' },
-                { n:'API Routes',             r:'/api/brief · /api/orchestrate · /api/agents/support — clé serveur sécurisée' },
-                { n:'Pipeline orchestré',     r:'Séquentiel NDJSON — contexte passé de step en step — 5 livrables versionnés — max_tokens 4000 (Opus) / 2800 (Sonnet)' },
-                { n:'Agents support (×6)',    r:'Gmail · Fireflies · Content Vault · Debelvoix · Repurpose · Calendrier Éditorial' },
-                { n:'Historique localStorage',r:'Sauvegarde auto après chaque pipeline · 20 campagnes max · viewer intégré · export .md' },
+                { n:'Next.js 14',               r:'Framework · App Router · React 18 · deploy Vercel' },
+                { n:'Anthropic SDK',             r:'claude-opus-4-5 (Orchestrateur, Stratège, Analyste, Debelvoix) · claude-sonnet-4-5 (Lola, Zara, Naïa, Gmail, Repurpose, CV)' },
+                { n:'API Routes',               r:'/api/brief · /api/orchestrate · /api/agents/support — clé serveur sécurisée' },
+                { n:'Orchestrateur intelligent', r:'Analyse le projet, sélectionne les agents, déclenche le pipeline sur mesure — JSON structured output' },
+                { n:'Pipeline orchestré',        r:'Séquentiel NDJSON — pré-step Debelvoix (brand analysis) — contexte passé de step en step' },
+                { n:'Agents support (×6)',        r:'Gmail · Fireflies · Content Vault · Debelvoix · Repurpose · Calendrier Éditorial' },
+                { n:'Historique localStorage',   r:'Sauvegarde auto après chaque pipeline · 20 campagnes max · viewer intégré · export .md' },
               ].map((s,i)=>(
                 <div key={i} style={{ background:B.surface, border:`1px solid ${B.border}`, borderRadius:'12px', padding:'16px 18px' }}>
                   <div style={{ fontSize:'13px', fontWeight:'700', color:B.goldLight, marginBottom:'5px' }}>{s.n}</div>
