@@ -46,7 +46,7 @@ const URL_FIELDS = [
   { key:'tiktok',    label:'TikTok',    placeholder:'https://tiktok.com/...' },
 ]
 
-const ORCH_SYSTEM = `Tu es l'Orchestrateur de B.BOLD Core, chef de projet multi-agents. Tu reçois un brief de projet pour une marque et tu décides quels agents activer, dans quel ordre, et pourquoi.
+const ORCH_SYSTEM = `Tu es Céline, Orchestratrice de B.BOLD Core, chef de projet multi-agents. Tu reçois un brief de projet pour une marque et tu décides quels agents activer, dans quel ordre, et pourquoi.
 
 LES 5 AGENTS DISPONIBLES :
 - stratege (Maeva) : Stratège & Brief — positionnement, Value Proposition Canvas, piliers éditoriaux. Indispensable pour tout nouveau client ou nouveau projet de marque.
@@ -1112,12 +1112,12 @@ Analyse ce projet et sélectionne les agents B.BOLD les plus adaptés.`
         <div style={{ display:'flex', alignItems:'center', gap:'16px', marginBottom:'8px' }}>
           <Eye size={44}/>
           <div>
-            <div style={{ fontFamily:'Georgia,serif', fontSize:'22px', fontWeight:'900', color:B.white }}>Orchestrateur</div>
-            <div style={{ fontSize:'11px', color:B.gold, letterSpacing:'0.12em' }}>CHEF DE PROJET · CLAUDE OPUS</div>
+            <div style={{ fontFamily:'Georgia,serif', fontSize:'22px', fontWeight:'900', color:B.white }}>Céline</div>
+            <div style={{ fontSize:'11px', color:B.gold, letterSpacing:'0.12em' }}>ORCHESTRATRICE · CLAUDE OPUS</div>
           </div>
         </div>
         <p style={{ fontSize:'12px', color:'rgba(250,248,251,0.45)', marginBottom:'24px', lineHeight:'1.6' }}>
-          Décris ton projet. L'Orchestrateur analyse le brief et sélectionne les agents les plus adaptés.
+          Décris ton projet. Céline analyse le brief et sélectionne les agents les plus adaptés.
         </p>
         <div style={{ height:'1px', background:`linear-gradient(90deg,transparent,${B.gold}77,transparent)`, marginBottom:'24px' }}/>
 
@@ -1893,7 +1893,7 @@ export default function BBoldCore() {
                 <Eye size={44}/>
                 <div>
                   <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'6px', flexWrap:'wrap' }}>
-                    <span style={{ fontFamily:'Georgia,serif', fontSize:'20px', fontWeight:'900', color:B.white }}>Orchestrateur</span>
+                    <span style={{ fontFamily:'Georgia,serif', fontSize:'20px', fontWeight:'900', color:B.white }}>Céline</span>
                     <span style={{ padding:'2px 9px', background:`${B.gold}18`, border:`1px solid ${B.gold}50`,
                       borderRadius:'20px', fontSize:'9px', color:B.goldLight, fontWeight:'600', letterSpacing:'0.12em' }}>
                       CLAUDE OPUS
@@ -1905,7 +1905,7 @@ export default function BBoldCore() {
                     </div>
                   </div>
                   <p style={{ fontSize:'12px', color:'rgba(250,248,251,0.55)', lineHeight:'1.65', margin:0 }}>
-                    Chef de projet IA. Soumets ton projet, il sélectionne les agents adaptés et déclenche le pipeline sur mesure.
+                    Chef de projet. Soumets ton projet, elle sélectionne les agents adaptés et déclenche le pipeline sur mesure.
                   </p>
                 </div>
               </div>
