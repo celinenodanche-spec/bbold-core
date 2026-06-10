@@ -550,6 +550,13 @@ function Modal({ agent, onClose }) {
                 💡 Le brief Canva est copié dans ton presse-papier. Clique "Ouvrir Canva" pour créer ton design avec ces specs.
               </div>
             )}
+            <NotionSaveWidget
+              response={response}
+              agentEmoji={agent.emoji}
+              agentName={agent.prenom}
+              clientName={data.client || ''}
+              accentColor={agent.color}
+            />
             <button onClick={() => { setResponse(''); setData({}); setImagePreview(null); setImageBase64(null); setImageMediaType(null) }}
               style={{ width:'100%', padding:'10px',
                 background:'transparent', border:'1px solid rgba(250,248,251,0.12)', borderRadius:'10px',
@@ -634,6 +641,89 @@ function downloadResponseAsHtml(responseText, agentId, agentName, agentEmoji, ag
   a.download = `bbold-${agentId}-${slug}-${Date.now()}.html`
   a.click()
   URL.revokeObjectURL(url)
+}
+
+// ─── NotionSaveWidget ─────────────────────────────────────────────────────────
+
+function NotionSaveWidget({ response, agentEmoji, agentName, clientName, accentColor }) {
+  const [open, setOpen]         = useState(false)
+  const [url, setUrl]           = useState('')
+  const [saving, setSaving]     = useState(false)
+  const [saved, setSaved]       = useState(false)
+  const [err, setErr]           = useState('')
+
+  async function save() {
+    if (!url.trim()) { setErr('Colle l\'URL de la page Notion du client.'); return }
+    setSaving(true); setErr('')
+    try {
+      const res = await fetch('/api/notion/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pageUrl: url, content: response, agentEmoji, agentName, clientName }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`)
+      setSaved(true); setOpen(false); setUrl('')
+      setTimeout(() => setSaved(false), 4000)
+    } catch (e) { setErr(e.message) }
+    finally { setSaving(false) }
+  }
+
+  const color = accentColor || '#6b0f6e'
+
+  return (
+    <div style={{ marginBottom:'8px' }}>
+      {!open && !saved && (
+        <button onClick={() => setOpen(true)} style={{
+          width:'100%', padding:'11px', display:'flex', alignItems:'center', justifyContent:'center', gap:'7px',
+          background:'rgba(0,0,0,0)', border:'1px solid rgba(250,248,251,0.15)', borderRadius:'10px',
+          color:'rgba(250,248,251,0.55)', fontSize:'12px', fontWeight:'600', cursor:'pointer',
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          → Sauvegarder dans Notion
+        </button>
+      )}
+      {saved && (
+        <div style={{ padding:'11px', textAlign:'center', background:'rgba(16,185,129,0.1)',
+          border:'1px solid rgba(16,185,129,0.3)', borderRadius:'10px',
+          color:'#6ee7b7', fontSize:'12px', fontWeight:'600' }}>
+          ✓ Ajouté dans Notion
+        </div>
+      )}
+      {open && (
+        <div style={{ background:'rgba(10,0,8,0.6)', border:`1px solid ${color}33`, borderRadius:'12px', padding:'16px' }}>
+          <div style={{ fontSize:'10px', fontWeight:'700', color:'rgba(250,248,251,0.4)',
+            letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'8px' }}>
+            URL de la page Notion du client
+          </div>
+          <input
+            type="text" value={url} onChange={e => { setUrl(e.target.value); setErr('') }}
+            placeholder="https://notion.so/..."
+            style={{ width:'100%', padding:'9px 12px', borderRadius:'8px',
+              background:'rgba(107,15,110,0.15)', border:`1px solid ${color}44`,
+              color:B.white, fontSize:'12px', outline:'none', marginBottom:'8px',
+              fontFamily:'system-ui,sans-serif' }}
+          />
+          {err && <div style={{ color:'#ff6b6b', fontSize:'11px', marginBottom:'8px' }}>⚠ {err}</div>}
+          <div style={{ display:'flex', gap:'8px' }}>
+            <button onClick={save} disabled={saving} style={{
+              flex:1, padding:'9px', borderRadius:'8px', fontSize:'12px', fontWeight:'700', cursor:'pointer',
+              background: saving ? 'rgba(107,15,110,0.3)' : `linear-gradient(135deg,${color}cc,${color}77)`,
+              border:`1px solid ${color}66`, color:B.white,
+            }}>
+              {saving ? '⏳ Envoi…' : '✓ Confirmer'}
+            </button>
+            <button onClick={() => { setOpen(false); setErr('') }} style={{
+              padding:'9px 14px', borderRadius:'8px', fontSize:'12px', cursor:'pointer',
+              background:'transparent', border:'1px solid rgba(250,248,251,0.12)', color:'rgba(250,248,251,0.4)',
+            }}>
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ─── SupportModal ─────────────────────────────────────────────────────────────
@@ -781,6 +871,14 @@ function SupportModal({ agent, onClose }) {
                 📡 Rapport avec sources cliquables. Le fichier HTML s'ouvre dans ton navigateur.
               </div>
             )}
+
+            <NotionSaveWidget
+              response={response}
+              agentEmoji={agent.emoji}
+              agentName={agent.name}
+              clientName={data.client || data.focus || ''}
+              accentColor={agent.color}
+            />
 
             <button onClick={() => { setResponse(''); setData({}) }} style={{ width:'100%', padding:'10px',
               background:'transparent', border:'1px solid rgba(250,248,251,0.12)', borderRadius:'10px',
