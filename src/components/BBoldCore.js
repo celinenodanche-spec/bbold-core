@@ -22,8 +22,12 @@ const SUPPORT_AGENTS = [
   { id:'debelvoix',  emoji:'🔍', name:'Debelvoix',     subtitle:'Analyse la voix de marque existante et génère le guide brand voice.', color:'#0d9488', accent:'#5eead4' },
   { id:'repurpose',  emoji:'♻️', name:'Repurpose',     subtitle:'1 post validé → 5 formats natifs (LinkedIn, Insta, FB, Story, NL).', color:'#f59e0b', accent:'#fde68a' },
   { id:'calendrier', emoji:'📅', name:'Calendrier',    subtitle:'Génère un calendrier éditorial 30 jours depuis ta stratégie.',       color:'#4f46e5', accent:'#a5b4fc' },
-  { id:'olivia',     emoji:'📡', name:'Olivia Pope',   subtitle:'Veille communicationnelle en temps réel — réseaux, campagnes, canaux digitaux & classiques.', color:'#dc2626', accent:'#fca5a5' },
-  { id:'anna',       emoji:'👑', name:'Anna Wintour',  subtitle:'Brand board complet — palette HEX, typographies, logo, ambiance. Téléchargeable en HTML.', color:'#b45309', accent:'#fde68a' },
+  { id:'olivia',     emoji:'📡', name:'Olivia Pope',      subtitle:'Veille communicationnelle en temps réel — réseaux, campagnes, canaux digitaux & classiques.', color:'#dc2626', accent:'#fca5a5' },
+  { id:'anna',       emoji:'👑', name:'Anna Wintour',     subtitle:'Brand board complet — palette HEX, typographies, logo, ambiance. Téléchargeable en HTML.',    color:'#b45309', accent:'#fde68a' },
+  { id:'script',     emoji:'🎬', name:'Script Vidéo',     subtitle:'Hook 3s + script complet Reel/TikTok/YouTube avec timestamps et description optimisée.',      color:'#7c3aed', accent:'#c4b5fd' },
+  { id:'influence',  emoji:'🌟', name:'Influence Marketing', subtitle:'Profils influenceurs ciblés + brief influenceur complet + message d\'approche.',           color:'#ec4899', accent:'#f9a8d4' },
+  { id:'offre',      emoji:'📋', name:'Offre Commerciale', subtitle:'Proposition commerciale structurée — contexte, solution, livrables, budget, planning.',      color:'#059669', accent:'#6ee7b7' },
+  { id:'seo',        emoji:'🔎', name:'SEO Content',      subtitle:'Article SEO complet avec métas, structure H1/H2/H3 et contenu optimisé.',                     color:'#0891b2', accent:'#67e8f9' },
 ]
 
 const PIPELINE_STEPS = [
@@ -315,6 +319,54 @@ const SUPPORT_FORMS = {
       { key:'debelvoix_analyse',   label:'Analyse Debelvoix (optionnel)',         type:'textarea', placeholder:'Colle ici le guide brand voice généré par Debelvoix pour enrichir le brand board...' },
     ],
   },
+
+  script: {
+    title: 'Script Vidéo', subtitle: 'Hook 3s + script complet avec timestamps, sous-titres et description.',
+    fields: [
+      { key:'plateforme',   label:'Plateforme',               type:'select',   options:['Instagram Reel','TikTok','YouTube Short','YouTube (format long)','Facebook Reel'] },
+      { key:'duree',        label:'Durée cible',              type:'select',   options:['15 secondes','30 secondes','60 secondes','90 secondes','3-5 minutes','8-12 minutes'] },
+      { key:'sujet',        label:'Sujet / Message principal',type:'textarea', placeholder:'Ex: Présenter notre nouvelle offre d\'impression eco-responsable, montrer le processus...' },
+      { key:'ton',          label:'Ton',                      type:'select',   options:['Dynamique & énergique','Professionnel & rassurant','Storytelling émotionnel','Éducatif & pédagogique','Humoristique & léger'] },
+      { key:'cta',          label:"Appel à l'action final",   type:'text',     placeholder:'Ex: Demander un devis gratuit sur le lien en bio' },
+      { key:'infos_marque', label:'Infos marque / contexte',  type:'text',     placeholder:'Ex: Caraïb Ediprint, imprimerie Martinique, cible TPE locales' },
+    ],
+  },
+
+  influence: {
+    title: 'Influence Marketing', subtitle: 'Stratégie influenceurs ciblée DOM-TOM — brief + approche + contrat.',
+    fields: [
+      { key:'client',    label:'Client / Marque',                      type:'text',     placeholder:'Ex: Caraïb Ediprint' },
+      { key:'secteur',   label:'Secteur',                              type:'text',     placeholder:'Ex: Imprimerie, Martinique' },
+      { key:'territoire',label:'Territoire',                           type:'select',   options:['Martinique','Guadeloupe','Guyane','La Réunion','Tous DOM-TOM','France + DOM-TOM'] },
+      { key:'objectif',  label:'Objectif de la campagne influence',    type:'select',   options:['Notoriété de marque','Génération de leads','Lancement produit','Drive-to-store','Engagement communauté'] },
+      { key:'budget',    label:'Budget collaboration (par influenceur)',type:'select',   options:['Troc / Gifting uniquement','Moins de 500€','500€ — 1 500€','1 500€ — 3 000€','Plus de 3 000€'] },
+      { key:'type',      label:'Type de contenu souhaité',             type:'select',   options:['Post Instagram + Story','Reel dédié','TikTok','YouTube mention','Package multi-formats'] },
+    ],
+  },
+
+  offre: {
+    title: 'Offre Commerciale', subtitle: 'Proposition commerciale B.BOLD complète prête à envoyer au client.',
+    fields: [
+      { key:'client',   label:'Nom du client / prospect',    type:'text',     placeholder:'Ex: Boutique Mode Tropicale, Fort-de-France' },
+      { key:'secteur',  label:'Secteur',                     type:'text',     placeholder:'Ex: Mode & retail, Martinique' },
+      { key:'besoin',   label:'Besoin / problème identifié', type:'textarea', placeholder:'Ex: Aucune présence Instagram, concurrent qui cartonne sur les réseaux, besoin de visibilité pour l\'ouverture du deuxième magasin...' },
+      { key:'services', label:'Services à proposer',         type:'textarea', placeholder:'Ex: Stratégie réseaux sociaux, création de contenu mensuel (12 posts + 4 reels), community management...' },
+      { key:'budget',   label:'Budget indicatif',            type:'text',     placeholder:'Ex: 1 500€/mois — ou "à définir"' },
+      { key:'delai',    label:'Délai de démarrage souhaité', type:'text',     placeholder:'Ex: Démarrage début septembre' },
+    ],
+  },
+
+  seo: {
+    title: 'SEO Content', subtitle: 'Article SEO optimisé avec métas, structure et contenu prêt à publier.',
+    fields: [
+      { key:'sujet',          label:'Sujet de l\'article',              type:'text',     placeholder:'Ex: Comment choisir son imprimeur local en Martinique' },
+      { key:'mot_cle',        label:'Mot-clé principal',                type:'text',     placeholder:'Ex: imprimerie Martinique' },
+      { key:'mots_cles_sec',  label:'Mots-clés secondaires (3 à 5)',    type:'text',     placeholder:'Ex: impression numérique, flyer Martinique, devis imprimeur' },
+      { key:'audience',       label:'Audience cible',                   type:'text',     placeholder:'Ex: TPE et commerçants martiniquais qui cherchent un imprimeur fiable' },
+      { key:'type_contenu',   label:'Type de contenu',                  type:'select',   options:['Article de blog informatif','Guide pratique (how-to)','Comparatif / Top X','Landing page service','FAQ optimisée'] },
+      { key:'longueur',       label:'Longueur cible',                   type:'select',   options:['800 mots (article court)','1 200 mots (article standard)','2 000 mots (article approfondi)','2 500+ mots (pilier SEO)'] },
+    ],
+  },
 }
 
 const CAMPAIGN_FIELDS = [
@@ -363,7 +415,7 @@ function FieldGroup({ field, value, onChange, accentColor }) {
       ) : field.type === 'textarea' ? (
         <textarea value={value||''} onChange={e=>onChange(e.target.value)}
           placeholder={field.placeholder}
-          rows={['transcript','contenu','piliers','debelvoix_analyse'].includes(field.key) ? 8 : 3}
+          rows={['transcript','contenu','piliers','debelvoix_analyse','sujet','besoin','services'].includes(field.key) ? 6 : 3}
           style={{ ...baseStyle, resize:'vertical', fontFamily:'system-ui,sans-serif', lineHeight:'1.5' }}/>
       ) : (
         <input type="text" value={value||''} onChange={e=>onChange(e.target.value)}
