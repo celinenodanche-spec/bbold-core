@@ -16,18 +16,18 @@ const AGENTS = [
 ]
 
 const SUPPORT_AGENTS = [
-  { id:'gmail',      emoji:'📧', name:'Gmail',         subtitle:'Email professionnel — objet + corps + CTA en 30 secondes.',          color:'#3b82f6', accent:'#93c5fd' },
-  { id:'fireflies',  emoji:'🔥', name:'Fireflies',     subtitle:'Extrait un brief structuré depuis un transcript de réunion.',        color:'#10b981', accent:'#6ee7b7' },
-  { id:'cv',         emoji:'📁', name:'Content Vault', subtitle:'Archive et versionne tes livrables avec frontmatter YAML.',          color:'#f97316', accent:'#fdba74' },
-  { id:'debelvoix',  emoji:'🔍', name:'Debelvoix',     subtitle:'Analyse la voix de marque existante et génère le guide brand voice.', color:'#0d9488', accent:'#5eead4' },
-  { id:'repurpose',  emoji:'♻️', name:'Repurpose',     subtitle:'1 post validé → 5 formats natifs (LinkedIn, Insta, FB, Story, NL).', color:'#f59e0b', accent:'#fde68a' },
-  { id:'calendrier', emoji:'📅', name:'Calendrier',    subtitle:'Génère un calendrier éditorial 30 jours depuis ta stratégie.',       color:'#4f46e5', accent:'#a5b4fc' },
-  { id:'olivia',     emoji:'📡', name:'Olivia Pope',      subtitle:'Veille communicationnelle en temps réel — réseaux, campagnes, canaux digitaux & classiques.', color:'#dc2626', accent:'#fca5a5' },
-  { id:'anna',       emoji:'👑', name:'Anna Wintour',     subtitle:'Brand board complet — palette HEX, typographies, logo, ambiance. Téléchargeable en HTML.',    color:'#b45309', accent:'#fde68a' },
-  { id:'script',     emoji:'🎬', name:'Script Vidéo',     subtitle:'Hook 3s + script complet Reel/TikTok/YouTube avec timestamps et description optimisée.',      color:'#7c3aed', accent:'#c4b5fd' },
-  { id:'influence',  emoji:'🌟', name:'Influence Marketing', subtitle:'Profils influenceurs ciblés + brief influenceur complet + message d\'approche.',           color:'#ec4899', accent:'#f9a8d4' },
-  { id:'offre',      emoji:'📋', name:'Offre Commerciale', subtitle:'Proposition commerciale structurée — contexte, solution, livrables, budget, planning.',      color:'#059669', accent:'#6ee7b7' },
-  { id:'seo',        emoji:'🔎', name:'SEO Content',      subtitle:'Article SEO complet avec métas, structure H1/H2/H3 et contenu optimisé.',                     color:'#0891b2', accent:'#67e8f9' },
+  { id:'gmail',      emoji:'📧', name:'J.K. Rowling',      subtitle:'Email professionnel — objet + corps + CTA en 30 secondes.',                                  color:'#3b82f6', accent:'#93c5fd' },
+  { id:'fireflies',  emoji:'🔥', name:'Erin Brockovich',   subtitle:'Capture tout, oublie rien — extrait un brief béton depuis tes notes de réunion.',            color:'#10b981', accent:'#6ee7b7' },
+  { id:'cv',         emoji:'📁', name:'Marie Kondo',       subtitle:'Elle range, classe, structure. Chaque livrable archivé avec frontmatter YAML.',              color:'#f97316', accent:'#fdba74' },
+  { id:'debelvoix',  emoji:'🔍', name:'Maya Angelou',      subtitle:'La voix, l\'identité, l\'âme d\'une marque en mots. Analyse et guide brand voice complet.',  color:'#0d9488', accent:'#5eead4' },
+  { id:'repurpose',  emoji:'♻️', name:'Madonna',           subtitle:'Réinvention perpétuelle — 1 post validé → 5 formats natifs.',                               color:'#f59e0b', accent:'#fde68a' },
+  { id:'calendrier', emoji:'📅', name:'Hermione Granger',  subtitle:'Emploi du temps impossible géré à la perfection — calendrier éditorial 30 jours.',          color:'#4f46e5', accent:'#a5b4fc' },
+  { id:'olivia',     emoji:'📡', name:'Olivia Pope',       subtitle:'Veille communicationnelle en temps réel — réseaux, campagnes, canaux digitaux & classiques.', color:'#dc2626', accent:'#fca5a5' },
+  { id:'anna',       emoji:'👑', name:'Anna Wintour',      subtitle:'Brand board complet — palette HEX, typographies, logo, ambiance. Téléchargeable en HTML.',    color:'#b45309', accent:'#fde68a' },
+  { id:'script',     emoji:'🎬', name:'Shonda Rhimes',     subtitle:'Elle a écrit Scandal, Grey\'s, Bridgerton. Hook 3s + script complet prêt à tourner.',        color:'#7c3aed', accent:'#c4b5fd' },
+  { id:'influence',  emoji:'🌟', name:'Kris Jenner',       subtitle:'Elle a transformé une famille en empire. Stratégie influenceurs + brief + approche.',         color:'#ec4899', accent:'#f9a8d4' },
+  { id:'offre',      emoji:'📋', name:'Oprah Winfrey',     subtitle:'"You get a car." — Proposition commerciale irrésistible prête à envoyer.',                   color:'#059669', accent:'#6ee7b7' },
+  { id:'seo',        emoji:'🔎', name:'Ada Lovelace',      subtitle:'Première programmatrice de l\'histoire. Article SEO complet, optimisé pour les algorithmes.', color:'#0891b2', accent:'#67e8f9' },
 ]
 
 const PIPELINE_STEPS = [
@@ -246,7 +246,7 @@ Mission :
 
 const SUPPORT_FORMS = {
   gmail: {
-    title: 'Agent Gmail', subtitle: 'Email B.BOLD — objet + corps + CTA en 30 secondes.',
+    title: 'J.K. Rowling — Email', subtitle: 'Un email B.BOLD percutant — objet + corps + CTA en 30 secondes.',
     fields: [
       { key:'destinataire', label:'Destinataire / Contexte', type:'text',     placeholder:'Ex: Directeur marketing, relance après réunion' },
       { key:'sujet',        label:"Sujet de l'email",        type:'text',     placeholder:'Ex: Bilan campagne mai — vos résultats' },
@@ -255,13 +255,13 @@ const SUPPORT_FORMS = {
     ],
   },
   fireflies: {
-    title: 'Agent Fireflies', subtitle: 'Colle ton transcript — Fireflies en extrait un brief actionnable.',
+    title: 'Erin Brockovich — Notes & Réunions', subtitle: 'Colle ton transcript — elle capture tout et sort un brief imparable.',
     fields: [
       { key:'transcript', label:'Transcript ou notes de réunion', type:'textarea', placeholder:'Colle ici ton transcript Fireflies.ai ou tes notes brutes de réunion...' },
     ],
   },
   cv: {
-    title: 'Content Vault', subtitle: 'Archive un livrable avec frontmatter YAML + changelog.',
+    title: 'Marie Kondo — Content Vault', subtitle: 'Archive un livrable avec frontmatter YAML + changelog. Chaque asset à sa place.',
     fields: [
       { key:'client',   label:'Client',   type:'text',     placeholder:'Ex: Caraïb Ediprint' },
       { key:'version',  label:'Version',  type:'text',     placeholder:'Ex: v1.0' },
@@ -269,7 +269,7 @@ const SUPPORT_FORMS = {
     ],
   },
   debelvoix: {
-    title: 'Debelvoix — Brand Voice', subtitle: "Colle du contenu existant, Debelvoix sort le guide brand voice complet.",
+    title: 'Maya Angelou — Brand Voice', subtitle: 'La voix, l\'identité, l\'âme d\'une marque. Colle du contenu existant, elle sort le guide brand voice complet.',
     fields: [
       { key:'client',  label:'Client / Marque',             type:'text',     placeholder:'Ex: Debeliou Agency' },
       { key:'secteur', label:'Secteur',                     type:'text',     placeholder:'Ex: Agence communication, Martinique' },
@@ -277,7 +277,7 @@ const SUPPORT_FORMS = {
     ],
   },
   repurpose: {
-    title: 'Repurpose — 1 post → 5 formats', subtitle: 'Prends un post validé, Repurpose le décline sur toutes les plateformes.',
+    title: 'Madonna — Repurpose', subtitle: 'Réinvention perpétuelle du même matériau. 1 post validé → 5 formats natifs.',
     fields: [
       { key:'contenu', label:'Post original (validé)',    type:'textarea', placeholder:'Colle ici le post ou le contenu à décliner...' },
       { key:'client',  label:'Client',                    type:'text',     placeholder:'Ex: Caraïb Ediprint' },
@@ -286,7 +286,7 @@ const SUPPORT_FORMS = {
     ],
   },
   calendrier: {
-    title: 'Calendrier Éditorial 30 jours', subtitle: 'Donne tes piliers, Calendrier génère un plan mois complet.',
+    title: 'Hermione Granger — Calendrier', subtitle: 'Elle gère un emploi du temps impossible. Donne tes piliers, elle sort le plan 30 jours.',
     fields: [
       { key:'client',      label:'Client',                   type:'text',     placeholder:'Ex: Debeliou Agency' },
       { key:'plateformes', label:'Plateformes',              type:'select',   options:['Instagram + Facebook','LinkedIn + Meta','Instagram seul','LinkedIn seul','Tous les canaux'] },
@@ -321,7 +321,7 @@ const SUPPORT_FORMS = {
   },
 
   script: {
-    title: 'Script Vidéo', subtitle: 'Hook 3s + script complet avec timestamps, sous-titres et description.',
+    title: 'Shonda Rhimes — Script Vidéo', subtitle: 'Scandal, Grey\'s, Bridgerton. Hook 3s + script complet avec timestamps, sous-titres et description.',
     fields: [
       { key:'plateforme',   label:'Plateforme',               type:'select',   options:['Instagram Reel','TikTok','YouTube Short','YouTube (format long)','Facebook Reel'] },
       { key:'duree',        label:'Durée cible',              type:'select',   options:['15 secondes','30 secondes','60 secondes','90 secondes','3-5 minutes','8-12 minutes'] },
@@ -333,7 +333,7 @@ const SUPPORT_FORMS = {
   },
 
   influence: {
-    title: 'Influence Marketing', subtitle: 'Stratégie influenceurs ciblée DOM-TOM — brief + approche + contrat.',
+    title: 'Kris Jenner — Influence Marketing', subtitle: 'Elle a créé l\'empire Kardashian avant que le mot influenceur existe. Stratégie + brief + approche.',
     fields: [
       { key:'client',    label:'Client / Marque',                      type:'text',     placeholder:'Ex: Caraïb Ediprint' },
       { key:'secteur',   label:'Secteur',                              type:'text',     placeholder:'Ex: Imprimerie, Martinique' },
@@ -345,7 +345,7 @@ const SUPPORT_FORMS = {
   },
 
   offre: {
-    title: 'Offre Commerciale', subtitle: 'Proposition commerciale B.BOLD complète prête à envoyer au client.',
+    title: 'Oprah Winfrey — Offre Commerciale', subtitle: '"You get a car." L\'offre irrésistible incarnée. Proposition commerciale complète prête à envoyer.',
     fields: [
       { key:'client',   label:'Nom du client / prospect',    type:'text',     placeholder:'Ex: Boutique Mode Tropicale, Fort-de-France' },
       { key:'secteur',  label:'Secteur',                     type:'text',     placeholder:'Ex: Mode & retail, Martinique' },
@@ -357,7 +357,7 @@ const SUPPORT_FORMS = {
   },
 
   seo: {
-    title: 'SEO Content', subtitle: 'Article SEO optimisé avec métas, structure et contenu prêt à publier.',
+    title: 'Ada Lovelace — SEO Content', subtitle: 'Première programmatrice de l\'histoire. Article SEO optimisé pour les algorithmes, prêt à publier.',
     fields: [
       { key:'sujet',          label:'Sujet de l\'article',              type:'text',     placeholder:'Ex: Comment choisir son imprimeur local en Martinique' },
       { key:'mot_cle',        label:'Mot-clé principal',                type:'text',     placeholder:'Ex: imprimerie Martinique' },
