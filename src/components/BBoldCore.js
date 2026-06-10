@@ -687,7 +687,7 @@ function SupportModal({ agent, onClose }) {
             {isOlivia && (
               <div style={{ padding:'10px 14px', background:'rgba(220,38,38,0.06)', border:'1px solid rgba(220,38,38,0.2)',
                 borderRadius:'8px', fontSize:'11px', color:'rgba(250,248,251,0.45)', marginBottom:'14px' }}>
-                📡 Olivia utilise Perplexity AI pour une veille en temps réel. Requiert PERPLEXITY_API_KEY.
+                📡 Olivia synthétise la veille comm via Claude Opus — campagnes réelles, tendances plateformes, insights actionnables.
               </div>
             )}
             {error && <div style={{ color:'#ff6b6b', fontSize:'12px', marginBottom:'12px' }}>⚠ {error}</div>}

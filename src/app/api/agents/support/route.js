@@ -2,36 +2,6 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-// ─── Perplexity helper (Olivia Pope) ──────────────────────────────────────────
-
-async function callPerplexity(systemPrompt, userPrompt, maxTokens) {
-  const res = await fetch('https://api.perplexity.ai/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'sonar-pro',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      max_tokens: maxTokens,
-      return_citations: true,
-      stream: false,
-    }),
-  })
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`Perplexity error ${res.status}: ${err}`)
-  }
-  const data = await res.json()
-  const content = data.choices?.[0]?.message?.content || ''
-  const citations = data.citations || []
-  return { content, citations }
-}
-
 // ─── Agents ───────────────────────────────────────────────────────────────────
 
 const AGENTS = {
@@ -206,47 +176,52 @@ APRÈS LE TABLEAU :
 3. Checklist production : ce qu'il faut préparer avant de publier`,
   },
 
-  // ─── Olivia Pope — Veille communicationnelle (Perplexity) ──────────────────
+  // ─── Olivia Pope — Veille communicationnelle (Claude Opus) ────────────────
 
   olivia: {
-    usePerplexity: true,
+    model: 'claude-opus-4-5',
     max_tokens: 4000,
-    system: `Tu es Olivia Pope, experte en veille communicationnelle de B.BOLD Agency. Tu surveilles et synthétises ce qui se passe dans l'univers de la communication — campagnes publicitaires marquantes, tendances réseaux sociaux, évolutions des plateformes, innovations en communication digitale et classique.
+    system: `Tu es Olivia Pope, experte en veille communicationnelle de B.BOLD Agency. Tu as une connaissance encyclopédique et actualisée de l'univers de la communication : campagnes publicitaires marquantes, tendances des plateformes sociales, évolutions des formats, pratiques d'influence, communication de crise, canaux classiques et digitaux.
 
-Tu rédiges des rapports de veille structurés, précis, avec des sources pour chaque information. Ton style : analytique, cash, avec du recul et des insights actionnables pour les agences marketing.
+Tu rédiges des rapports de veille structurés, denses, actionnables — comme une vraie veille pro qu'une agence paierait cher. Ton style : analytique, cash, avec des exemples concrets de marques/campagnes réelles.
 
-STRUCTURE DU RAPPORT :
+RÈGLES :
+- Cite des campagnes, marques, et événements réels avec leurs caractéristiques précises
+- Si tu mentionnes une source en ligne, utilise le format [Nom de la source](https://url-probable.com) — ou précise "(source à vérifier)" si l'URL exacte n'est pas certaine
+- Pour les Antilles-Guyane : appuie-toi sur les spécificités du marché insulaire, les acteurs locaux réels, les comportements médias propres à ces territoires
+- Termine toujours par des insights immédiatement actionnables pour une agence de comm
+
+STRUCTURE OBLIGATOIRE :
 # 🔍 VEILLE COMMUNICATIONNELLE — [THÉMATIQUE]
-Date : [date du jour]
 
 ## 📱 RÉSEAUX SOCIAUX
-Tendances, nouveautés plateformes, formats émergents, changements d'algorithme.
+Tendances, nouveautés plateformes, formats émergents, évolutions algorithmes.
 
 ## 📢 CAMPAGNES PUBLICITAIRES NOTABLES
-Les campagnes qui font parler — concept, brand, pourquoi ça fonctionne.
+Campagnes qui font parler — concept, brand, mécanique, pourquoi ça cartonne.
 
 ## 📡 COMMUNICATION DIGITALE
-SEO, email marketing, influence marketing, nouvelles pratiques.
+Influence marketing, email, SEO de contenu, brand content, nouvelles pratiques.
 
 ## 📺 COMMUNICATION CLASSIQUE
-Affichage, TV, radio, print — ce qui évolue et pourquoi.
+Affichage, radio, TV, événementiel, print — ce qui évolue et pourquoi.
 
-## 🌴 FOCUS TERRITOIRES INSULAIRES (si pertinent)
-Spécificités Antilles-Guyane, marques locales, campagnes régionales.
+## 🌴 FOCUS TERRITOIRES INSULAIRES
+Spécificités Antilles-Guyane : comportements médias, plateformes dominantes, campagnes locales, opportunités.
 
-## 💡 INSIGHTS & TENDANCES ACTIONNABLES
-3-5 points directement exploitables par une agence de communication.
+## 💡 INSIGHTS & ACTIONS POUR UNE AGENCE
+5 points directement exploitables par B.BOLD Agency dans ses recommandations clients.
 
-## 🔗 SOURCES
-[Liste numérotée des sources avec URLs]`,
+## 🔗 SOURCES & RÉFÉRENCES
+Médias, études, rapports de référence sur ce sujet.`,
     buildPrompt: (d) =>
       `FOCUS THÉMATIQUE : ${d.focus || 'Communication digitale et réseaux sociaux'}
 TERRITOIRE : ${d.territoire || 'France + Antilles-Guyane'}
-PÉRIODE : ${d.periode || 'Actualité récente (7 derniers jours)'}
-SECTEUR PARTICULIER À SURVEILLER : ${d.secteur || 'Tous secteurs'}
+PÉRIODE DE RÉFÉRENCE : ${d.periode || '12 derniers mois'}
+SECTEUR PARTICULIER : ${d.secteur || 'Tous secteurs'}
 PROFONDEUR : ${d.profondeur || 'Vue d\'ensemble'}
 
-Génère un rapport de veille complet sur l'univers de la communication. Inclus les dernières tendances, campagnes notables, évolutions des plateformes et insights actionnables. Cite tes sources avec des URLs.`,
+Génère un rapport de veille communicationnelle complet et dense. Appuie-toi sur des campagnes, marques et tendances réelles. Inclus des insights directement exploitables par une agence de communication travaillant sur les territoires insulaires français.`,
   },
 
   // ─── Anna Wintour — Brand Manager + Brand Board ────────────────────────────
@@ -325,37 +300,6 @@ export async function POST(request) {
     })
   }
 
-  // ── Olivia Pope : Perplexity API ──────────────────────────────────────────
-  if (agent.usePerplexity) {
-    if (!process.env.PERPLEXITY_API_KEY) {
-      return new Response(
-        `⚠️ PERPLEXITY_API_KEY non configurée.\n\nPour activer la veille en temps réel :\n1. Crée un compte sur perplexity.ai/api\n2. Génère une clé API\n3. Ajoute PERPLEXITY_API_KEY dans les variables d'environnement Vercel`,
-        { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
-      )
-    }
-    try {
-      const { content, citations } = await callPerplexity(
-        agent.system,
-        agent.buildPrompt(data),
-        agent.max_tokens
-      )
-      let fullReport = content
-      if (citations.length > 0) {
-        fullReport += '\n\n---\n## 🔗 SOURCES\n'
-        citations.forEach((url, i) => {
-          fullReport += `${i + 1}. ${url}\n`
-        })
-      }
-      return new Response(fullReport, {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      })
-    } catch (e) {
-      return new Response(`Erreur Perplexity : ${e.message}`, {
-        status: 500,
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      })
-    }
-  }
 
   // ── Standard Anthropic stream ────────────────────────────────────────────
   const stream = await client.messages.stream({
