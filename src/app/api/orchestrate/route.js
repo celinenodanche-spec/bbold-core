@@ -7,6 +7,7 @@ const PIPELINE = [
   {
     id: 'stratege', prenom: 'Maeva', emoji: '🎯',
     model: 'claude-opus-4-5',
+    max_tokens: 4000,
     folder: 'briefs/',
     system: `Tu es Maeva, Stratège & Brief de B.BOLD Agency, experte en brand strategy pour les territoires insulaires français (Martinique, Guadeloupe, Guyane). Style : cash, structuré, bullet points pour les insights. Sois précise et directe.`,
     buildPrompt: (b, _ctx) =>
@@ -29,6 +30,7 @@ Mission :
   {
     id: 'createur', prenom: 'Lola', emoji: '✍️',
     model: 'claude-sonnet-4-5',
+    max_tokens: 2800,
     folder: 'content/',
     system: `Tu es Lola, Créatrice de Contenu de B.BOLD Agency. Hook = 15 mots max. Jamais de listes à puces dans le corps des posts. Prose fluide, 3 paragraphes max. Style authentique et territorial si pertinent. Pas de clichés.`,
     buildPrompt: (b, ctx) =>
@@ -46,6 +48,7 @@ Mission :
   {
     id: 'designer', prenom: 'Zara', emoji: '🎨',
     model: 'claude-sonnet-4-5',
+    max_tokens: 2800,
     folder: 'prompts-images/',
     system: `Tu es Zara, Designer de B.BOLD Agency, experte en direction artistique et prompts génératifs (Midjourney v6, Flux, DALL-E 3). Fournis des prompts techniques précis avec tous les paramètres.`,
     buildPrompt: (b, ctx) =>
@@ -63,6 +66,7 @@ Mission : Pour chacun des 3 posts de Lola :
   {
     id: 'analyste', prenom: 'Inès', emoji: '📊',
     model: 'claude-opus-4-5',
+    max_tokens: 4000,
     folder: 'analytics/',
     system: `Tu es Inès, Analyste & Architecte du Plan 3D de B.BOLD Agency. Tableaux clairs, chiffres précis, actions SMART. Plan 4 semaines avec 3 actions par semaine.`,
     buildPrompt: (b, ctx) =>
@@ -82,6 +86,7 @@ Mission :
   {
     id: 'presentateur', prenom: 'Naïa', emoji: '🎤',
     model: 'claude-sonnet-4-5',
+    max_tokens: 2800,
     folder: 'decks/',
     system: `Tu es Naïa, Présentatrice de B.BOLD Agency. Experte en storytelling (SOZA, Pyramide de Minto, Before/After). Structure narrative claire, slide-par-slide avec notes speaker.`,
     buildPrompt: (b, ctx) =>
@@ -122,7 +127,7 @@ export async function POST(request) {
         try {
           const stream = await client.messages.stream({
             model: step.model,
-            max_tokens: 1800,
+            max_tokens: step.max_tokens || 2800,
             system: step.system,
             messages: [{ role: 'user', content: step.buildPrompt(brief, context) }],
           })
