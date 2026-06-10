@@ -22,6 +22,8 @@ const SUPPORT_AGENTS = [
   { id:'debelvoix',  emoji:'🔍', name:'Debelvoix',     subtitle:'Analyse la voix de marque existante et génère le guide brand voice.', color:'#0d9488', accent:'#5eead4' },
   { id:'repurpose',  emoji:'♻️', name:'Repurpose',     subtitle:'1 post validé → 5 formats natifs (LinkedIn, Insta, FB, Story, NL).', color:'#f59e0b', accent:'#fde68a' },
   { id:'calendrier', emoji:'📅', name:'Calendrier',    subtitle:'Génère un calendrier éditorial 30 jours depuis ta stratégie.',       color:'#4f46e5', accent:'#a5b4fc' },
+  { id:'olivia',     emoji:'📡', name:'Olivia Pope',   subtitle:'Veille communicationnelle en temps réel — réseaux, campagnes, canaux digitaux & classiques.', color:'#dc2626', accent:'#fca5a5' },
+  { id:'anna',       emoji:'👑', name:'Anna Wintour',  subtitle:'Brand board complet — palette HEX, typographies, logo, ambiance. Téléchargeable en HTML.', color:'#b45309', accent:'#fde68a' },
 ]
 
 const PIPELINE_STEPS = [
@@ -271,6 +273,29 @@ const SUPPORT_FORMS = {
       { key:'contexte',    label:'Contexte / Infos utiles',  type:'textarea', placeholder:'Ex: Mois de juillet, saison cyclonique, lancement produit prévu le 15...' },
     ],
   },
+  olivia: {
+    title: 'Olivia Pope — Veille Com', subtitle: 'Veille communicationnelle en temps réel via Perplexity AI.',
+    fields: [
+      { key:'focus',      label:'Focus thématique',                     type:'select',   options:['Communication digitale & réseaux sociaux','Campagnes publicitaires notables','Influence marketing','Communication de crise','Tendances brand content','Vue d\'ensemble communication'] },
+      { key:'territoire', label:'Territoire',                            type:'select',   options:['France + Antilles-Guyane','France métropolitaine','Martinique','Guadeloupe','Global'] },
+      { key:'periode',    label:'Période de veille',                     type:'select',   options:['7 derniers jours','30 derniers jours','Actualité immédiate','3 derniers mois'] },
+      { key:'secteur',    label:'Secteur à surveiller (optionnel)',      type:'text',     placeholder:'Ex: Luxe, food, tourisme insulaire...' },
+      { key:'profondeur', label:'Profondeur du rapport',                 type:'select',   options:['Vue d\'ensemble','Analyse approfondie','Focus 1 tendance spécifique'] },
+    ],
+  },
+  anna: {
+    title: 'Anna Wintour — Brand Board', subtitle: 'Brand board complet avec palette HEX, typographies, concept logo et ambiance.',
+    fields: [
+      { key:'client',              label:'Client / Nom de marque',               type:'text',     placeholder:'Ex: Debeliou Agency' },
+      { key:'secteur',             label:'Secteur',                              type:'text',     placeholder:'Ex: Agence communication, Martinique' },
+      { key:'valeurs',             label:'Valeurs de la marque',                 type:'text',     placeholder:'Ex: Authenticité, disruption, excellence' },
+      { key:'cible',               label:'Cible',                                type:'text',     placeholder:'Ex: Créatifs, entrepreneurs 25-40 ans' },
+      { key:'personnalite',        label:'Personnalité souhaitée',               type:'select',   options:['Luxe & premium','Disruptif & bold','Naturel & organique','Tech & moderne','Artisanal & authentique','Énergique & jeune'] },
+      { key:'references',          label:'Références visuelles / inspirations',  type:'text',     placeholder:'Ex: Vogue, Glossier, Apple' },
+      { key:'couleurs_existantes', label:'Couleurs existantes (si logo déjà)',   type:'text',     placeholder:'Ex: Violet #6b0f6e, Or #c9a84c — ou "Aucune contrainte"' },
+      { key:'debelvoix_analyse',   label:'Analyse Debelvoix (optionnel)',         type:'textarea', placeholder:'Colle ici le guide brand voice généré par Debelvoix pour enrichir le brand board...' },
+    ],
+  },
 }
 
 const CAMPAIGN_FIELDS = [
@@ -319,7 +344,7 @@ function FieldGroup({ field, value, onChange, accentColor }) {
       ) : field.type === 'textarea' ? (
         <textarea value={value||''} onChange={e=>onChange(e.target.value)}
           placeholder={field.placeholder}
-          rows={field.key==='transcript' || field.key==='contenu' || field.key==='piliers' ? 8 : 3}
+          rows={['transcript','contenu','piliers','debelvoix_analyse'].includes(field.key) ? 8 : 3}
           style={{ ...baseStyle, resize:'vertical', fontFamily:'system-ui,sans-serif', lineHeight:'1.5' }}/>
       ) : (
         <input type="text" value={value||''} onChange={e=>onChange(e.target.value)}
@@ -519,6 +544,79 @@ function Modal({ agent, onClose }) {
   )
 }
 
+// ─── HTML download helper (Olivia + Anna) ────────────────────────────────────
+
+function downloadResponseAsHtml(responseText, agentId, agentName, agentEmoji, agentColor, clientName) {
+  const date = new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' })
+  const slug = (clientName || agentId).toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-')
+
+  // Render HEX swatches + links + basic markdown
+  const styledContent = responseText
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/#([0-9a-fA-F]{6})\b/g, (m, hex) =>
+      `<span class="hex-chip"><span class="swatch" style="background:#${hex}"></span>#${hex}</span>`)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^━+$/gm, '<hr class="divider">')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/\n/g, '<br>')
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${agentEmoji} ${agentName} — ${clientName || 'B.BOLD'} — ${date}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:#0a0008;color:#faf8fb;min-height:100vh;padding:0}
+  .header{background:linear-gradient(135deg,#120010,#1a001a);border-bottom:1px solid ${agentColor}44;padding:32px 48px;display:flex;align-items:center;gap:20px}
+  .header-emoji{font-size:48px;line-height:1}
+  .header-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:#faf8fb}
+  .header-meta{font-size:13px;color:rgba(250,248,251,0.45);margin-top:4px}
+  .header-badge{background:${agentColor}22;border:1px solid ${agentColor}55;color:${agentColor};font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:0.08em;margin-top:8px;display:inline-block}
+  .content{max-width:860px;margin:0 auto;padding:48px 48px 80px}
+  h1{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:#faf8fb;margin:32px 0 14px;border-left:3px solid ${agentColor};padding-left:16px}
+  h2{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#faf8fb;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(250,248,251,0.1)}
+  .body-text{font-size:14px;line-height:1.85;color:rgba(250,248,251,0.82)}
+  .hex-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(250,248,251,0.06);border:1px solid rgba(250,248,251,0.12);border-radius:6px;padding:2px 8px;font-size:12px;font-family:'Inter',sans-serif;font-weight:600;color:#faf8fb;vertical-align:middle;margin:2px 3px}
+  .swatch{width:16px;height:16px;border-radius:3px;border:1px solid rgba(255,255,255,0.2);flex-shrink:0;display:inline-block}
+  .divider{border:none;border-top:1px solid rgba(250,248,251,0.12);margin:24px 0}
+  hr.divider{border:none;height:2px;background:linear-gradient(90deg,transparent,${agentColor}55,transparent);margin:28px 0}
+  a{color:${agentColor};text-decoration:underline;word-break:break-all}
+  a:hover{opacity:0.8}
+  strong{font-weight:700;color:#faf8fb}
+  .footer{text-align:center;padding:32px;border-top:1px solid rgba(250,248,251,0.08);font-size:11px;color:rgba(250,248,251,0.25);margin-top:40px}
+  @media print{body{background:#fff;color:#111}.header{background:#f5f5f5;border-bottom:1px solid #ddd}.content{padding:24px}.header-title,.body-text,h1,h2,strong{color:#111!important}.hex-chip{border:1px solid #ccc;background:#f9f9f9;color:#111!important}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-emoji">${agentEmoji}</div>
+  <div>
+    <div class="header-title">${agentName}</div>
+    <div class="header-meta">B.BOLD Agency · ${clientName || ''} · ${date}</div>
+    <div class="header-badge">B.BOLD CORE</div>
+  </div>
+</div>
+<div class="content">
+  <div class="body-text">${styledContent}</div>
+</div>
+<div class="footer">Généré par B.BOLD Core · ${agentEmoji} ${agentName} · ${date}</div>
+</body>
+</html>`
+
+  const blob = new Blob([html], { type:'text/html;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `bbold-${agentId}-${slug}-${Date.now()}.html`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 // ─── SupportModal ─────────────────────────────────────────────────────────────
 
 function SupportModal({ agent, onClose }) {
@@ -528,6 +626,10 @@ function SupportModal({ agent, onClose }) {
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
+
+  const isOlivia = agent.id === 'olivia'
+  const isAnna   = agent.id === 'anna'
+  const hasDownload = isOlivia || isAnna
 
   async function generate() {
     setLoading(true); setResponse(''); setError('')
@@ -545,6 +647,12 @@ function SupportModal({ agent, onClose }) {
     } catch (e) { setError(e.message || 'Erreur inconnue') }
     finally { setLoading(false) }
   }
+
+  const loadingMsg = isOlivia
+    ? 'Olivia scrute le web en temps réel…'
+    : isAnna
+    ? 'Anna construit le brand board…'
+    : `Agent ${agent.name} en cours…`
 
   return (
     <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(10,0,8,0.9)', backdropFilter:'blur(12px)',
@@ -568,12 +676,20 @@ function SupportModal({ agent, onClose }) {
           </div>
         </div>
         <div style={{ height:'1px', background:`linear-gradient(90deg,transparent,${agent.color}88,transparent)`, marginBottom:'24px' }}/>
+
+        {/* ── FORM ─────────────────────────────────────────────────── */}
         {!response && !loading && (
           <>
             {form.fields.map(field => (
               <FieldGroup key={field.key} field={field} value={data[field.key]}
                 onChange={v=>setData({...data,[field.key]:v})} accentColor={agent.accent}/>
             ))}
+            {isOlivia && (
+              <div style={{ padding:'10px 14px', background:'rgba(220,38,38,0.06)', border:'1px solid rgba(220,38,38,0.2)',
+                borderRadius:'8px', fontSize:'11px', color:'rgba(250,248,251,0.45)', marginBottom:'14px' }}>
+                📡 Olivia utilise Perplexity AI pour une veille en temps réel. Requiert PERPLEXITY_API_KEY.
+              </div>
+            )}
             {error && <div style={{ color:'#ff6b6b', fontSize:'12px', marginBottom:'12px' }}>⚠ {error}</div>}
             <button onClick={generate} style={{ width:'100%', padding:'14px',
               background:`linear-gradient(135deg,${agent.color}cc,${agent.color}66)`,
@@ -583,19 +699,23 @@ function SupportModal({ agent, onClose }) {
             </button>
           </>
         )}
+
+        {/* ── LOADING ───────────────────────────────────────────────── */}
         {loading && (
           <div style={{ textAlign:'center', padding:'40px 0' }}>
             <div style={{ width:'40px', height:'40px', borderRadius:'50%', margin:'0 auto 16px',
               border:`2px solid ${agent.color}22`, borderTop:`2px solid ${agent.color}`,
               animation:'spin 0.8s linear infinite' }}/>
-            <p style={{ color:'rgba(250,248,251,0.5)', fontSize:'13px' }}>Agent {agent.name} en cours…</p>
+            <p style={{ color:'rgba(250,248,251,0.5)', fontSize:'13px' }}>{loadingMsg}</p>
           </div>
         )}
+
+        {/* ── RESPONSE ──────────────────────────────────────────────── */}
         {response && (
           <>
             <div style={{ marginBottom:'16px' }}>
               <div style={{ fontSize:'11px', fontWeight:'700', color:agent.accent, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'10px' }}>
-                Résultat — {agent.name}
+                {isOlivia ? '📡 Rapport de veille' : isAnna ? '👑 Brand Board' : `Résultat — ${agent.name}`}
               </div>
               <div style={{ background:'rgba(10,0,8,0.5)', border:`1px solid ${agent.color}33`,
                 borderRadius:'12px', padding:'18px', fontSize:'13px', color:'rgba(250,248,251,0.85)',
@@ -603,15 +723,46 @@ function SupportModal({ agent, onClose }) {
                 {response}
               </div>
             </div>
-            <div style={{ display:'flex', gap:'10px', marginBottom:'12px' }}>
+
+            {/* ── ACTIONS ─────────────────────────────────────────── */}
+            <div style={{ display:'flex', gap:'10px', marginBottom:'12px', flexWrap:'wrap' }}>
               <button onClick={() => { navigator.clipboard.writeText(response).then(() => { setCopied(true); setTimeout(()=>setCopied(false),2000) }) }}
-                style={{ flex:1, padding:'12px',
+                style={{ flex:1, minWidth:'120px', padding:'12px',
                   background: copied ? `${agent.color}22` : 'rgba(107,15,110,0.3)',
                   border:`1px solid ${agent.color}55`, borderRadius:'10px',
                   color: copied ? agent.accent : B.white, fontSize:'13px', fontWeight:'600', cursor:'pointer' }}>
                 {copied ? '✓ Copié !' : '📋 Copier'}
               </button>
+
+              {hasDownload && (
+                <button
+                  onClick={() => downloadResponseAsHtml(
+                    response, agent.id, agent.name, agent.emoji, agent.color,
+                    data.client || data.focus || ''
+                  )}
+                  style={{ flex:1, minWidth:'180px', padding:'12px',
+                    background:`linear-gradient(135deg,${agent.color}cc,${agent.color}77)`,
+                    border:`1px solid ${agent.color}88`, borderRadius:'10px',
+                    color:B.white, fontSize:'13px', fontWeight:'700', cursor:'pointer',
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
+                  {isAnna ? '👑 Télécharger Brand Board' : '📥 Télécharger Rapport HTML'}
+                </button>
+              )}
             </div>
+
+            {isAnna && (
+              <div style={{ padding:'10px 14px', background:'rgba(180,83,9,0.07)', border:'1px solid rgba(180,83,9,0.25)',
+                borderRadius:'8px', fontSize:'11px', color:'rgba(250,248,251,0.45)', marginBottom:'10px' }}>
+                👑 Le brand board HTML s'ouvre dans ton navigateur. Tu peux l'imprimer ou le partager directement au client.
+              </div>
+            )}
+            {isOlivia && (
+              <div style={{ padding:'10px 14px', background:'rgba(220,38,38,0.06)', border:'1px solid rgba(220,38,38,0.2)',
+                borderRadius:'8px', fontSize:'11px', color:'rgba(250,248,251,0.45)', marginBottom:'10px' }}>
+                📡 Rapport avec sources cliquables. Le fichier HTML s'ouvre dans ton navigateur.
+              </div>
+            )}
+
             <button onClick={() => { setResponse(''); setData({}) }} style={{ width:'100%', padding:'10px',
               background:'transparent', border:'1px solid rgba(250,248,251,0.12)', borderRadius:'10px',
               color:'rgba(250,248,251,0.4)', fontSize:'12px', cursor:'pointer' }}>

@@ -2,6 +2,38 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// ─── Perplexity helper (Olivia Pope) ──────────────────────────────────────────
+
+async function callPerplexity(systemPrompt, userPrompt, maxTokens) {
+  const res = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'sonar-pro',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: maxTokens,
+      return_citations: true,
+      stream: false,
+    }),
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Perplexity error ${res.status}: ${err}`)
+  }
+  const data = await res.json()
+  const content = data.choices?.[0]?.message?.content || ''
+  const citations = data.citations || []
+  return { content, citations }
+}
+
+// ─── Agents ───────────────────────────────────────────────────────────────────
+
 const AGENTS = {
   gmail: {
     model: 'claude-sonnet-4-5',
@@ -99,7 +131,7 @@ GUIDE BRAND VOICE (livrable actionnable) :
   repurpose: {
     model: 'claude-sonnet-4-5',
     max_tokens: 2800,
-    system: `Tu es l'Agent Repurpose de B.BOLD Agency. Tu prends un contenu validé et le déclinesparfaitement sur chaque plateforme dans son format natif. Chaque version est distincte — pas de copier-coller. Tu respectes les contraintes de caractères, les codes de chaque réseau et le ton de marque. Hook différent pour chaque plateforme.`,
+    system: `Tu es l'Agent Repurpose de B.BOLD Agency. Tu prends un contenu validé et le déclines parfaitement sur chaque plateforme dans son format natif. Chaque version est distincte — pas de copier-coller. Tu respectes les contraintes de caractères, les codes de chaque réseau et le ton de marque. Hook différent pour chaque plateforme.`,
     buildPrompt: (d) =>
       `CONTENU ORIGINAL :
 ${d.contenu || '—'}
@@ -173,7 +205,114 @@ APRÈS LE TABLEAU :
 2. 3 "moments forts" du mois à ne pas rater (post à fort potentiel viral)
 3. Checklist production : ce qu'il faut préparer avant de publier`,
   },
+
+  // ─── Olivia Pope — Veille communicationnelle (Perplexity) ──────────────────
+
+  olivia: {
+    usePerplexity: true,
+    max_tokens: 4000,
+    system: `Tu es Olivia Pope, experte en veille communicationnelle de B.BOLD Agency. Tu surveilles et synthétises ce qui se passe dans l'univers de la communication — campagnes publicitaires marquantes, tendances réseaux sociaux, évolutions des plateformes, innovations en communication digitale et classique.
+
+Tu rédiges des rapports de veille structurés, précis, avec des sources pour chaque information. Ton style : analytique, cash, avec du recul et des insights actionnables pour les agences marketing.
+
+STRUCTURE DU RAPPORT :
+# 🔍 VEILLE COMMUNICATIONNELLE — [THÉMATIQUE]
+Date : [date du jour]
+
+## 📱 RÉSEAUX SOCIAUX
+Tendances, nouveautés plateformes, formats émergents, changements d'algorithme.
+
+## 📢 CAMPAGNES PUBLICITAIRES NOTABLES
+Les campagnes qui font parler — concept, brand, pourquoi ça fonctionne.
+
+## 📡 COMMUNICATION DIGITALE
+SEO, email marketing, influence marketing, nouvelles pratiques.
+
+## 📺 COMMUNICATION CLASSIQUE
+Affichage, TV, radio, print — ce qui évolue et pourquoi.
+
+## 🌴 FOCUS TERRITOIRES INSULAIRES (si pertinent)
+Spécificités Antilles-Guyane, marques locales, campagnes régionales.
+
+## 💡 INSIGHTS & TENDANCES ACTIONNABLES
+3-5 points directement exploitables par une agence de communication.
+
+## 🔗 SOURCES
+[Liste numérotée des sources avec URLs]`,
+    buildPrompt: (d) =>
+      `FOCUS THÉMATIQUE : ${d.focus || 'Communication digitale et réseaux sociaux'}
+TERRITOIRE : ${d.territoire || 'France + Antilles-Guyane'}
+PÉRIODE : ${d.periode || 'Actualité récente (7 derniers jours)'}
+SECTEUR PARTICULIER À SURVEILLER : ${d.secteur || 'Tous secteurs'}
+PROFONDEUR : ${d.profondeur || 'Vue d\'ensemble'}
+
+Génère un rapport de veille complet sur l'univers de la communication. Inclus les dernières tendances, campagnes notables, évolutions des plateformes et insights actionnables. Cite tes sources avec des URLs.`,
+  },
+
+  // ─── Anna Wintour — Brand Manager + Brand Board ────────────────────────────
+
+  anna: {
+    model: 'claude-opus-4-5',
+    max_tokens: 6000,
+    system: `Tu es Anna Wintour, Brand Manager de B.BOLD Agency. Tu crées des brand boards complets et précis pour chaque marque analysée. Tu travailles main dans la main avec Debelvoix (brand voice) — si une analyse Debelvoix est fournie, tu l'intègres dans le brand board.
+
+TON OUTPUT EST UN BRAND BOARD STRUCTURÉ avec ces sections obligatoires :
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BRAND BOARD — [NOM CLIENT]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 🎨 PALETTE DE COULEURS
+Pour chaque couleur : Nom poétique | Code HEX | Usage (primaire/secondaire/accent/fond/texte)
+Exemple :
+● Violet Profond | #6b0f6e | Couleur primaire — brand identity
+● Or Chaud | #c9a84c | Accent — CTA, highlights
+[Minimum 5 couleurs, maximum 7]
+
+## ✍️ SYSTÈME TYPOGRAPHIQUE
+TITRES H1 : [Nom police] [Graisse] — Caractère : [description de la personnalité]
+TITRES H2 : [Nom police] [Graisse] — Caractère : [description]
+SOUS-TITRES : [Nom police] [Graisse] — Caractère : [description]
+CORPS DE TEXTE : [Nom police] [Graisse] — Caractère : [description]
+ACCENT / SIGNATURE : [Nom police] [Style] — Usage : [quand l'utiliser]
+
+## 🖼️ CONCEPT LOGO
+Forme principale : [description géométrique]
+Symbole / Icône : [concept et signification]
+Typographie logotype : [police + traitement]
+Variations : [horizontal / vertical / monogramme / favicon]
+À ÉVITER dans le logo : [contraintes design]
+
+## 🌡️ AMBIANCE & MOODBOARD
+Mots-clés ambiance (7 mots) : [mot1] · [mot2] · [mot3] · [mot4] · [mot5] · [mot6] · [mot7]
+Références visuelles : [3 références (marques, photographes, styles)]
+Feeling global : [description en 2-3 phrases de l'expérience visuelle de la marque]
+
+## 📐 RÈGLES D'USAGE
+✅ À FAIRE : [5 règles positives]
+❌ À ÉVITER : [5 interdits visuels]
+
+## 🛠️ SPECS CANVA
+Template recommandé : [type Canva + dimensions]
+Police Canva équivalente pour [chaque typo] : [substitut disponible sur Canva]
+Palette à importer : [liste HEX]`,
+    buildPrompt: (d) =>
+      `CLIENT / MARQUE : ${d.client || '—'}
+SECTEUR : ${d.secteur || '—'}
+VALEURS DE LA MARQUE : ${d.valeurs || '—'}
+CIBLE : ${d.cible || '—'}
+PERSONNALITÉ SOUHAITÉE : ${d.personnalite || '—'}
+RÉFÉRENCES VISUELLES / INSPIRATIONS : ${d.references || '—'}
+COULEURS EXISTANTES (si logo déjà en place) : ${d.couleurs_existantes || 'Aucune contrainte'}
+
+ANALYSE DEBELVOIX (brand voice) :
+${d.debelvoix_analyse || '— (aucune analyse Debelvoix fournie — générer le brand board sans analyse voice)'}
+
+Crée le brand board complet. Sois précise sur les codes HEX, les noms de polices exacts (disponibles sur Google Fonts si possible) et les specs Canva.`,
+  },
 }
+
+// ─── POST handler ─────────────────────────────────────────────────────────────
 
 export async function POST(request) {
   const { agentId, ...data } = await request.json()
@@ -186,6 +325,39 @@ export async function POST(request) {
     })
   }
 
+  // ── Olivia Pope : Perplexity API ──────────────────────────────────────────
+  if (agent.usePerplexity) {
+    if (!process.env.PERPLEXITY_API_KEY) {
+      return new Response(
+        `⚠️ PERPLEXITY_API_KEY non configurée.\n\nPour activer la veille en temps réel :\n1. Crée un compte sur perplexity.ai/api\n2. Génère une clé API\n3. Ajoute PERPLEXITY_API_KEY dans les variables d'environnement Vercel`,
+        { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
+      )
+    }
+    try {
+      const { content, citations } = await callPerplexity(
+        agent.system,
+        agent.buildPrompt(data),
+        agent.max_tokens
+      )
+      let fullReport = content
+      if (citations.length > 0) {
+        fullReport += '\n\n---\n## 🔗 SOURCES\n'
+        citations.forEach((url, i) => {
+          fullReport += `${i + 1}. ${url}\n`
+        })
+      }
+      return new Response(fullReport, {
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      })
+    } catch (e) {
+      return new Response(`Erreur Perplexity : ${e.message}`, {
+        status: 500,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      })
+    }
+  }
+
+  // ── Standard Anthropic stream ────────────────────────────────────────────
   const stream = await client.messages.stream({
     model: agent.model,
     max_tokens: agent.max_tokens || 1500,
