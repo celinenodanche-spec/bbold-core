@@ -141,16 +141,57 @@ const FORMS = {
     userPrompt: (d) => `PLATEFORME : ${d.plateforme||'—'}\nTHÉMATIQUE : ${d.thematique||'—'}\nTON : ${d.ton||'—'}\nCTA : ${d.cta||'—'}\nSPÉCIFICITÉS : ${d.brand||'—'}\n\nMission : 3 versions du post (angle différent), hook 15 mots max pour chacune, CTA intégré, 5-10 hashtags optimisés.`,
   },
   designer: {
-    title: 'Brief Visuel', subtitle: 'Zara génère tes prompts images prêts pour Midjourney ou Flux.',
-    system: `Tu es Zara, Designer de B.BOLD Agency, experte en direction artistique et prompts génératifs (Midjourney v6, Flux, DALL-E 3). Fournis des prompts techniques précis avec paramètres.`,
+    title: 'Brief Visuel', subtitle: 'Zara crée tes prompts Gemini Imagen + specs Canva prêtes à l\'emploi.',
+    system: `Tu es Zara, Designer de B.BOLD Agency, experte en direction artistique, prompts IA et création Canva pour les territoires insulaires français.
+
+FORMATS AUTORISÉS (jamais de carré 1:1) :
+- Deck / Présentation 16:9 → Canva : 1920 × 1080 px
+- Post Instagram/LinkedIn 4:5 → Canva : 1080 × 1350 px
+- Story & Reel 9:16 → Canva : 1080 × 1920 px
+
+Pour chaque visuel tu fournis OBLIGATOIREMENT :
+
+1. PROMPT GEMINI IMAGEN (anglais, 120-160 mots)
+Format : description scène + sujet + style + éclairage + palette + composition + ambiance
+Ex : "Wide cinematic shot of a smiling Black woman entrepreneur in a bright studio, wearing elegant professional attire in deep purple and gold tones, natural Caribbean light filtering through large windows, bokeh background with geometric shapes, luxury magazine aesthetic, ultra-detailed skin texture, warm golden hour lighting, --ar 4:5"
+
+2. BRIEF CANVA STRUCTURÉ
+- Dimensions exactes
+- Layout : zones titre / visuel / texte corps / CTA
+- Typographies (telles que fournies par le client)
+- Palette HEX
+- Style des éléments décoratifs (formes, traits, overlays)
+- Textes suggérés pour titres et sous-titres
+
+Si une image de référence est fournie, analyse PRÉCISÉMENT : palette dominante, style typographique visible, composition, ratio, mood général — et intègre tout ça dans les specs.`,
     fields: [
-      { key:'format',  label:'Format',             type:'select',   options:['Post carré 1:1','Story 9:16','Bannière LinkedIn 16:9','Thumbnail YouTube'] },
-      { key:'style',   label:'Style visuel',       type:'select',   options:['Minimaliste & épuré','Énergique & contrasté','Luxe & premium','Naturel & organique','Disruptif & bold'] },
-      { key:'palette', label:'Palette couleurs',   type:'text',     placeholder:'Ex: violet #6b0f6e, or #c9a84c, fond noir' },
-      { key:'sujet',   label:'Description visuel', type:'textarea', placeholder:'Ex: Femme créole souriante en studio, ambiance pro' },
-      { key:'mood',    label:'Mood / Références',  type:'text',     placeholder:'Ex: Ambiance magazine Vogue, lumière dorée' },
+      { key:'format',            label:'Format cible',            type:'select',   options:['Deck / Présentation 16:9','Post Instagram/LinkedIn 4:5','Story & Reel 9:16'] },
+      { key:'nombre',            label:'Nombre de visuels',       type:'select',   options:['1 visuel','3 visuels','5 visuels (carrousel)','10 slides (deck)'] },
+      { key:'style',             label:'Style visuel',            type:'select',   options:['Minimaliste & épuré','Énergique & contrasté','Luxe & premium','Naturel & organique','Disruptif & bold'] },
+      { key:'palette',           label:'Palette couleurs',        type:'text',     placeholder:'Ex: violet #6b0f6e, or #c9a84c, fond noir #0a0008' },
+      { key:'police_titre',      label:'Police — Titres',         type:'text',     placeholder:'Ex: Playfair Display Bold' },
+      { key:'police_sous_titre', label:'Police — Sous-titres',    type:'text',     placeholder:'Ex: Montserrat SemiBold 600' },
+      { key:'police_corps',      label:'Police — Corps de texte', type:'text',     placeholder:'Ex: Inter Regular 400' },
+      { key:'sujet',             label:'Sujet / Message visuel',  type:'textarea', placeholder:'Ex: Femme créole en studio, ambiance luxe, message "Votre marque mérite mieux"' },
+      { key:'mood',              label:'Mood / Références',       type:'text',     placeholder:'Ex: Vogue Paris, lumière naturelle dorée, editorial' },
     ],
-    userPrompt: (d) => `FORMAT : ${d.format||'—'}\nSTYLE : ${d.style||'—'}\nPALETTE : ${d.palette||'—'}\nSUJET : ${d.sujet||'—'}\nMOOD : ${d.mood||'—'}\n\nMission : 3 prompts Midjourney v6 (en anglais, avec --ar --v 6 --style raw), puis version Flux/DALL-E en français.`,
+    userPrompt: (d) => `FORMAT : ${d.format||'—'}
+NOMBRE : ${d.nombre||'1 visuel'}
+STYLE : ${d.style||'—'}
+PALETTE : ${d.palette||'—'}
+
+TYPOGRAPHIES :
+- Titres : ${d.police_titre||'non spécifiée'}
+- Sous-titres : ${d.police_sous_titre||'non spécifiée'}
+- Corps de texte : ${d.police_corps||'non spécifiée'}
+
+SUJET / MESSAGE : ${d.sujet||'—'}
+MOOD / RÉFÉRENCES : ${d.mood||'—'}
+
+Mission :
+1. Pour chaque visuel : prompt Gemini Imagen complet (anglais, 120-160 mots) avec toutes les specs visuelles
+2. Brief Canva structuré (dimensions, layout, zones, typographies, textes suggérés, éléments décoratifs)
+3. Si image de référence uploadée : analyse le style et adapte les prompts en conséquence`,
   },
   analyste: {
     title: 'Brief Analytique', subtitle: 'Inès lit tes analytics et construit ton plan 3D sur 4 semaines.',
@@ -297,13 +338,45 @@ function Modal({ agent, onClose }) {
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
+  const [imageBase64, setImageBase64] = useState(null)
+  const [imageMediaType, setImageMediaType] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const fileInputRef = useRef(null)
+  const isDesigner = agent.id === 'designer'
+
+  function handleImageUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const allowed = ['image/jpeg','image/png','image/gif','image/webp']
+    if (!allowed.includes(file.type)) { setError('Format non supporté. Utilise JPG, PNG, GIF ou WebP.'); return }
+    if (file.size > 5 * 1024 * 1024) { setError('Image trop lourde (max 5 Mo).'); return }
+    setError('')
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const result = ev.target.result
+      const base64 = result.split(',')[1]
+      setImageBase64(base64)
+      setImageMediaType(file.type)
+      setImagePreview(result)
+    }
+    reader.readAsDataURL(file)
+  }
 
   async function generate() {
     setLoading(true); setResponse(''); setError('')
     try {
+      const body = {
+        agentId: agent.id,
+        systemPrompt: form.system,
+        userPrompt: form.userPrompt(data),
+      }
+      if (isDesigner && imageBase64) {
+        body.imageBase64 = imageBase64
+        body.imageMediaType = imageMediaType
+      }
       const res = await fetch('/api/brief', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ agentId:agent.id, systemPrompt:form.system, userPrompt:form.userPrompt(data) }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) throw new Error(`Erreur ${res.status}`)
       const reader = res.body.getReader(); const decoder = new TextDecoder(); let text = ''
@@ -341,6 +414,43 @@ function Modal({ agent, onClose }) {
               <FieldGroup key={field.key} field={field} value={data[field.key]}
                 onChange={v=>setData({...data,[field.key]:v})} accentColor={agent.accent}/>
             ))}
+
+            {/* Image de référence — Zara uniquement */}
+            {isDesigner && (
+              <div style={{ marginBottom:'18px' }}>
+                <label style={{ display:'block', fontSize:'10px', fontWeight:'700', color:B.gold,
+                  letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'8px' }}>
+                  Image de référence (optionnel)
+                </label>
+                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handleImageUpload} style={{ display:'none' }}/>
+                {!imagePreview ? (
+                  <button onClick={() => fileInputRef.current?.click()} style={{
+                    width:'100%', padding:'14px',
+                    background:'rgba(201,168,76,0.07)', border:`1px dashed ${B.gold}44`,
+                    borderRadius:'10px', color:B.gold, fontSize:'12px', cursor:'pointer',
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:'8px',
+                  }}>
+                    <span style={{ fontSize:'18px' }}>📎</span>
+                    Uploader une image de référence (JPG, PNG, WebP — max 5 Mo)
+                  </button>
+                ) : (
+                  <div style={{ position:'relative', borderRadius:'10px', overflow:'hidden', border:`1px solid ${B.gold}44` }}>
+                    <img src={imagePreview} alt="Référence" style={{ width:'100%', maxHeight:'180px', objectFit:'cover', display:'block' }}/>
+                    <div style={{ position:'absolute', inset:0, background:'rgba(10,0,8,0.55)',
+                      display:'flex', alignItems:'center', justifyContent:'center', gap:'10px' }}>
+                      <span style={{ fontSize:'11px', color:B.goldLight, fontWeight:'600' }}>✓ Zara analysera ce style</span>
+                      <button onClick={() => { setImagePreview(null); setImageBase64(null); setImageMediaType(null); if(fileInputRef.current) fileInputRef.current.value='' }}
+                        style={{ padding:'4px 10px', background:'rgba(255,107,107,0.2)', border:'1px solid rgba(255,107,107,0.4)',
+                          borderRadius:'6px', color:'#ff6b6b', fontSize:'10px', cursor:'pointer' }}>
+                        Retirer
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {error && <div style={{ color:'#ff6b6b', fontSize:'12px', marginBottom:'12px' }}>⚠ {error}</div>}
             <button onClick={generate} style={{ width:'100%', padding:'14px',
               background:`linear-gradient(135deg,${agent.color},${B.violetDeep})`,
@@ -370,18 +480,36 @@ function Modal({ agent, onClose }) {
                 {response}
               </div>
             </div>
-            <div style={{ display:'flex', gap:'10px', marginBottom:'12px' }}>
+            <div style={{ display:'flex', gap:'10px', marginBottom:'12px', flexWrap:'wrap' }}>
               <button onClick={() => { navigator.clipboard.writeText(response).then(() => { setCopied(true); setTimeout(()=>setCopied(false),2000) }) }}
-                style={{ flex:1, padding:'12px',
+                style={{ flex:1, minWidth:'140px', padding:'12px',
                   background: copied ? 'rgba(201,168,76,0.2)' : 'rgba(107,15,110,0.3)',
                   border:`1px solid ${copied ? B.gold : agent.color}55`, borderRadius:'10px',
                   color: copied ? B.goldLight : B.white, fontSize:'13px', fontWeight:'600', cursor:'pointer' }}>
-                {copied ? '✓ Copié !' : '📋 Copier la réponse'}
+                {copied ? '✓ Copié !' : '📋 Copier'}
               </button>
+              {isDesigner && (
+                <a href="https://www.canva.com/design/new" target="_blank" rel="noopener noreferrer"
+                  onClick={() => navigator.clipboard.writeText(response)}
+                  style={{ flex:1, minWidth:'140px', padding:'12px',
+                    background:'linear-gradient(135deg,#7c3aed,#4f46e5)',
+                    border:'1px solid #7c3aed88', borderRadius:'10px',
+                    color:B.white, fontSize:'13px', fontWeight:'700', cursor:'pointer',
+                    textDecoration:'none', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
+                  🎨 Ouvrir Canva
+                </a>
+              )}
             </div>
-            <button onClick={() => { setResponse(''); setData({}) }} style={{ width:'100%', padding:'10px',
-              background:'transparent', border:'1px solid rgba(250,248,251,0.12)', borderRadius:'10px',
-              color:'rgba(250,248,251,0.4)', fontSize:'12px', cursor:'pointer' }}>
+            {isDesigner && (
+              <div style={{ padding:'10px 14px', background:'rgba(201,168,76,0.07)', border:`1px solid ${B.gold}22`,
+                borderRadius:'8px', fontSize:'11px', color:'rgba(250,248,251,0.45)', marginBottom:'10px' }}>
+                💡 Le brief Canva est copié dans ton presse-papier. Clique "Ouvrir Canva" pour créer ton design avec ces specs.
+              </div>
+            )}
+            <button onClick={() => { setResponse(''); setData({}); setImagePreview(null); setImageBase64(null); setImageMediaType(null) }}
+              style={{ width:'100%', padding:'10px',
+                background:'transparent', border:'1px solid rgba(250,248,251,0.12)', borderRadius:'10px',
+                color:'rgba(250,248,251,0.4)', fontSize:'12px', cursor:'pointer' }}>
               ← Nouveau brief
             </button>
           </>
