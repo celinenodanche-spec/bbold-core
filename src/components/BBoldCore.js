@@ -119,16 +119,35 @@ function downloadMd(brief, steps) {
 
 const FORMS = {
   stratege: {
-    title: 'Brief Stratégique', subtitle: 'Maeva construit ton positionnement et ta Value Proposition Canvas.',
-    system: `Tu es Maeva, Stratège & Brief de B.BOLD Agency, experte en brand strategy pour les territoires insulaires français. Ton style : cash, structuré, bullet points pour les insights.`,
+    title: 'Brief Stratégique', subtitle: 'Maeva construit ton positionnement, ta VPC et identifie tes 3 concurrents directs.',
+    system: `Tu es Maeva, Stratège & Brief de B.BOLD Agency, experte en brand strategy pour les territoires insulaires français. Tu as une connaissance approfondie du tissu économique local — Martinique, Guadeloupe, Guyane, La Réunion et autres DOM-TOM. Ton style : cash, structuré, bullet points pour les insights.
+
+Pour chaque brief, tu identifies OBLIGATOIREMENT 3 concurrents directs réels dans le même département que le client, proposant le même type de produits ou services. Si tu ne connais pas d'acteurs locaux certains, tu identifies les types d'acteurs les plus probables avec leurs caractéristiques générales tout en le précisant. Tu analyses ensuite leurs positionnements pour en déduire le territoire disponible pour le client.`,
     fields: [
       { key:'client',   label:'Nom du client',      type:'text',     placeholder:'Ex: Caraïb Ediprint' },
-      { key:'secteur',  label:"Secteur d'activité", type:'text',     placeholder:'Ex: Imprimerie digitale, Martinique' },
+      { key:'secteur',  label:"Secteur & territoire", type:'text',    placeholder:'Ex: Imprimerie digitale, Martinique' },
       { key:'objectif', label:'Objectif principal', type:'select',   options:['Notoriété de marque','Génération de leads','Augmenter les ventes','Fidéliser la communauté'] },
       { key:'icp',      label:'Cible / ICP',        type:'textarea', placeholder:'Ex: TPE locales 30-50 ans, budget com < 2k/mois' },
       { key:'budget',   label:'Budget mensuel',     type:'text',     placeholder:'Ex: 1 500€/mois' },
     ],
-    userPrompt: (d) => `CLIENT : ${d.client||'—'}\nSECTEUR : ${d.secteur||'—'}\nOBJECTIF : ${d.objectif||'—'}\nCIBLE / ICP : ${d.icp||'—'}\nBUDGET : ${d.budget||'—'}\n\nMission :\n1. 3 insights clés sur ce marché local\n2. ICP détaillé\n3. Positionnement différenciant en 1 phrase\n4. Value Proposition Canvas complet\n5. 3 piliers éditoriaux`,
+    userPrompt: (d) => `CLIENT : ${d.client||'—'}
+SECTEUR & TERRITOIRE : ${d.secteur||'—'}
+OBJECTIF : ${d.objectif||'—'}
+CIBLE / ICP : ${d.icp||'—'}
+BUDGET : ${d.budget||'—'}
+
+Mission :
+1. 3 insights clés sur ce marché local (spécificités du territoire, comportements consommateurs, opportunités)
+2. ICP détaillé (profil, douleurs, déclencheurs d'achat)
+3. ANALYSE CONCURRENTIELLE — identifie toi-même 3 concurrents directs dans le même département proposant le même type de produits/services. Pour chacun :
+   - Nom + description courte
+   - Positionnement perçu (promesse, ton, cible apparente)
+   - Point fort identifiable
+   - Angle faible / territoire non exploité
+   → Conclusion : le positionnement disponible pour ${d.client||'le client'}
+4. Positionnement différenciant en 1 phrase (ancré dans les angles libres identifiés)
+5. Value Proposition Canvas complet
+6. 3 piliers éditoriaux`,
   },
   createur: {
     title: 'Brief Contenu', subtitle: 'Lola rédige tes posts, scripts et captions qui convertissent.',
