@@ -2,6 +2,8 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+export const runtime = 'edge'
+
 // Fetches clean text content from a URL — works for websites, not for JS-rendered social media
 async function fetchUrlContent(url) {
   if (!url || !url.startsWith('http')) return ''
@@ -33,7 +35,7 @@ const PIPELINE = [
   {
     id: 'stratege', prenom: 'Maeva', emoji: '🎯',
     model: 'claude-opus-4-5',
-    max_tokens: 4000,
+    max_tokens: 14000,
     folder: 'briefs/',
     system: `Tu es Maeva, Stratège & Brief de B.BOLD Agency, experte en brand strategy pour les territoires insulaires français (Martinique, Guadeloupe, Guyane). Style : cash, structuré, bullet points pour les insights. Sois précise et directe.`,
     buildPrompt: (b, ctx) => {
@@ -67,7 +69,7 @@ Mission :
   {
     id: 'createur', prenom: 'Lola', emoji: '✍️',
     model: 'claude-sonnet-4-5',
-    max_tokens: 2800,
+    max_tokens: 12000,
     folder: 'content/',
     system: `Tu es Lola, Créatrice de Contenu de B.BOLD Agency. Hook = 15 mots max. Jamais de listes à puces dans le corps des posts. Prose fluide, 3 paragraphes max. Style authentique et territorial si pertinent. Pas de clichés.`,
     buildPrompt: (b, ctx) =>
@@ -85,7 +87,7 @@ Mission :
   {
     id: 'designer', prenom: 'Zara', emoji: '🎨',
     model: 'claude-sonnet-4-5',
-    max_tokens: 2800,
+    max_tokens: 12000,
     folder: 'prompts-images/',
     system: `Tu es Zara, Designer de B.BOLD Agency, experte en direction artistique et prompts génératifs (Midjourney v6, Flux, DALL-E 3). Fournis des prompts techniques précis avec tous les paramètres.`,
     buildPrompt: (b, ctx) =>
@@ -103,7 +105,7 @@ Mission : Pour chacun des 3 posts de Lola :
   {
     id: 'analyste', prenom: 'Inès', emoji: '📊',
     model: 'claude-opus-4-5',
-    max_tokens: 4000,
+    max_tokens: 14000,
     folder: 'analytics/',
     system: `Tu es Inès, Analyste & Architecte du Plan 3D de B.BOLD Agency. Tableaux clairs, chiffres précis, actions SMART. Plan 4 semaines avec 3 actions par semaine.`,
     buildPrompt: (b, ctx) =>
@@ -123,7 +125,7 @@ Mission :
   {
     id: 'presentateur', prenom: 'Naïa', emoji: '🎤',
     model: 'claude-sonnet-4-5',
-    max_tokens: 2800,
+    max_tokens: 12000,
     folder: 'decks/',
     system: `Tu es Naïa, Présentatrice de B.BOLD Agency. Experte en storytelling (SOZA, Pyramide de Minto, Before/After). Structure narrative claire, slide-par-slide avec notes speaker.`,
     buildPrompt: (b, ctx) =>
@@ -208,7 +210,7 @@ Synthèse en 5 lignes utilisable comme brief stratégique.`
         try {
           const dvStream = await client.messages.stream({
             model: 'claude-opus-4-5',
-            max_tokens: 2500,
+            max_tokens: 8000,
             system: DEBELVOIX_SYSTEM,
             messages: [{ role: 'user', content: debelvoixPrompt }],
           })
@@ -238,17 +240,28 @@ Synthèse en 5 lignes utilisable comme brief stratégique.`
         try {
           const stream = await client.messages.stream({
             model: step.model,
-            max_tokens: step.max_tokens || 2800,
+            max_tokens: step.max_tokens || 10000,
             system: step.system,
             messages: [{ role: 'user', content: step.buildPrompt(brief, context) }],
           })
 
           let fullText = ''
+          let raisonArret = null
           for await (const chunk of stream) {
             if (chunk.type === 'content_block_delta' && chunk.delta?.text) {
               fullText += chunk.delta.text
               send({ type: 'step_chunk', index: i, agent: step.id, text: chunk.delta.text })
             }
+            if (chunk.type === 'message_delta' && chunk.delta?.stop_reason) {
+              raisonArret = chunk.delta.stop_reason
+            }
+          }
+          // Livrable coupé : on le dit dans le flux, sinon l'étape suivante
+          // repart d'un texte tronqué sans que personne ne s'en aperçoive.
+          if (raisonArret === 'max_tokens') {
+            const avis = `\n\n---\n⚠ DOCUMENT INCOMPLET — la limite de longueur a été atteinte.\nCe texte s'arrête au milieu. Ne l'envoie pas tel quel : relance en demandant une partie à la fois, ou augmente max_tokens pour cet agent.`
+            fullText += avis
+            send({ type: 'step_chunk', index: i, agent: step.id, text: avis })
           }
 
           context[step.outputKey] = fullText

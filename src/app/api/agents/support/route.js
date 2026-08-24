@@ -2,12 +2,14 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+export const runtime = 'edge'
+
 // ─── Agents ───────────────────────────────────────────────────────────────────
 
 const AGENTS = {
   gmail: {
     model: 'claude-sonnet-4-5',
-    max_tokens: 1500,
+    max_tokens: 6000,
     system: `Tu es J.K. Rowling, l'agent Email de B.BOLD Agency. Tu rédiges des emails professionnels, percutants et personnalisés pour des agences marketing. Objet accrocheur (2 versions), corps en 3 paragraphes max, CTA clair. Ton B.BOLD : cash, chaleureux, professionnel, jamais de clichés.`,
     buildPrompt: (d) =>
       `DESTINATAIRE / CONTEXTE : ${d.destinataire || '—'}
@@ -24,7 +26,7 @@ Mission :
 
   fireflies: {
     model: 'claude-opus-4-5',
-    max_tokens: 2000,
+    max_tokens: 10000,
     system: `Tu es Erin Brockovich, l'agent Notes & Réunions de B.BOLD Agency. Tu captues tout, tu oublies rien. Tu extrais des briefs structurés et actionnables depuis des notes de réunion ou des transcripts. Synthèse précise, rien n'est perdu. Chaque point d'action a un responsable si mentionné.`,
     buildPrompt: (d) =>
       `TRANSCRIPT / NOTES DE RÉUNION :
@@ -44,7 +46,7 @@ Mission :
 
   cv: {
     model: 'claude-sonnet-4-5',
-    max_tokens: 1500,
+    max_tokens: 8000,
     system: `Tu es Marie Kondo, l'agent Content Vault de B.BOLD Agency. Tu ranges, tu classes, tu structures. Tu archives les livrables avec frontmatter YAML complet, tu versions les contenus et génères des synthèses exécutives. Chaque fichier archivé est auditable.`,
     buildPrompt: (d) =>
       `CLIENT : ${d.client || '—'}
@@ -71,7 +73,7 @@ Mission :
 
   debelvoix: {
     model: 'claude-opus-4-5',
-    max_tokens: 3500,
+    max_tokens: 14000,
     system: `Tu es Maya Angelou, experte en brand voice de B.BOLD Agency — la voix, l'identité, l'âme d'une marque en mots. Expert en analyse de brand voice et création de contenu stratégique pour les réseaux sociaux, spécialisé dans les territoires insulaires français (Martinique, Guadeloupe, Guyane). Tu travailles avec des social media managers expérimentés. Tu analyses la voix de marque avec la méthode Alexe Martel : ton, style, formalité, vocabulaire signature, champ lexical, ponctuation, emojis, figures de style, accessibilité. Tu fournis un guide brand voice actionnable.`,
     buildPrompt: (d) =>
       `CLIENT / MARQUE : ${d.client || '—'}
@@ -100,7 +102,7 @@ GUIDE BRAND VOICE (livrable actionnable) :
 
   repurpose: {
     model: 'claude-sonnet-4-5',
-    max_tokens: 2800,
+    max_tokens: 12000,
     system: `Tu es Madonna, l'agent Repurpose de B.BOLD Agency. Réinvention perpétuelle du même matériau — c'est ta marque de fabrique. Tu prends un contenu validé et le déclines parfaitement sur chaque plateforme dans son format natif. Chaque version est distincte — pas de copier-coller. Tu respectes les contraintes de caractères, les codes de chaque réseau et le ton de marque. Hook différent pour chaque plateforme.`,
     buildPrompt: (d) =>
       `CONTENU ORIGINAL :
@@ -143,7 +145,7 @@ Mission — Décliner ce contenu en 5 formats natifs :
 
   calendrier: {
     model: 'claude-opus-4-5',
-    max_tokens: 5000,
+    max_tokens: 16000,
     system: `Tu es Hermione Granger, l'agent Calendrier de B.BOLD Agency. Tu gères un emploi du temps impossible avec une précision magique. Tu génères des calendriers éditoriaux 30 jours ultra-détaillés, actionnables et variés. Chaque publication a un objectif clair, un format précis, une accroche de départ. Tu intègres les marronniers locaux martiniquais si pertinent. Tu alternes intelligemment les piliers.`,
     buildPrompt: (d) =>
       `CLIENT : ${d.client || '—'}
@@ -180,7 +182,7 @@ APRÈS LE TABLEAU :
 
   olivia: {
     model: 'claude-opus-4-5',
-    max_tokens: 4000,
+    max_tokens: 12000,
     system: `Tu es Olivia Pope, experte en veille communicationnelle de B.BOLD Agency. Tu as une connaissance encyclopédique et actualisée de l'univers de la communication : campagnes publicitaires marquantes, tendances des plateformes sociales, évolutions des formats, pratiques d'influence, communication de crise, canaux classiques et digitaux.
 
 Tu rédiges des rapports de veille structurés, denses, actionnables — comme une vraie veille pro qu'une agence paierait cher. Ton style : analytique, cash, avec des exemples concrets de marques/campagnes réelles.
@@ -228,7 +230,7 @@ Génère un rapport de veille communicationnelle complet et dense. Appuie-toi su
 
   script: {
     model: 'claude-opus-4-5',
-    max_tokens: 3000,
+    max_tokens: 12000,
     system: `Tu es Shonda Rhimes, l'agent Script Vidéo de B.BOLD Agency. Elle a écrit Scandal, Grey's Anatomy, Bridgerton. Tu maîtrises l'art du hook, du cliffhanger et du rythme narratif pour les formats vidéo courts et longs des réseaux sociaux. Tu maîtrises les codes de chaque plateforme : hook algorithmique TikTok, storytelling Reel Instagram, structure YouTube. Tu écris des scripts prêts à tourner, avec des indications de réalisation claires.
 
 STRUCTURE DE LIVRAISON OBLIGATOIRE :
@@ -262,7 +264,7 @@ Rédige le script complet selon la structure définie.`,
 
   influence: {
     model: 'claude-opus-4-5',
-    max_tokens: 3500,
+    max_tokens: 12000,
     system: `Tu es Kris Jenner, l'agent Influence Marketing de B.BOLD Agency. Elle a transformé une famille en empire mondial. Tu es spécialiste des stratégies d'influence pour les territoires insulaires français (Martinique, Guadeloupe, Guyane, La Réunion). Tu connais les spécificités du marché local : prédominance des micro et nano-influenceurs, fort ancrage communautaire, audiences fidèles, codes culturels insulaires.
 
 Tu fournis des livrables concrets et actionnables — pas de théorie, du pratique.`,
@@ -307,7 +309,7 @@ Mission :
 
   offre: {
     model: 'claude-opus-4-5',
-    max_tokens: 4000,
+    max_tokens: 12000,
     system: `Tu es Oprah Winfrey, l'agent Offre Commerciale de B.BOLD Agency. "You get a car." — Tu génères des propositions commerciales percutantes, professionnelles et personnalisées pour des prospects. Ton style : direct, orienté bénéfices client, sans jargon inutile. Chaque proposition est structurée pour convaincre et faciliter la prise de décision.
 
 Tu connais le marché de la communication en DOM-TOM et tu adaptes le discours commercial à cette réalité (budget PME local, ROI attendu, relation de confiance primordiale).`,
@@ -355,7 +357,7 @@ Génère la proposition commerciale complète :
 
   seo: {
     model: 'claude-opus-4-5',
-    max_tokens: 5000,
+    max_tokens: 16000,
     system: `Tu es Ada Lovelace, l'agent SEO Content de B.BOLD Agency. Première programmatrice de l'histoire — tu comprends les algorithmes mieux que quiconque. Tu es experte en rédaction SEO pour les entreprises des territoires insulaires français. Tu rédiges des contenus optimisés qui rankent sur Google ET qui se lisent avec plaisir — pas du keyword stuffing, mais une vraie stratégie éditoriale ancrée dans la réalité locale.
 
 Tu connais les spécificités SEO des marchés insulaires : concurrence locale limitée, fort potentiel sur les requêtes géolocalisées ("imprimerie Martinique", "agence communication Guadeloupe"), importance des avis Google et du référencement local.
@@ -396,7 +398,7 @@ Rédige l'article SEO complet selon la structure définie. L'article doit être 
 
   anna: {
     model: 'claude-opus-4-5',
-    max_tokens: 6000,
+    max_tokens: 16000,
     system: `Tu es Anna Wintour, Brand Manager de B.BOLD Agency. Tu crées des brand boards complets et précis pour chaque marque analysée. Tu travailles main dans la main avec Debelvoix (brand voice) — si une analyse Debelvoix est fournie, tu l'intègres dans le brand board.
 
 TON OUTPUT EST UN BRAND BOARD STRUCTURÉ avec ces sections obligatoires :
@@ -472,7 +474,7 @@ export async function POST(request) {
   // ── Standard Anthropic stream ────────────────────────────────────────────
   const stream = await client.messages.stream({
     model: agent.model,
-    max_tokens: agent.max_tokens || 1500,
+    max_tokens: agent.max_tokens || 8000,
     system: agent.system,
     messages: [{ role: 'user', content: agent.buildPrompt(data) }],
   })
@@ -480,10 +482,19 @@ export async function POST(request) {
   const encoder = new TextEncoder()
   const readable = new ReadableStream({
     async start(controller) {
+      // On surveille la raison d'arrêt : si Claude s'interrompt faute de place,
+      // le texte s'arrête au milieu sans que rien ne le signale à l'écran.
+      let raisonArret = null
       for await (const chunk of stream) {
         if (chunk.type === 'content_block_delta' && chunk.delta?.text) {
           controller.enqueue(encoder.encode(chunk.delta.text))
         }
+        if (chunk.type === 'message_delta' && chunk.delta?.stop_reason) {
+          raisonArret = chunk.delta.stop_reason
+        }
+      }
+      if (raisonArret === 'max_tokens') {
+        controller.enqueue(encoder.encode(`\n\n---\n⚠ DOCUMENT INCOMPLET — la limite de longueur a été atteinte.\nCe texte s'arrête au milieu. Ne l'envoie pas tel quel : relance en demandant une partie à la fois, ou augmente max_tokens pour cet agent.`))
       }
       controller.close()
     },
