@@ -74,9 +74,16 @@ function getAvatarPath(id) {
   return `/avatars/${map[id]}.png`
 }
 
-// ─── History helpers ──────────────────────────────────────────────────────────
+// ─── Historique ───────────────────────────────────────────────────────────────
+// Deux types d'entrées cohabitent :
+//   type 'campagne' → un passage complet du pipeline, plusieurs livrables
+//   type 'agent'    → un agent support lancé seul, un livrable
+// Chaque entrée conserve `messages`, l'historique de conversation, pour
+// permettre de demander une retouche sans tout recommencer.
 
 const HISTORY_KEY = 'bbold_history'
+const PRESETS_KEY = 'bbold_presets'
+const MAX_ENTREES = 60
 
 function loadHistory() {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]') } catch { return [] }
@@ -85,7 +92,16 @@ function loadHistory() {
 function saveToHistory(entry) {
   try {
     const prev = loadHistory()
-    localStorage.setItem(HISTORY_KEY, JSON.stringify([entry, ...prev].slice(0, 20)))
+    localStorage.setItem(HISTORY_KEY, JSON.stringify([entry, ...prev].slice(0, MAX_ENTREES)))
+  } catch {}
+}
+
+// Remplace une entrée existante, ou l'ajoute si elle n'y est pas.
+// Utilisé après une retouche : on met à jour au lieu d'empiler des doublons.
+function upsertHistory(entry) {
+  try {
+    const prev = loadHistory().filter(e => e.id !== entry.id)
+    localStorage.setItem(HISTORY_KEY, JSON.stringify([entry, ...prev].slice(0, MAX_ENTREES)))
   } catch {}
 }
 
@@ -93,6 +109,28 @@ function deleteFromHistory(id) {
   try {
     const prev = loadHistory()
     localStorage.setItem(HISTORY_KEY, JSON.stringify(prev.filter(e => e.id !== id)))
+  } catch {}
+}
+
+// ─── Configurations de pipeline par client ────────────────────────────────────
+// Une cliente n'a pas les mêmes besoins qu'une autre. On mémorise quels agents
+// composent son pipeline, pour ne pas les resélectionner à chaque campagne.
+
+function loadPresets() {
+  try { return JSON.parse(localStorage.getItem(PRESETS_KEY) || '[]') } catch { return [] }
+}
+
+function savePreset(preset) {
+  try {
+    const prev = loadPresets().filter(p => p.nom.toLowerCase() !== preset.nom.toLowerCase())
+    localStorage.setItem(PRESETS_KEY, JSON.stringify([preset, ...prev].slice(0, 40)))
+  } catch {}
+}
+
+function deletePreset(nom) {
+  try {
+    const prev = loadPresets().filter(p => p.nom.toLowerCase() !== nom.toLowerCase())
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(prev))
   } catch {}
 }
 
@@ -778,26 +816,174 @@ function NotionSaveWidget({ response, agentEmoji, agentName, clientName, accentC
   )
 }
 
+
+// ─── Retouche ─────────────────────────────────────────────────────────────────
+// Permet de demander une modification sur un livrable déjà produit, sans tout
+// relancer. L'agent reçoit sa propre réponse et la consigne de retouche : il
+// reprend son travail au lieu de repartir de zéro.
+
+function BlocRetouche({ accent, onRetoucher, enCours, historiqueRetouches = [] }) {
+  const [ouvert, setOuvert] = useState(false)
+  const [demande, setDemande] = useState('')
+
+  const lancer = () => {
+    const d = demande.trim()
+    if (!d || enCours) return
+    setDemande('')
+    setOuvert(false)
+    onRetoucher(d)
+  }
+
+  return (
+    <div style={{ marginTop:'14px' }}>
+      {historiqueRetouches.length > 0 && (
+        <div style={{ marginBottom:'10px', display:'flex', flexWrap:'wrap', gap:'6px' }}>
+          {historiqueRetouches.map((r, i) => (
+            <span key={i} title={r} style={{
+              fontSize:'10px', padding:'3px 9px', borderRadius:'20px',
+              background:`${accent}12`, border:`1px solid ${accent}33`,
+              color:'rgba(250,248,251,0.55)', maxWidth:'260px',
+              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+            }}>
+              retouche {i + 1} · {r}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {!ouvert ? (
+        <button
+          onClick={() => setOuvert(true)}
+          disabled={enCours}
+          style={{
+            width:'100%', padding:'11px', borderRadius:'10px',
+            background:'transparent', border:`1px dashed ${accent}55`,
+            color: enCours ? 'rgba(250,248,251,0.25)' : accent,
+            fontSize:'12.5px', fontWeight:'600',
+            cursor: enCours ? 'not-allowed' : 'pointer',
+          }}
+        >
+          ✎ Demander une modification
+        </button>
+      ) : (
+        <div style={{
+          padding:'14px', borderRadius:'10px',
+          background:`${accent}0a`, border:`1px solid ${accent}33`,
+        }}>
+          <div style={{ fontSize:'10px', letterSpacing:'0.15em', color:accent, fontWeight:'600', marginBottom:'8px' }}>
+            QUE VEUX-TU CHANGER ?
+          </div>
+          <textarea
+            value={demande}
+            onChange={e => setDemande(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) lancer() }}
+            rows={3}
+            autoFocus
+            placeholder="Ex : raccourcis les hooks, enlève les emojis, ajoute un CTA à la fin, ton plus direct…"
+            style={{
+              width:'100%', padding:'10px 13px', boxSizing:'border-box',
+              background:'rgba(0,0,0,0.3)', border:'1px solid rgba(250,248,251,0.12)',
+              borderRadius:'8px', color:'rgba(250,248,251,0.9)',
+              fontSize:'13px', lineHeight:'1.6', outline:'none', resize:'vertical',
+            }}
+          />
+          <div style={{ display:'flex', gap:'8px', marginTop:'10px' }}>
+            <button
+              onClick={lancer}
+              disabled={!demande.trim()}
+              style={{
+                flex:1, padding:'10px', borderRadius:'8px', border:'none',
+                background: demande.trim() ? accent : 'rgba(250,248,251,0.06)',
+                color: demande.trim() ? '#0a0008' : 'rgba(250,248,251,0.25)',
+                fontSize:'12.5px', fontWeight:'700',
+                cursor: demande.trim() ? 'pointer' : 'not-allowed',
+              }}
+            >
+              Appliquer la modification
+            </button>
+            <button
+              onClick={() => { setOuvert(false); setDemande('') }}
+              style={{
+                padding:'10px 18px', borderRadius:'8px',
+                background:'transparent', border:'1px solid rgba(250,248,251,0.12)',
+                color:'rgba(250,248,251,0.4)', fontSize:'12.5px', cursor:'pointer',
+              }}
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Consigne envoyée à l'agent pour une retouche. Volontairement stricte :
+// sans elle, l'agent a tendance à tout réécrire ou à commenter ses changements.
+function consigneRetouche(demande) {
+  return `Reprends le livrable que tu viens de produire et applique cette modification :
+
+${demande}
+
+Renvoie le livrable COMPLET et corrigé, dans le même format que précédemment.
+Ne commente pas tes changements, ne mets pas de préambule, ne résume pas ce que
+tu as modifié. Sors uniquement le document final.`
+}
+
 // ─── SupportModal ─────────────────────────────────────────────────────────────
 
-function SupportModal({ agent, onClose }) {
+function SupportModal({ agent, onClose, entreeExistante = null, onSaved }) {
   const form = SUPPORT_FORMS[agent.id]
-  const [data, setData] = useState({})
-  const [response, setResponse] = useState('')
+  const [data, setData] = useState(entreeExistante?.data || {})
+  const [response, setResponse] = useState(entreeExistante?.output || '')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
+
+  // Conversation complète, conservée pour permettre les retouches successives.
+  const [messages, setMessages] = useState(entreeExistante?.messages || [])
+  const [retouches, setRetouches] = useState(entreeExistante?.retouches || [])
+  // Identifiant stable : une retouche met à jour l'entrée, elle n'en crée pas
+  // une nouvelle à chaque fois.
+  const idRef = useRef(entreeExistante?.id || null)
 
   const isOlivia = agent.id === 'olivia'
   const isAnna   = agent.id === 'anna'
   const hasDownload = isOlivia || isAnna
 
-  async function generate() {
-    setLoading(true); setResponse(''); setError('')
+  // Enregistre le livrable pour qu'il survive à la fermeture de la modale.
+  function enregistrer(texte, conversation, listeRetouches) {
+    if (!texte || !texte.trim()) return
+    if (!idRef.current) idRef.current = Date.now()
+    upsertHistory({
+      id: idRef.current,
+      type: 'agent',
+      agentId: agent.id,
+      agentName: agent.name,
+      agentEmoji: agent.emoji,
+      titre: form?.title || agent.name,
+      date: new Date().toISOString().split('T')[0],
+      horodatage: new Date().toISOString(),
+      client: data.client || data.marque || data.nom_client || '',
+      data,
+      output: texte,
+      messages: conversation,
+      retouches: listeRetouches,
+    })
+    if (onSaved) onSaved()
+  }
+
+  // Appel générique : soit la demande initiale, soit une retouche.
+  async function appeler(conversation) {
+    setLoading(true); setError('')
     try {
       const res = await fetch('/api/agents/support', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ agentId:agent.id, ...data }),
+        body: JSON.stringify({
+          agentId: agent.id,
+          ...data,
+          ...(conversation ? { messages: conversation } : {}),
+        }),
       })
       if (!res.ok) throw new Error(`Erreur ${res.status}`)
       const reader = res.body.getReader(); const decoder = new TextDecoder(); let text = ''
@@ -805,8 +991,39 @@ function SupportModal({ agent, onClose }) {
         const { done, value } = await reader.read(); if (done) break
         text += decoder.decode(value, { stream:true }); setResponse(text)
       }
-    } catch (e) { setError(e.message || 'Erreur inconnue') }
-    finally { setLoading(false) }
+      return text
+    } catch (e) {
+      setError(e.message || 'Erreur inconnue')
+      return null
+    } finally { setLoading(false) }
+  }
+
+  async function generate() {
+    setResponse(''); setRetouches([]); idRef.current = null
+    const texte = await appeler(null)
+    if (texte == null) return
+    // On reconstitue la conversation : la route a construit le premier message
+    // à partir du formulaire, on le rejoue ici sous forme lisible.
+    const conv = [
+      { role:'user', content: `[Demande initiale — ${form?.title || agent.name}]\n` + JSON.stringify(data, null, 2) },
+      { role:'assistant', content: texte },
+    ]
+    setMessages(conv)
+    enregistrer(texte, conv, [])
+  }
+
+  async function retoucher(demande) {
+    const base = messages.length > 0
+      ? messages
+      : [{ role:'user', content:'[Demande initiale]' }, { role:'assistant', content: response }]
+    const conv = [...base, { role:'user', content: consigneRetouche(demande) }]
+    setResponse('')
+    const texte = await appeler(conv)
+    if (texte == null) return
+    const suite = [...conv, { role:'assistant', content: texte }]
+    const listeRetouches = [...retouches, demande]
+    setMessages(suite); setRetouches(listeRetouches)
+    enregistrer(texte, suite, listeRetouches)
   }
 
   const loadingMsg = isOlivia
@@ -883,6 +1100,19 @@ function SupportModal({ agent, onClose }) {
                 lineHeight:'1.75', whiteSpace:'pre-wrap', maxHeight:'420px', overflowY:'auto', fontFamily:'system-ui,sans-serif' }}>
                 {response}
               </div>
+            </div>
+
+            {/* ── RETOUCHE ────────────────────────────────────────── */}
+            <BlocRetouche
+              accent={agent.accent || agent.color}
+              onRetoucher={retoucher}
+              enCours={loading}
+              historiqueRetouches={retouches}
+            />
+
+            <div style={{ fontSize:'10.5px', color:'rgba(250,248,251,0.3)', margin:'10px 0 14px' }}>
+              Ce livrable est enregistré dans l'onglet Historique — tu le retrouveras
+              après avoir fermé cette fenêtre.
             </div>
 
             {/* ── ACTIONS ─────────────────────────────────────────── */}
@@ -1219,8 +1449,41 @@ Analyse ce projet et sélectionne les agents B.BOLD les plus adaptés.`
 function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }) {
   const [phase, setPhase] = useState('form')
   const [brief, setBrief] = useState(initialBrief || {})
-  const [activeSelectedAgents] = useState(initialSelectedAgents || null)
+  // Sélection modifiable : l'orchestrateur propose, la cliente dispose.
+  const [activeSelectedAgents, setActiveSelectedAgents] = useState(initialSelectedAgents || null)
+  const [presets, setPresets] = useState([])
+  const [nomPreset, setNomPreset] = useState('')
+  useEffect(() => { setPresets(loadPresets()) }, [])
+
+  // Bascule un agent dans ou hors du pipeline. On ne descend jamais à zéro :
+  // un pipeline vide n'a pas de sens et le bouton de lancement resterait mort.
+  function basculerAgent(id) {
+    const actuels = activeSelectedAgents && activeSelectedAgents.length > 0
+      ? activeSelectedAgents
+      : PIPELINE_STEPS.map(x => x.id)
+    const suite = actuels.includes(id) ? actuels.filter(x => x !== id) : [...actuels, id]
+    if (suite.length === 0) return
+    // On conserve l'ordre du pipeline : les étapes se nourrissent l'une l'autre.
+    setActiveSelectedAgents(PIPELINE_STEPS.filter(x => suite.includes(x.id)).map(x => x.id))
+  }
+
+  function enregistrerPreset() {
+    const nom = (nomPreset || brief.client || '').trim()
+    if (!nom) return
+    savePreset({ nom, agents: effectiveSteps.map(x => x.id), maj: new Date().toISOString() })
+    setPresets(loadPresets())
+    setNomPreset('')
+  }
+
+  function appliquerPreset(preset) {
+    setActiveSelectedAgents(preset.agents)
+    if (!brief.client) setBrief(b => ({ ...b, client: preset.nom }))
+  }
   const [showUrlFields, setShowUrlFields] = useState(false)
+
+  const promptsRef = useRef({})
+  const [retouchesEtapes, setRetouchesEtapes] = useState({})
+  const [retoucheEnCours, setRetoucheEnCours] = useState(null)
 
   const effectiveSteps = (activeSelectedAgents && activeSelectedAgents.length > 0)
     ? PIPELINE_STEPS.filter(s => activeSelectedAgents.includes(s.id))
@@ -1354,6 +1617,58 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
     return true
   }
 
+  // Retouche d'une étape déjà produite. On rejoue la conversation de cette
+  // agente uniquement : les autres étapes ne bougent pas.
+  async function retoucherEtape(step, demande) {
+    const actuel = stepStatuses[step.id]?.output
+    if (!actuel) return
+    setRetoucheEnCours(step.id)
+    try {
+      const base = [
+        { role:'user', content: promptsRef.current[step.id] || '[Demande initiale]' },
+        { role:'assistant', content: actuel },
+      ]
+      const conv = [...base, { role:'user', content: consigneRetouche(demande) }]
+
+      const res = await fetch('/api/orchestrate', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          ...brief,
+          selected_agents: effectiveSteps.map(x => x.id),
+          mode:'step',
+          stepIndex: effectiveSteps.findIndex(x => x.id === step.id),
+          messages: conv,
+        }),
+      })
+      if (!res.ok) throw new Error(`Erreur ${res.status}`)
+
+      const reader = res.body.getReader(); const decoder = new TextDecoder()
+      let buffer = '', texte = ''
+      while (true) {
+        const { done, value } = await reader.read(); if (done) break
+        buffer += decoder.decode(value, { stream:true })
+        const lines = buffer.split('\n'); buffer = lines.pop() ?? ''
+        for (const line of lines) {
+          if (!line.trim()) continue
+          let ev; try { ev = JSON.parse(line) } catch (_) { continue }
+          if (ev.type === 'step_chunk') {
+            texte += ev.text
+            setStepStatuses(prev => ({ ...prev, [step.id]: { ...prev[step.id], output: texte } }))
+          }
+          if (ev.type === 'step_error') throw new Error(ev.error || 'Erreur agent')
+        }
+      }
+
+      allOutputsRef.current[step.id] = texte
+      setRetouchesEtapes(prev => ({ ...prev, [step.id]: [...(prev[step.id] || []), demande] }))
+      enregistrerCampagne(false)   // la campagne est mise à jour dans l'historique
+    } catch (e) {
+      setError(`Retouche ${step.prenom} : ${e.message}`)
+    } finally {
+      setRetoucheEnCours(null)
+    }
+  }
+
   function processEvent(event) {
     switch (event.type) {
       case 'pre_step_start':
@@ -1401,7 +1716,11 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
       case 'step_done': {
         const out = currentOutputRef.current
         allOutputsRef.current[event.agent] = out
+        // Le prompt de départ est conservé : il devient le premier message de
+        // la conversation si l'on demande une retouche sur cette étape.
+        if (event.promptInitial) promptsRef.current[event.agent] = event.promptInitial
         setStepStatuses(prev => ({ ...prev, [event.agent]: { ...prev[event.agent], status:'done', output:out } }))
+        setPhase(p => p)
         break
       }
 
@@ -1469,20 +1788,111 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
           {/* ── PHASE FORM ── */}
           {phase === 'form' && (
             <div style={{ flex:1, padding:'20px 24px 24px', overflowY:'auto' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'20px', padding:'10px 14px',
-                background:B.surface, border:`1px solid ${B.border}`, borderRadius:'12px', flexWrap:'wrap' }}>
-                {effectiveSteps.map((step, i) => (
-                  <div key={step.id} style={{ display:'flex', alignItems:'center', gap:'6px', flexShrink:0 }}>
-                    <span style={{ padding:'4px 10px', borderRadius:'20px', fontSize:'10px', fontWeight:'700',
-                      background:`${step.color}18`, border:`1px solid ${step.color}44`, color:B.white }}>
-                      {step.emoji} {step.prenom}
+              {/* ── COMPOSITION DU PIPELINE ──────────────────────────── */}
+              <div style={{ marginBottom:'20px', padding:'14px', background:B.surface,
+                border:`1px solid ${B.border}`, borderRadius:'12px' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px', flexWrap:'wrap' }}>
+                  <span style={{ fontSize:'9px', letterSpacing:'0.16em', color:B.gold, fontWeight:'700' }}>
+                    COMPOSITION DU PIPELINE
+                  </span>
+                  <span style={{ fontSize:'10px', color:'rgba(250,248,251,0.3)' }}>
+                    clique pour retirer ou remettre une agente
+                  </span>
+                  {activeSelectedAgents && initialSelectedAgents && (
+                    <span style={{ marginLeft:'auto', fontSize:'8px', color:B.gold, opacity:0.6 }}>
+                      proposé par l'Orchestrateur
                     </span>
-                    {i < effectiveSteps.length - 1 && <span style={{ fontSize:'10px', color:B.gold, opacity:0.45 }}>→</span>}
+                  )}
+                </div>
+
+                <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
+                  {PIPELINE_STEPS.map(step => {
+                    const actif = effectiveSteps.some(x => x.id === step.id)
+                    const seule = actif && effectiveSteps.length === 1
+                    return (
+                      <button
+                        key={step.id}
+                        onClick={() => basculerAgent(step.id)}
+                        disabled={seule}
+                        title={seule ? 'Au moins une agente doit rester' : (actif ? 'Retirer du pipeline' : 'Ajouter au pipeline')}
+                        style={{
+                          padding:'5px 11px', borderRadius:'20px', fontSize:'10.5px', fontWeight:'700',
+                          background: actif ? `${step.color}22` : 'transparent',
+                          border:`1px solid ${actif ? step.color + '77' : 'rgba(250,248,251,0.12)'}`,
+                          color: actif ? B.white : 'rgba(250,248,251,0.3)',
+                          cursor: seule ? 'not-allowed' : 'pointer',
+                          textDecoration: actif ? 'none' : 'line-through',
+                        }}
+                      >
+                        {step.emoji} {step.prenom}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div style={{ fontSize:'10px', color:'rgba(250,248,251,0.35)', marginTop:'9px' }}>
+                  {effectiveSteps.length} agente{effectiveSteps.length > 1 ? 's' : ''} ·{' '}
+                  {effectiveSteps.map(x => x.prenom).join(' → ')}
+                </div>
+
+                {/* ── Configurations mémorisées ─────────────────────── */}
+                <div style={{ marginTop:'12px', paddingTop:'12px', borderTop:`1px solid ${B.border}` }}>
+                  {presets.length > 0 && (
+                    <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginBottom:'9px' }}>
+                      {presets.map(pr => (
+                        <span key={pr.nom} style={{ display:'inline-flex', alignItems:'center' }}>
+                          <button
+                            onClick={() => appliquerPreset(pr)}
+                            title={pr.agents.length + ' agentes'}
+                            style={{
+                              padding:'4px 9px', borderRadius:'20px 0 0 20px', fontSize:'10px',
+                              background:`${B.gold}12`, border:`1px solid ${B.gold}33`, borderRight:'none',
+                              color:B.goldLight, cursor:'pointer',
+                            }}
+                          >
+                            {pr.nom} · {pr.agents.length}
+                          </button>
+                          <button
+                            onClick={() => { deletePreset(pr.nom); setPresets(loadPresets()) }}
+                            title="Oublier cette configuration"
+                            style={{
+                              padding:'4px 7px', borderRadius:'0 20px 20px 0', fontSize:'10px',
+                              background:`${B.gold}08`, border:`1px solid ${B.gold}33`,
+                              color:'rgba(250,248,251,0.3)', cursor:'pointer',
+                            }}
+                          >×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{ display:'flex', gap:'6px' }}>
+                    <input
+                      value={nomPreset}
+                      onChange={e => setNomPreset(e.target.value)}
+                      placeholder={brief.client ? `Mémoriser pour ${brief.client}` : 'Nom du client…'}
+                      style={{
+                        flex:1, padding:'7px 11px', boxSizing:'border-box',
+                        background:'rgba(0,0,0,0.25)', border:'1px solid rgba(250,248,251,0.1)',
+                        borderRadius:'8px', color:'rgba(250,248,251,0.85)', fontSize:'11.5px', outline:'none',
+                      }}
+                    />
+                    <button
+                      onClick={enregistrerPreset}
+                      disabled={!(nomPreset || brief.client || '').trim()}
+                      style={{
+                        padding:'7px 14px', borderRadius:'8px', fontSize:'11.5px', fontWeight:'600',
+                        background: (nomPreset || brief.client) ? `${B.gold}18` : 'transparent',
+                        border:`1px solid ${B.gold}33`,
+                        color: (nomPreset || brief.client) ? B.goldLight : 'rgba(250,248,251,0.2)',
+                        cursor: (nomPreset || brief.client) ? 'pointer' : 'not-allowed',
+                        whiteSpace:'nowrap',
+                      }}
+                    >
+                      Mémoriser
+                    </button>
                   </div>
-                ))}
-                {activeSelectedAgents && (
-                  <span style={{ marginLeft:'auto', fontSize:'8px', color:B.gold, opacity:0.6, flexShrink:0 }}>via Orchestrateur</span>
-                )}
+                </div>
               </div>
 
               {CAMPAIGN_FIELDS.map(field => (
@@ -1732,6 +2142,18 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                                   color: copied===step.id ? step.color : B.white, fontSize:'11px', cursor:'pointer' }}>
                                 {copied===step.id ? '✓ Copié' : '📋 Copier'}
                               </button>
+
+                              <BlocRetouche
+                                accent={step.color}
+                                onRetoucher={d => retoucherEtape(step, d)}
+                                enCours={retoucheEnCours === step.id}
+                                historiqueRetouches={retouchesEtapes[step.id] || []}
+                              />
+                              {retoucheEnCours === step.id && (
+                                <div style={{ fontSize:'11px', color:step.color, marginTop:'8px' }}>
+                                  {step.prenom} retravaille son livrable…
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1860,6 +2282,9 @@ export default function BBoldCore() {
   const [showOrchestrator, setShowOrchestrator] = useState(false)
   const [campaignInitialBrief, setCampaignInitialBrief] = useState(null)
   const [campaignSelectedAgents, setCampaignSelectedAgents] = useState(null)
+  // Livrable d'agent rouvert depuis l'historique : on remonte la conversation
+  // pour pouvoir enchaîner une nouvelle retouche.
+  const [viewingAgentEntry, setViewingAgentEntry] = useState(null)
   const [historyItems, setHistoryItems] = useState([])
   const [viewingHistory, setViewingHistory] = useState(null)
 
@@ -1902,10 +2327,29 @@ export default function BBoldCore() {
       `}</style>
 
       {activeAgent        && <Modal             agent={activeAgent}        onClose={()=>setActiveAgent(null)}/>}
-      {activeSupportAgent && <SupportModal       agent={activeSupportAgent} onClose={()=>setActiveSupportAgent(null)}/>}
+      {activeSupportAgent && (
+        <SupportModal
+          agent={activeSupportAgent}
+          onClose={() => { setActiveSupportAgent(null); setHistoryItems(loadHistory()) }}
+          onSaved={() => setHistoryItems(loadHistory())}
+        />
+      )}
       {showOrchestrator   && <OrchestratorModal  onClose={()=>setShowOrchestrator(false)} onLaunch={handleOrchestratorLaunch}/>}
       {showCampaign       && <CampaignModal       onClose={handleCloseCampaign} onSaved={refreshHistory}
                                initialBrief={campaignInitialBrief} initialSelectedAgents={campaignSelectedAgents}/>}
+
+      {viewingAgentEntry && (() => {
+        const ag = SUPPORT_AGENTS.find(a => a.id === viewingAgentEntry.agentId)
+        if (!ag) return null
+        return (
+          <SupportModal
+            agent={ag}
+            entreeExistante={viewingAgentEntry}
+            onClose={() => { setViewingAgentEntry(null); setHistoryItems(loadHistory()) }}
+            onSaved={() => setHistoryItems(loadHistory())}
+          />
+        )
+      })()}
       {viewingHistory     && <HistoryModal        campaign={viewingHistory}   onClose={()=>setViewingHistory(null)}/>}
 
       {/* Header */}
@@ -2030,10 +2474,13 @@ export default function BBoldCore() {
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'24px' }}>
               <div>
                 <h2 style={{ fontFamily:'Georgia,serif', fontSize:'22px', fontWeight:'900', color:B.white, marginBottom:'4px' }}>
-                  Historique des campagnes
+                  Historique
                 </h2>
                 <p style={{ fontSize:'12px', color:'rgba(250,248,251,0.4)' }}>
-                  {historyItems.length === 0 ? 'Aucune campagne sauvegardée.' : `${historyItems.length} campagne${historyItems.length > 1 ? 's' : ''} — 20 max`}
+                  {historyItems.length === 0
+                    ? 'Rien d\'enregistré pour l\'instant.'
+                    : `${historyItems.filter(i => i.type !== 'agent').length} campagne(s) · ` +
+                      `${historyItems.filter(i => i.type === 'agent').length} livrable(s) d'agent — ${MAX_ENTREES} max`}
                 </p>
               </div>
               {historyItems.length > 0 && (
@@ -2048,7 +2495,7 @@ export default function BBoldCore() {
             {historyItems.length === 0 && (
               <div style={{ textAlign:'center', padding:'60px 0', color:'rgba(250,248,251,0.2)', fontSize:'14px' }}>
                 <div style={{ fontSize:'36px', marginBottom:'12px' }}>📭</div>
-                Lance une campagne complète pour la voir apparaître ici.
+                Lance une campagne ou un agent : tout ce qui est produit atterrit ici.
               </div>
             )}
             <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
@@ -2056,29 +2503,59 @@ export default function BBoldCore() {
                 <div key={item.id} style={{ background:B.surface, border:`1px solid ${B.border}`,
                   borderRadius:'14px', padding:'16px 20px', display:'flex', alignItems:'center', gap:'16px', flexWrap:'wrap' }}>
                   <div style={{ flex:1, minWidth:'200px' }}>
-                    <div style={{ fontFamily:'Georgia,serif', fontSize:'16px', fontWeight:'800', color:B.white, marginBottom:'3px' }}>
-                      {item.client}
+                    <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'3px', flexWrap:'wrap' }}>
+                      <span style={{ fontFamily:'Georgia,serif', fontSize:'16px', fontWeight:'800', color:B.white }}>
+                        {item.type === 'agent'
+                          ? `${item.agentEmoji || '✦'} ${item.agentName || item.titre}`
+                          : (item.client || 'Campagne')}
+                      </span>
+                      {item.type === 'agent' && (
+                        <span style={{ padding:'2px 8px', borderRadius:'20px', fontSize:'9px', fontWeight:'700',
+                          background:`${B.violetDeep}33`, border:`1px solid ${B.violetDeep}66`, color:'rgba(250,248,251,0.7)' }}>
+                          AGENT SEUL
+                        </span>
+                      )}
+                      {item.partiel && (
+                        <span style={{ padding:'2px 8px', borderRadius:'20px', fontSize:'9px', fontWeight:'700',
+                          background:'rgba(255,107,107,0.12)', border:'1px solid rgba(255,107,107,0.3)', color:'rgba(255,107,107,0.8)' }}>
+                          PARTIELLE
+                        </span>
+                      )}
+                      {item.retouches?.length > 0 && (
+                        <span style={{ padding:'2px 8px', borderRadius:'20px', fontSize:'9px',
+                          background:`${B.gold}14`, border:`1px solid ${B.gold}33`, color:B.goldLight }}>
+                          {item.retouches.length} retouche{item.retouches.length > 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize:'11px', color:'rgba(250,248,251,0.4)' }}>
                       {item.date}
+                      {item.type === 'agent' && item.client && <span style={{ marginLeft:'10px', color:B.gold }}>{item.client}</span>}
                       {item.objectif   && <span style={{ marginLeft:'10px', color:B.gold }}>{item.objectif}</span>}
                       {item.plateformes && <span style={{ marginLeft:'10px', color:'rgba(250,248,251,0.3)' }}>{item.plateformes}</span>}
                       {item.secteur    && <span style={{ marginLeft:'10px', color:'rgba(250,248,251,0.25)' }}>{item.secteur}</span>}
+                      {item.type === 'agent' && item.output && (
+                        <span style={{ marginLeft:'10px', color:'rgba(250,248,251,0.25)' }}>
+                          {item.output.trim().split(/\s+/).length} mots
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div style={{ display:'flex', gap:'8px', flexShrink:0 }}>
-                    <div style={{ display:'flex', gap:'4px', alignItems:'center' }}>
-                      {PIPELINE_STEPS.map(step => (
-                        <div key={step.id} title={step.prenom}
-                          style={{ width:'22px', height:'22px', borderRadius:'50%', overflow:'hidden',
-                            border:`1.5px solid ${item.outputs[step.id] ? step.color+'88' : 'rgba(250,248,251,0.1)'}`,
-                            opacity: item.outputs[step.id] ? 1 : 0.25 }}>
-                          <img src={getAvatarPath(step.id)} alt={step.prenom}
-                            style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top' }}/>
-                        </div>
-                      ))}
-                    </div>
-                    <button onClick={() => setViewingHistory(item)} style={{ padding:'7px 16px',
+                    {item.type !== 'agent' && (
+                      <div style={{ display:'flex', gap:'4px', alignItems:'center' }}>
+                        {PIPELINE_STEPS.map(step => (
+                          <div key={step.id} title={step.prenom}
+                            style={{ width:'22px', height:'22px', borderRadius:'50%', overflow:'hidden',
+                              border:`1.5px solid ${item.outputs?.[step.id] ? step.color+'88' : 'rgba(250,248,251,0.1)'}`,
+                              opacity: item.outputs?.[step.id] ? 1 : 0.25 }}>
+                            <img src={getAvatarPath(step.id)} alt={step.prenom}
+                              style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top' }}/>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <button onClick={() => item.type === 'agent' ? setViewingAgentEntry(item) : setViewingHistory(item)} style={{ padding:'7px 16px',
                       background:`linear-gradient(135deg,${B.magenta}cc,${B.violetDeep}cc)`,
                       border:`1px solid ${B.magenta}66`, borderRadius:'8px',
                       color:B.white, fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>

@@ -481,7 +481,10 @@ Crée le brand board complet. Sois précise sur les codes HEX, les noms de polic
 // ─── POST handler ─────────────────────────────────────────────────────────────
 
 export async function POST(request) {
-  const { agentId, ...data } = await request.json()
+  // `messages` permet de demander une retouche : on renvoie la conversation
+  // complète (demande initiale, réponse de l'agent, puis la retouche voulue).
+  // Sans lui, chaque appel repart de zéro et l'agent réécrit tout.
+  const { agentId, messages: conversation, ...data } = await request.json()
   const agent = AGENTS[agentId]
 
   if (!agent) {
@@ -497,7 +500,9 @@ export async function POST(request) {
     model: agent.model,
     max_tokens: agent.max_tokens || 8000,
     system: blocDate() + '\n' + agent.system,
-    messages: [{ role: 'user', content: agent.buildPrompt(data) }],
+    messages: Array.isArray(conversation) && conversation.length > 0
+      ? conversation
+      : [{ role: 'user', content: agent.buildPrompt(data) }],
   })
 
   const encoder = new TextEncoder()

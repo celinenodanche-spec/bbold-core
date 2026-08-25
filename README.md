@@ -184,3 +184,61 @@ Fuseau : `America/Martinique` (UTC-4). Sans ce réglage, le serveur — qui tour
 en UTC — aurait affiché le lendemain à partir de 20 h heure locale.
 
 Rien à maintenir : la date est calculée à chaque appel.
+
+---
+
+# Retouches · Historique complet · Pipeline par client
+
+## 1. Demander une modification
+
+Sous chaque livrable — agent support **et** étape de pipeline — un bouton
+« ✎ Demander une modification ». Tu écris ce que tu veux changer, l'agent
+reprend **son propre travail** au lieu de repartir de zéro.
+
+Techniquement : les routes acceptent désormais une conversation complète
+(demande initiale → réponse → retouche). Sans ça, chaque appel repartait à
+blanc et l'agent réécrivait tout.
+
+Les retouches successives s'empilent : chacune apparaît en étiquette au-dessus
+du bouton, et l'agent garde le fil.
+
+Sur une étape de pipeline, la retouche ne rejoue **que cette agente**. Les
+autres étapes ne bougent pas.
+
+## 2. Retrouver chaque réponse
+
+**Les agents support n'enregistraient rien.** Fermer la fenêtre effaçait le
+livrable. C'est corrigé : chaque sortie part dans l'Historique.
+
+L'onglet Historique contient maintenant deux types d'entrées :
+
+| Type | Contenu |
+|---|---|
+| Campagne | un passage de pipeline, plusieurs livrables |
+| Agent seul | un agent support lancé isolément |
+
+Chaque entrée conserve la conversation. Rouvrir un livrable depuis l'historique
+permet d'enchaîner une nouvelle retouche — le fil n'est pas perdu.
+
+Capacité portée de 20 à 60 entrées.
+
+## 3. Composer le pipeline par client
+
+Le bandeau des agentes était figé. Il devient un sélecteur : clique sur une
+agente pour la retirer ou la remettre. Le pipeline ne peut jamais tomber à
+zéro, et l'ordre est toujours préservé — les étapes se nourrissent l'une
+l'autre, Lola a besoin du positionnement de Maeva.
+
+**Configurations mémorisées.** Tu composes un pipeline, tu le mémorises sous le
+nom du client. Au prochain lancement, un clic le rétablit. Une cliente qui n'a
+jamais besoin de deck garde un pipeline à quatre agentes, sans y penser.
+
+L'orchestrateur continue de proposer une sélection : elle devient un point de
+départ modifiable au lieu d'un choix imposé.
+
+## Limite connue
+
+Tout ceci vit dans le stockage local du navigateur. Vider le cache efface
+l'historique et les configurations. Sur un poste unique c'est tenable ; le jour
+où ces livrables deviennent un actif, il faudra le même traitement que pour les
+leads de MDS — un stockage serveur.

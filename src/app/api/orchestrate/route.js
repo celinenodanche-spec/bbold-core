@@ -177,7 +177,7 @@ export async function POST(request) {
   //   mode 'prestep' -> analyse Debelvoix seule
   //   mode 'step'    -> l'étape numéro stepIndex, avec le contexte accumulé
   //   sans mode      -> ancien comportement, conservé par compatibilité
-  const { mode, stepIndex, context: contexteRecu, ...brief } = corps
+  const { mode, stepIndex, context: contexteRecu, messages: conversation, ...brief } = corps
   const encoder = new TextEncoder()
   const context = contexteRecu && typeof contexteRecu === 'object' ? { ...contexteRecu } : {}
 
@@ -285,7 +285,11 @@ Synthèse en 5 lignes utilisable comme brief stratégique.`
             model: step.model,
             max_tokens: step.max_tokens || 10000,
             system: blocDate() + '\n' + step.system,
-            messages: [{ role: 'user', content: step.buildPrompt(brief, context) }],
+            // Retouche d'une étape : la conversation prend le pas sur le
+            // prompt initial, l'agente reprend son propre travail.
+            messages: Array.isArray(conversation) && conversation.length > 0
+              ? conversation
+              : [{ role: 'user', content: step.buildPrompt(brief, context) }],
           })
 
           let fullText = ''
@@ -314,6 +318,9 @@ Synthèse en 5 lignes utilisable comme brief stratégique.`
             // La sortie voyage avec l'événement : c'est le navigateur qui
             // conserve le contexte d'une étape à l'autre.
             output: fullText, outputKey: step.outputKey,
+            // Le prompt de départ voyage avec le résultat : il devient le
+            // premier message de la conversation en cas de retouche.
+            promptInitial: step.buildPrompt(brief, context),
           })
 
         } catch (err) {
