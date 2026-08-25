@@ -147,9 +147,18 @@ Framework narratif à préciser en introduction.`,
 const DEBELVOIX_SYSTEM = `Tu es Debelvoix, expert en analyse de brand voice pour les territoires insulaires français. Tu analyses la présence digitale existante d'une marque à partir des URLs et du contenu extrait. Tu fournis une analyse actionnable qui servira de contexte stratégique.`
 
 export async function POST(request) {
-  const brief = await request.json()
+  const corps = await request.json()
+
+  // Le pipeline s'exécute désormais UNE ÉTAPE PAR REQUÊTE.
+  // Avant, les 5 agents tournaient dans un seul appel : leurs durées
+  // s'additionnaient et la dernière étape se faisait couper par la limite
+  // de durée de Vercel. Une étape par requête, chacune reste très en deçà.
+  //   mode 'prestep' -> analyse Debelvoix seule
+  //   mode 'step'    -> l'étape numéro stepIndex, avec le contexte accumulé
+  //   sans mode      -> ancien comportement, conservé par compatibilité
+  const { mode, stepIndex, context: contexteRecu, ...brief } = corps
   const encoder = new TextEncoder()
-  const context = {}
+  const context = contexteRecu && typeof contexteRecu === 'object' ? { ...contexteRecu } : {}
 
   // Determine effective pipeline (all steps or filtered by selected_agents)
   const effectivePipeline = (Array.isArray(brief.selected_agents) && brief.selected_agents.length > 0)
@@ -170,7 +179,7 @@ export async function POST(request) {
       send({ type: 'pipeline_start', total: effectivePipeline.length, hasPreStep: hasUrls })
 
       // ─── PRE-STEP : Debelvoix brand analysis (when URLs provided) ────────────
-      if (hasUrls) {
+      if (hasUrls && mode !== 'step') {
         send({ type: 'pre_step_start', agent: 'debelvoix', prenom: 'Debelvoix', emoji: '🔍' })
 
         // Try fetching website content (social media pages are JS-rendered, won't return useful content)
@@ -232,9 +241,22 @@ Synthèse en 5 lignes utilisable comme brief stratégique.`
         }
       }
 
-      // ─── MAIN PIPELINE ────────────────────────────────────────────────────────
-      for (let i = 0; i < effectivePipeline.length; i++) {
+      // En mode prestep, la requête s'arrête ici : l'analyse Debelvoix est
+      // renvoyée au navigateur, qui la joindra au contexte des étapes suivantes.
+      if (mode === 'prestep') {
+        controller.close()
+        return
+      }
+
+      // ─── PIPELINE ─────────────────────────────────────────────────────────────
+      // Une seule étape si stepIndex est fourni, sinon toutes (ancien mode).
+      const indices = (mode === 'step' && Number.isInteger(stepIndex))
+        ? [stepIndex]
+        : effectivePipeline.map((_, k) => k)
+
+      for (const i of indices) {
         const step = effectivePipeline[i]
+        if (!step) { send({ type: 'step_error', index: i, error: `Étape ${i} inconnue` }); break }
         send({ type: 'step_start', index: i, agent: step.id, prenom: step.prenom, emoji: step.emoji, folder: step.folder })
 
         try {
@@ -265,7 +287,13 @@ Synthèse en 5 lignes utilisable comme brief stratégique.`
           }
 
           context[step.outputKey] = fullText
-          send({ type: 'step_done', index: i, agent: step.id, prenom: step.prenom, folder: step.folder })
+          send({
+            type: 'step_done', index: i, agent: step.id,
+            prenom: step.prenom, folder: step.folder,
+            // La sortie voyage avec l'événement : c'est le navigateur qui
+            // conserve le contexte d'une étape à l'autre.
+            output: fullText, outputKey: step.outputKey,
+          })
 
         } catch (err) {
           send({ type: 'step_error', index: i, agent: step.id, error: err.message || 'Erreur inconnue' })
@@ -273,6 +301,8 @@ Synthèse en 5 lignes utilisable comme brief stratégique.`
           return
         }
       }
+
+      if (mode === 'step') { controller.close(); return }
 
       send({ type: 'pipeline_done' })
       controller.close()

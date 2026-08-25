@@ -96,3 +96,54 @@ veux, il touche à l'interface.
 
 Un **code d'accès** : l'URL est publique. N'importe qui la connaissant peut
 lancer les agents, donc dépenser tes crédits API.
+
+
+---
+
+# Correction · le pipeline se coupait au dernier agent
+
+## Ce qui s'est passé
+
+En relevant les plafonds de longueur, j'ai rallongé chaque étape d'un facteur
+trois à quatre. Or les 5 agents tournaient dans **une seule requête** : leurs
+durées s'additionnaient. Le total a dépassé la durée maximale autorisée, et la
+dernière étape s'est fait couper.
+
+Rebaisser les plafonds aurait ramené la troncature. Le problème n'était pas la
+longueur, c'était la conception : cinq agents dans un seul appel.
+
+## La correction
+
+**Une requête par agent.** Le navigateur enchaîne les appels et transporte le
+contexte d'une étape à l'autre.
+
+    avant   1 requête  →  Debelvoix + 5 agents  →  durée cumulée
+    après   6 requêtes →  1 agent chacune       →  chacune très en deçà
+
+Concrètement, la route accepte trois modes :
+
+| Mode | Ce qu'elle fait |
+|---|---|
+| `prestep` | l'analyse Debelvoix seule |
+| `step` + `stepIndex` + `context` | une étape, avec le contexte accumulé |
+| aucun | ancien comportement, conservé par compatibilité |
+
+L'événement `step_done` transporte désormais la sortie de l'étape : c'est le
+navigateur qui garde le contexte, la route ne conserve plus rien entre deux
+appels.
+
+## Ce qui ne change pas
+
+L'interface. Les neuf événements qu'elle attend sont tous émis à l'identique.
+L'affichage progressif, les statuts par agent, l'historique : rien à retoucher.
+
+## Effet de bord bénéfique
+
+Le pipeline n'a plus de limite de durée globale. Tu peux relever encore les
+plafonds d'un agent en particulier sans risquer de faire tomber toute la chaîne.
+
+## Si une étape échoue
+
+Elle arrête le pipeline et affiche l'erreur, comme avant. Seule exception :
+un échec de Debelvoix n'interrompt plus rien — c'est une analyse d'appoint,
+pas un livrable.

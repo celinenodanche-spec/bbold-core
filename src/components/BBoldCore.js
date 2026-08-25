@@ -1263,13 +1263,22 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
     setCurrentStreamText('')
     setStepStatuses(Object.fromEntries(PIPELINE_STEPS.map(s => [s.id, { ...s, status:'pending', output:'' }])))
 
-    try {
+    // Le pipeline s'exécute UNE ÉTAPE PAR REQUÊTE.
+    // Quand les 5 agents tournaient dans un seul appel, leurs durées
+    // s'additionnaient et la dernière étape se faisait couper. Découpé,
+    // chaque appel reste très en deçà de la limite, quelle que soit la
+    // longueur des livrables.
+    const selected = (activeSelectedAgents && activeSelectedAgents.length > 0)
+      ? activeSelectedAgents : undefined
+
+    // Le contexte est conservé ici et renvoyé à chaque étape suivante.
+    const contexte = {}
+
+    // Lance un appel et rejoue ses événements dans l'interface, telle quelle.
+    async function appeler(charge) {
       const res = await fetch('/api/orchestrate', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          ...brief,
-          selected_agents: (activeSelectedAgents && activeSelectedAgents.length > 0) ? activeSelectedAgents : undefined,
-        }),
+        body: JSON.stringify({ ...brief, selected_agents: selected, ...charge }),
       })
       if (!res.ok) throw new Error(`Erreur API ${res.status}`)
       const reader = res.body.getReader(); const decoder = new TextDecoder(); let buffer = ''
@@ -1279,12 +1288,70 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
         const lines = buffer.split('\n'); buffer = lines.pop() ?? ''
         for (const line of lines) {
           if (!line.trim()) continue
-          try { processEvent(JSON.parse(line)) } catch (_) {}
+          let ev; try { ev = JSON.parse(line) } catch (_) { continue }
+          // On récupère au passage la sortie de l'étape, pour la transmettre
+          // à la suivante. La route ne garde plus rien entre deux appels.
+          if (ev.type === 'pre_step_done' && ev.output) contexte.debelvoix_pre = ev.output
+          if (ev.type === 'step_done' && ev.output && ev.outputKey) contexte[ev.outputKey] = ev.output
+          if (ev.type === 'step_error') {
+            processEvent(ev)  // marque l'agente en erreur dans l'interface
+            const nom = PIPELINE_STEPS.find(x => x.id === ev.agent)?.prenom || ev.agent || 'agent'
+            throw new Error(`${nom} : ${ev.error || 'erreur inconnue'}`)
+          }
+          processEvent(ev)
         }
       }
-    } catch (e) {
-      setError(e.message || 'Erreur inconnue'); setPhase('done')
     }
+
+    try {
+      const etapes = effectiveSteps
+      processEvent({ type:'pipeline_start', total: etapes.length })
+
+      const hasUrls = !!(brief.site_web || brief.instagram || brief.facebook || brief.linkedin || brief.tiktok)
+      if (hasUrls) {
+        // L'échec de Debelvoix ne doit pas arrêter le pipeline : c'est une
+        // analyse d'appoint, pas un livrable.
+        try { await appeler({ mode:'prestep' }) }
+        catch (e) { processEvent({ type:'pre_step_error', agent:'debelvoix', error: e.message }) }
+      }
+
+      for (let i = 0; i < etapes.length; i++) {
+        await appeler({ mode:'step', stepIndex: i, context: contexte })
+      }
+
+      processEvent({ type:'pipeline_done' })
+    } catch (e) {
+      // Sauvegarde de secours : on garde les livrables déjà produits.
+      const sauve = enregistrerCampagne(true)
+      const livres = Object.keys(allOutputsRef.current).length
+      setError(
+        (e.message || 'Erreur inconnue') +
+        (sauve
+          ? ` — ${livres} livrable(s) déjà produit(s) ont été enregistrés dans l'Historique.`
+          : '')
+      )
+      setPhase('done')
+    }
+  }
+
+  // Enregistre la campagne. Appelée à la fin du pipeline, mais AUSSI quand une
+  // étape échoue : ce qui a déjà été produit ne doit pas disparaître parce que
+  // la dernière agente a lâché. Une campagne à 4 livrables sur 5 vaut mieux
+  // qu'une campagne perdue.
+  function enregistrerCampagne(partiel) {
+    const outputs = { ...allOutputsRef.current }
+    if (Object.keys(outputs).length === 0) return false   // rien à sauver
+    saveToHistory({
+      id: Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      client: brief.client, objectif: brief.objectif,
+      plateformes: brief.plateformes, budget: brief.budget, secteur: brief.secteur,
+      outputs,
+      partiel: !!partiel,
+      agentsLivres: Object.keys(outputs),
+    })
+    if (onSaved) onSaved()
+    return true
   }
 
   function processEvent(event) {
@@ -1345,15 +1412,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
         break
 
       case 'pipeline_done': {
-        const entry = {
-          id: Date.now(),
-          date: new Date().toISOString().split('T')[0],
-          client: brief.client, objectif: brief.objectif,
-          plateformes: brief.plateformes, budget: brief.budget, secteur: brief.secteur,
-          outputs: { ...allOutputsRef.current },
-        }
-        saveToHistory(entry)
-        if (onSaved) onSaved()
+        enregistrerCampagne(false)
         setPhase('done')
         setCurrentActiveAgent(null)
         setExpandedStep(effectiveSteps[0]?.id || null)
