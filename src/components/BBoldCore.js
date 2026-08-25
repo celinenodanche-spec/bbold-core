@@ -134,14 +134,57 @@ function deletePreset(nom) {
   } catch {}
 }
 
+
+// ─── Copie dans le presse-papiers ─────────────────────────────────────────────
+// L'API moderne échoue silencieusement dans plusieurs situations : document non
+// focalisé, page servie dans une iframe sans autorisation clipboard-write,
+// contexte non sécurisé. Sans repli ni retour d'erreur, le bouton semblait
+// simplement mort.
+async function copierTexte(texte) {
+  if (!texte) return false
+
+  // Voie normale
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(texte)
+      return true
+    }
+  } catch (_) { /* on tente le repli */ }
+
+  // Repli : zone de texte hors écran + commande d'édition historique.
+  // Moins élégant, mais fonctionne là où l'API moderne est bloquée.
+  try {
+    const zone = document.createElement('textarea')
+    zone.value = texte
+    zone.setAttribute('readonly', '')
+    zone.style.position = 'fixed'
+    zone.style.top = '-9999px'
+    zone.style.opacity = '0'
+    document.body.appendChild(zone)
+    zone.select()
+    zone.setSelectionRange(0, texte.length)
+    const ok = document.execCommand('copy')
+    document.body.removeChild(zone)
+    return ok
+  } catch (_) {
+    return false
+  }
+}
+
 // ─── Campaign markdown builder ────────────────────────────────────────────────
 
 function buildMarkdown(brief, steps) {
   const date = new Date().toISOString().split('T')[0]
   let md = `# Campagne B.BOLD — ${brief.client || '—'}\n`
   md += `**Date :** ${date}  \n**Objectif :** ${brief.objectif || '—'}  \n**Plateformes :** ${brief.plateformes || '—'}  \n**Budget :** ${brief.budget || '—'}  \n\n---\n\n`
-  steps.filter(s => s.status === 'done').forEach(s => {
-    md += `## ${s.emoji} ${s.prenom} → ${s.folder}\n\n${s.output}\n\n---\n\n`
+  steps.filter(s => s.status === 'done' && s.output).forEach(s => {
+    // Les métadonnées peuvent manquer si l'appelant n'a passé que le statut :
+    // on retombe sur la définition du pipeline plutôt que d'écrire « undefined ».
+    const ref = PIPELINE_STEPS.find(x => x.id === s.id) || {}
+    const emoji  = s.emoji  || ref.emoji  || '•'
+    const prenom = s.prenom || ref.prenom || s.id || 'Agent'
+    const folder = s.folder || ref.folder || ''
+    md += `## ${emoji} ${prenom}${folder ? ` → ${folder}` : ''}\n\n${s.output}\n\n---\n\n`
   })
   return md
 }
@@ -615,16 +658,16 @@ function Modal({ agent, onClose }) {
               </div>
             </div>
             <div style={{ display:'flex', gap:'10px', marginBottom:'12px', flexWrap:'wrap' }}>
-              <button onClick={() => { navigator.clipboard.writeText(response).then(() => { setCopied(true); setTimeout(()=>setCopied(false),2000) }) }}
+              <button onClick={async () => { const ok = await copierTexte(response); setCopied(ok ? true : 'echec'); setTimeout(()=>setCopied(false),2200) }}
                 style={{ flex:1, minWidth:'140px', padding:'12px',
                   background: copied ? 'rgba(201,168,76,0.2)' : 'rgba(107,15,110,0.3)',
                   border:`1px solid ${copied ? B.gold : agent.color}55`, borderRadius:'10px',
                   color: copied ? B.goldLight : B.white, fontSize:'13px', fontWeight:'600', cursor:'pointer' }}>
-                {copied ? '✓ Copié !' : '📋 Copier'}
+                {copied === 'echec' ? '✕ Copie refusée' : copied ? '✓ Copié !' : '📋 Copier'}
               </button>
               {isDesigner && (
                 <a href="https://www.canva.com/design/new" target="_blank" rel="noopener noreferrer"
-                  onClick={() => navigator.clipboard.writeText(response)}
+                  onClick={() => copierTexte(response)}
                   style={{ flex:1, minWidth:'140px', padding:'12px',
                     background:'linear-gradient(135deg,#7c3aed,#4f46e5)',
                     border:'1px solid #7c3aed88', borderRadius:'10px',
@@ -1117,12 +1160,12 @@ function SupportModal({ agent, onClose, entreeExistante = null, onSaved }) {
 
             {/* ── ACTIONS ─────────────────────────────────────────── */}
             <div style={{ display:'flex', gap:'10px', marginBottom:'12px', flexWrap:'wrap' }}>
-              <button onClick={() => { navigator.clipboard.writeText(response).then(() => { setCopied(true); setTimeout(()=>setCopied(false),2000) }) }}
+              <button onClick={async () => { const ok = await copierTexte(response); setCopied(ok ? true : 'echec'); setTimeout(()=>setCopied(false),2200) }}
                 style={{ flex:1, minWidth:'120px', padding:'12px',
                   background: copied ? `${agent.color}22` : 'rgba(107,15,110,0.3)',
                   border:`1px solid ${agent.color}55`, borderRadius:'10px',
                   color: copied ? agent.accent : B.white, fontSize:'13px', fontWeight:'600', cursor:'pointer' }}>
-                {copied ? '✓ Copié !' : '📋 Copier'}
+                {copied === 'echec' ? '✕ Copie refusée' : copied ? '✓ Copié !' : '📋 Copier'}
               </button>
 
               {hasDownload && (
@@ -1229,11 +1272,11 @@ function HistoryModal({ campaign, onClose }) {
                       whiteSpace:'pre-wrap', maxHeight:'340px', overflowY:'auto', marginBottom:'8px', fontFamily:'system-ui,sans-serif' }}>
                       {step.output}
                     </div>
-                    <button onClick={() => { navigator.clipboard.writeText(step.output).then(() => { setCopied(idx); setTimeout(()=>setCopied(null),2000) }) }}
+                    <button onClick={async () => { const ok = await copierTexte(step.output); setCopied(ok ? idx : 'echec'); setTimeout(()=>setCopied(null),2200) }}
                       style={{ padding:'7px 14px', background: copied===idx ? `${step.color}18` : 'rgba(107,15,110,0.2)',
                         border:`1px solid ${step.color}44`, borderRadius:'8px',
                         color: copied===idx ? step.color : B.white, fontSize:'11px', cursor:'pointer' }}>
-                      {copied===idx ? '✓ Copié' : '📋 Copier'}
+                      {copied === 'echec' ? '✕ Refusé' : copied===idx ? '✓ Copié' : '📋 Copier'}
                     </button>
                   </div>
                 )}
@@ -1246,12 +1289,12 @@ function HistoryModal({ campaign, onClose }) {
               borderRadius:'10px', color:B.black, fontSize:'12px', fontWeight:'800', cursor:'pointer' }}>
               ⬇ Télécharger (.md)
             </button>
-            <button onClick={() => { const md = buildMarkdown(campaign, stepsWithOutput); navigator.clipboard.writeText(md).then(() => { setCopiedAll(true); setTimeout(()=>setCopiedAll(false),2000) }) }}
+            <button onClick={async () => { const md = buildMarkdown(campaign, stepsWithOutput); const ok = await copierTexte(md); setCopiedAll(ok ? true : 'echec'); setTimeout(()=>setCopiedAll(false),2200) }}
               style={{ flex:1, minWidth:'180px', padding:'10px 20px',
                 background: copiedAll ? `${B.gold}18` : 'rgba(107,15,110,0.25)',
                 border:`1px solid ${copiedAll ? B.gold : B.border}`, borderRadius:'10px',
                 color: copiedAll ? B.goldLight : B.white, fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>
-              {copiedAll ? '✓ Copié !' : '📋 Copier tout (.md)'}
+              {copiedAll === 'echec' ? '✕ Copie refusée' : copiedAll === 'vide' ? '✕ Rien à copier' : copiedAll ? '✓ Copié !' : '📋 Copier tout (.md)'}
             </button>
           </div>
         </div>
@@ -1743,10 +1786,17 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
   const activeStepInfo = currentActiveAgent ? PIPELINE_STEPS.find(s => s.id === currentActiveAgent) : null
   const allEffectiveDone = effectiveSteps.every(s => stepStatuses[s.id]?.status === 'done')
 
-  function handleDownload() { downloadMd(brief, effectiveSteps.map(s => stepStatuses[s.id] || s)) }
-  function handleCopyAll() {
-    const md = buildMarkdown(brief, effectiveSteps.map(s => stepStatuses[s.id] || s))
-    navigator.clipboard.writeText(md).then(() => { setCopiedAll(true); setTimeout(()=>setCopiedAll(false),2000) })
+  function handleDownload() { downloadMd(brief, effectiveSteps.map(s => ({ ...s, ...(stepStatuses[s.id] || {}) }))) }
+  async function handleCopyAll() {
+    const md = buildMarkdown(brief, effectiveSteps.map(s => ({ ...s, ...(stepStatuses[s.id] || {}) })))
+    if (!md || md.trim().length < 40) {
+      setCopiedAll('vide')
+      setTimeout(() => setCopiedAll(false), 2600)
+      return
+    }
+    const ok = await copierTexte(md)
+    setCopiedAll(ok ? true : 'echec')
+    setTimeout(() => setCopiedAll(false), 2600)
   }
 
   return (
@@ -2101,11 +2151,11 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                               whiteSpace:'pre-wrap', maxHeight:'340px', overflowY:'auto', marginBottom:'8px', fontFamily:'system-ui,sans-serif' }}>
                               {preStepOutput}
                             </div>
-                            <button onClick={() => { navigator.clipboard.writeText(preStepOutput).then(() => { setCopied('debelvoix'); setTimeout(()=>setCopied(null),2000) }) }}
+                            <button onClick={async () => { const ok = await copierTexte(preStepOutput); setCopied(ok ? 'debelvoix' : 'echec'); setTimeout(()=>setCopied(null),2200) }}
                               style={{ padding:'7px 14px', background: copied==='debelvoix' ? 'rgba(13,148,136,0.18)' : 'rgba(107,15,110,0.2)',
                                 border:`1px solid ${copied==='debelvoix' ? '#0d948877' : '#0d948844'}`, borderRadius:'8px',
                                 color: copied==='debelvoix' ? '#5eead4' : B.white, fontSize:'11px', cursor:'pointer' }}>
-                              {copied==='debelvoix' ? '✓ Copié' : '📋 Copier'}
+                              {copied === 'echec' ? '✕ Refusé' : copied==='debelvoix' ? '✓ Copié' : '📋 Copier'}
                             </button>
                           </div>
                         )}
@@ -2136,11 +2186,11 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                                 whiteSpace:'pre-wrap', maxHeight:'340px', overflowY:'auto', marginBottom:'8px', fontFamily:'system-ui,sans-serif' }}>
                                 {s.output}
                               </div>
-                              <button onClick={() => { navigator.clipboard.writeText(s.output).then(() => { setCopied(step.id); setTimeout(()=>setCopied(null),2000) }) }}
+                              <button onClick={async () => { const ok = await copierTexte(s.output); setCopied(ok ? step.id : 'echec'); setTimeout(()=>setCopied(null),2200) }}
                                 style={{ padding:'7px 14px', background: copied===step.id ? `${step.color}18` : 'rgba(107,15,110,0.2)',
                                   border:`1px solid ${step.color}44`, borderRadius:'8px',
                                   color: copied===step.id ? step.color : B.white, fontSize:'11px', cursor:'pointer' }}>
-                                {copied===step.id ? '✓ Copié' : '📋 Copier'}
+                                {copied === 'echec' ? '✕ Refusé' : copied===step.id ? '✓ Copié' : '📋 Copier'}
                               </button>
 
                               <BlocRetouche
@@ -2167,6 +2217,14 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                         <div style={{ fontSize:'11px', color:'rgba(250,248,251,0.4)', marginTop:'4px', marginBottom:'14px' }}>
                           Clique sur chaque agente pour lire et copier son output
                         </div>
+                        {copiedAll === 'echec' && (
+                          <div style={{ margin:'0 0 12px', padding:'10px 14px', borderRadius:'8px',
+                            background:'rgba(255,107,107,0.08)', border:'1px solid rgba(255,107,107,0.25)',
+                            fontSize:'11.5px', color:'rgba(255,107,107,0.85)', lineHeight:'1.6' }}>
+                            Ton navigateur a refusé l'accès au presse-papiers. Utilise
+                            « Télécharger (.md) » — le fichier contient exactement la même chose.
+                          </div>
+                        )}
                         <div style={{ display:'flex', gap:'10px', justifyContent:'center', flexWrap:'wrap' }}>
                           <button onClick={handleDownload} style={{ padding:'10px 24px',
                             background:`linear-gradient(135deg,${B.gold}cc,${B.goldLight}88)`,
@@ -2178,7 +2236,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                             background: copiedAll ? `${B.gold}18` : 'rgba(107,15,110,0.3)',
                             border:`1px solid ${copiedAll ? B.gold : B.border}`, borderRadius:'10px',
                             color: copiedAll ? B.goldLight : B.white, fontSize:'13px', fontWeight:'700', cursor:'pointer' }}>
-                            {copiedAll ? '✓ Copié !' : '📋 Copier tout'}
+                            {copiedAll === 'echec' ? '✕ Copie refusée' : copiedAll === 'vide' ? '✕ Rien à copier' : copiedAll ? '✓ Copié !' : '📋 Copier tout'}
                           </button>
                         </div>
                       </div>
