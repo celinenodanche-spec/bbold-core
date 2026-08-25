@@ -4,6 +4,27 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export const runtime = 'edge'
 
+// ─── Date du jour, injectée dans tous les prompts ────────────────────────────
+// Sans elle, les agents se rabattent sur ce que leur modèle a appris et
+// écrivent des années périmées. Un calendrier éditorial daté de l'an dernier
+// est inutilisable.
+function blocDate() {
+  const maintenant = new Date()
+  const fmt = (opts) => maintenant.toLocaleDateString('fr-FR', { timeZone: 'America/Martinique', ...opts })
+  return `=== DATE DU JOUR ===
+Nous sommes le ${fmt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.
+Format court : ${fmt({ day: '2-digit', month: '2-digit', year: 'numeric' })}
+Année en cours : ${fmt({ year: 'numeric' })}
+Fuseau : Martinique (UTC-4)
+
+Toute date, tout calendrier, toute échéance et toute référence temporelle que tu
+produis part de cette date. Tu n'utilises jamais une autre année que celle-ci
+sans raison explicite. Si tu cites un exemple daté, il est cohérent avec le
+présent.
+`
+}
+
+
 export async function POST(request) {
   const {
     agentId,
@@ -44,7 +65,7 @@ export async function POST(request) {
   const stream = await client.messages.stream({
     model: models[agentId] || 'claude-sonnet-4-5',
     max_tokens: reqMaxTokens || 10000,
-    system: systemPrompt,
+    system: blocDate() + '\n' + systemPrompt,
     messages: [{ role: 'user', content: messageContent }],
   })
 

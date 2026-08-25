@@ -147,3 +147,40 @@ plafonds d'un agent en particulier sans risquer de faire tomber toute la chaîne
 Elle arrête le pipeline et affiche l'erreur, comme avant. Seule exception :
 un échec de Debelvoix n'interrompt plus rien — c'est une analyse d'appoint,
 pas un livrable.
+
+
+---
+
+# Correction · les agents ignoraient la date du jour
+
+## Le symptôme
+
+Des contenus datés d'une année périmée. Exemple relevé dans une sortie de
+Maya Angelou : « Mariage — Martinique — Juin 2024 », alors qu'on est en 2026.
+
+## La cause
+
+Sur les dix-huit agents, **un seul recevait la date du jour** : Marie Kondo,
+parce que son archivage en a besoin pour le frontmatter.
+
+Tous les autres l'ignoraient. Un modèle de langage qui ne connaît pas la date
+se rabat sur ce que son entraînement lui a appris, et écrit une année passée.
+
+C'est un vrai problème de qualité pour :
+
+- Hermione Granger — calendrier éditorial sur 30 jours
+- Olivia Pope — veille communicationnelle
+- Ada Lovelace — articles SEO
+- Kris Jenner — campagnes d'influence
+- les cinq agentes du pipeline — briefs, plannings, échéances
+
+## La correction
+
+Un bloc `=== DATE DU JOUR ===` est ajouté en tête de **tous** les prompts
+système, dans les trois routes. Il donne la date complète, l'année en cours,
+et la consigne de ne jamais partir d'une autre année.
+
+Fuseau : `America/Martinique` (UTC-4). Sans ce réglage, le serveur — qui tourne
+en UTC — aurait affiché le lendemain à partir de 20 h heure locale.
+
+Rien à maintenir : la date est calculée à chaque appel.

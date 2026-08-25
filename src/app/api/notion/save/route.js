@@ -141,7 +141,20 @@ export async function POST(request) {
       const msg = err?.message || `Erreur Notion ${res.status}`
       // Common errors
       if (res.status === 404) {
-        return Response.json({ error: 'Page Notion introuvable. Vérifie que l\'intégration B.BOLD Core a accès à cette page (Connections dans la page Notion).' }, { status: 404 })
+        // Notion répond 404 dans deux cas qu'il ne distingue pas : la page
+        // n'existe pas, ou l'intégration n'y a pas accès. On donne les deux
+        // pistes, plus l'identifiant extrait pour que l'utilisateur vérifie
+        // qu'on parle bien de la bonne page.
+        return Response.json({
+          error:
+            `Notion ne trouve pas cette page (id ${pageId}). Deux causes possibles :\n` +
+            `1. L'intégration B.BOLD Core n'a pas accès à la page — ouvre-la dans Notion, ` +
+            `menu ⋯ > Connexions > ajoute B.BOLD Core.\n` +
+            `2. La page appartient à un autre espace de travail que celui de l'intégration. ` +
+            `Si B.BOLD Core n'apparaît pas dans la liste des connexions, c'est ce cas.`,
+          pageId,
+          notion: msg,
+        }, { status: 404 })
       }
       if (res.status === 401) {
         return Response.json({ error: 'Token Notion invalide ou expiré. Vérifie NOTION_API_KEY dans Vercel.' }, { status: 401 })

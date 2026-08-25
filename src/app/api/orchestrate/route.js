@@ -4,6 +4,27 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export const runtime = 'edge'
 
+// ─── Date du jour, injectée dans tous les prompts ────────────────────────────
+// Sans elle, les agents se rabattent sur ce que leur modèle a appris et
+// écrivent des années périmées. Un calendrier éditorial daté de l'an dernier
+// est inutilisable.
+function blocDate() {
+  const maintenant = new Date()
+  const fmt = (opts) => maintenant.toLocaleDateString('fr-FR', { timeZone: 'America/Martinique', ...opts })
+  return `=== DATE DU JOUR ===
+Nous sommes le ${fmt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.
+Format court : ${fmt({ day: '2-digit', month: '2-digit', year: 'numeric' })}
+Année en cours : ${fmt({ year: 'numeric' })}
+Fuseau : Martinique (UTC-4)
+
+Toute date, tout calendrier, toute échéance et toute référence temporelle que tu
+produis part de cette date. Tu n'utilises jamais une autre année que celle-ci
+sans raison explicite. Si tu cites un exemple daté, il est cohérent avec le
+présent.
+`
+}
+
+
 // Fetches clean text content from a URL — works for websites, not for JS-rendered social media
 async function fetchUrlContent(url) {
   if (!url || !url.startsWith('http')) return ''
@@ -220,7 +241,7 @@ Synthèse en 5 lignes utilisable comme brief stratégique.`
           const dvStream = await client.messages.stream({
             model: 'claude-opus-4-5',
             max_tokens: 8000,
-            system: DEBELVOIX_SYSTEM,
+            system: blocDate() + '\n' + DEBELVOIX_SYSTEM,
             messages: [{ role: 'user', content: debelvoixPrompt }],
           })
 
@@ -263,7 +284,7 @@ Synthèse en 5 lignes utilisable comme brief stratégique.`
           const stream = await client.messages.stream({
             model: step.model,
             max_tokens: step.max_tokens || 10000,
-            system: step.system,
+            system: blocDate() + '\n' + step.system,
             messages: [{ role: 'user', content: step.buildPrompt(brief, context) }],
           })
 
