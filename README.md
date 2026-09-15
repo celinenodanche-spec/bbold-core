@@ -242,3 +242,38 @@ Tout ceci vit dans le stockage local du navigateur. Vider le cache efface
 l'historique et les configurations. Sur un poste unique c'est tenable ; le jour
 où ces livrables deviennent un actif, il faudra le même traitement que pour les
 leads de MDS — un stockage serveur.
+
+---
+
+# Studio de Zara — déploiement sur Vercel
+
+Le studio de Zara (posts 4:5, carrousels 4:5, stories 9:16, inspirations, styles,
+export ZIP) fonctionne **en local** sans rien de plus. Pour qu'il marche aussi sur
+la version **déployée sur Vercel**, deux réglages une seule fois :
+
+## 1. Variables d'environnement (Vercel → Project → Settings → Environment Variables)
+- `ANTHROPIC_API_KEY` — obligatoire (déjà utilisée par les autres agents).
+- `OPENAI_API_KEY` — optionnelle : active les **fonds d'image GPT Image 2.5**
+  générés à partir des inspirations. Sans elle, les visuels utilisent la palette.
+- `OPENAI_IMAGE_MODEL` / `OPENAI_IMAGE_MODEL_BATCH` — optionnelles
+  (`gpt-image-2.5-sunburst` pour une pièce, `gpt-image-2.5-flare` en série).
+
+## 2. Stockage — Vercel Blob (indispensable en prod)
+Le disque des fonctions Vercel est en lecture seule : les posts, les inspirations
+et les visuels rendus doivent aller sur **Vercel Blob**.
+1. Vercel → onglet **Storage** → **Create Database** → **Blob** → connecte-le au projet.
+2. Vercel injecte alors automatiquement `BLOB_READ_WRITE_TOKEN`. Rien d'autre à faire :
+   le studio détecte ce jeton et bascule tout seul du disque local vers Blob.
+
+> Sans store Blob, le studio tourne quand même en **local** (`npm run dev`), mais
+> les enregistrements échoueront sur le déploiement Vercel.
+
+## 3. Rendu des visuels (Chrome headless)
+Géré automatiquement : en local, Chrome via `puppeteer` ; sur Vercel,
+`@sparticuz/chromium` + `puppeteer-core` (aucune config). Si un rendu de gros
+carrousel dépasse le temps imparti sur l'offre **Hobby** (60 s max), passe la
+fonction en plan **Pro** ou réduis le nombre de slides.
+
+## Local — rappel
+`npm install` puis `npm run dev`. Le rendu Chrome utilise le navigateur mis en
+cache par `npx puppeteer browsers install chrome` (à lancer une fois si besoin).

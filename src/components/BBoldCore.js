@@ -1,4 +1,5 @@
 'use client'
+import ZaraStudio from './ZaraStudio'
 import { useState, useEffect, useRef } from 'react'
 
 const B = {
@@ -247,7 +248,7 @@ Mission :
     userPrompt: (d) => `PLATEFORME : ${d.plateforme||'—'}\nTHÉMATIQUE : ${d.thematique||'—'}\nTON : ${d.ton||'—'}\nCTA : ${d.cta||'—'}\nSPÉCIFICITÉS : ${d.brand||'—'}\n\nMission : 3 versions du post (angle différent), hook 15 mots max pour chacune, CTA intégré, 5-10 hashtags optimisés.`,
   },
   designer: {
-    title: 'Brief Visuel', subtitle: 'Zara crée tes prompts Gemini Imagen + specs Canva prêtes à l\'emploi.',
+    title: 'Studio visuel', subtitle: 'Zara crée tes posts, carrousels (4:5) et stories (9:16) prêts à publier — texte + visuels de marque, export en un clic.',
     system: `Tu es Zara, Designer de B.BOLD Agency, experte en direction artistique, prompts IA et création Canva pour les territoires insulaires français.
 
 FORMATS AUTORISÉS (jamais de carré 1:1) :
@@ -2384,7 +2385,9 @@ export default function BBoldCore() {
         @keyframes spin    { to{transform:rotate(360deg)} }
       `}</style>
 
-      {activeAgent        && <Modal             agent={activeAgent}        onClose={()=>setActiveAgent(null)}/>}
+      {activeAgent && activeAgent.id === 'designer'
+        ? <ZaraStudio onClose={()=>setActiveAgent(null)}/>
+        : activeAgent && <Modal agent={activeAgent} onClose={()=>setActiveAgent(null)}/>}
       {activeSupportAgent && (
         <SupportModal
           agent={activeSupportAgent}

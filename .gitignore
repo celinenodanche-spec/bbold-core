@@ -3,3 +3,11 @@ node_modules/
 out/
 .env
 .env.local
+
+# Données locales du studio (persistées sur Vercel Blob en prod)
+studio-data/
+/public/content-out/
+/public/generated-images/
+
+# cache TypeScript
+*.tsbuildinfo

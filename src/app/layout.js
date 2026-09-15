@@ -1,3 +1,5 @@
+import '../styles/studio.css'
+
 export const metadata = {
   title: 'B.BOLD Core — Multi-Agent Platform',
   description: 'Plateforme multiagent B.BOLD Agency',
