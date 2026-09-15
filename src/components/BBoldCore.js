@@ -1,6 +1,7 @@
 'use client'
 import ZaraStudio from './ZaraStudio'
 import { useState, useEffect, useRef } from 'react'
+import { apiFetch } from '../lib/access'
 
 const B = {
   violetDeep: '#6b0f6e', magenta: '#c000c0', gold: '#c9a84c',
@@ -552,7 +553,7 @@ function Modal({ agent, onClose }) {
         body.imageBase64 = imageBase64
         body.imageMediaType = imageMediaType
       }
-      const res = await fetch('/api/brief', {
+      const res = await apiFetch('/api/brief', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify(body),
       })
@@ -790,7 +791,7 @@ function NotionSaveWidget({ response, agentEmoji, agentName, clientName, accentC
     if (!url.trim()) { setErr('Colle l\'URL de la page Notion du client.'); return }
     setSaving(true); setErr('')
     try {
-      const res = await fetch('/api/notion/save', {
+      const res = await apiFetch('/api/notion/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pageUrl: url, content: response, agentEmoji, agentName, clientName }),
@@ -1021,7 +1022,7 @@ function SupportModal({ agent, onClose, entreeExistante = null, onSaved }) {
   async function appeler(conversation) {
     setLoading(true); setError('')
     try {
-      const res = await fetch('/api/agents/support', {
+      const res = await apiFetch('/api/agents/support', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
           agentId: agent.id,
@@ -1335,7 +1336,7 @@ URGENCE : ${data.urgence || '—'}
 Analyse ce projet et sélectionne les agents B.BOLD les plus adaptés.`
 
     try {
-      const res = await fetch('/api/brief', {
+      const res = await apiFetch('/api/brief', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ agentId:'orchestrateur', systemPrompt:ORCH_SYSTEM, userPrompt, max_tokens:3500 }),
       })
@@ -1583,7 +1584,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
 
     // Lance un appel et rejoue ses événements dans l'interface, telle quelle.
     async function appeler(charge) {
-      const res = await fetch('/api/orchestrate', {
+      const res = await apiFetch('/api/orchestrate', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ ...brief, selected_agents: selected, ...charge }),
       })
@@ -1674,7 +1675,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
       ]
       const conv = [...base, { role:'user', content: consigneRetouche(demande) }]
 
-      const res = await fetch('/api/orchestrate', {
+      const res = await apiFetch('/api/orchestrate', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({
           ...brief,

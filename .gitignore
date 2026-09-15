@@ -8,3 +8,4 @@ out/
 studio-data/
 /public/content-out/
 /public/generated-images/
+tsconfig.tsbuildinfo

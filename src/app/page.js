@@ -1,2 +1,11 @@
 'use client'
-export { default } from '../components/BBoldCore'
+import AccessGate from '../components/AccessGate'
+import BBoldCore from '../components/BBoldCore'
+
+export default function Page() {
+  return (
+    <AccessGate>
+      <BBoldCore />
+    </AccessGate>
+  )
+}
