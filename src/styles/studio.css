@@ -1,6 +1,7 @@
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
+@source "../";
 
 :root {
   --color-bg: #ffffff;
@@ -10,13 +11,19 @@
   --color-accent: #0A0A0A;
 }
 
-/* Reset minimal SCOPÉ au studio (préflight Tailwind volontairement exclu pour
-   ne pas altérer l'interface existante de B.BOLD Core, en styles inline). */
-.zara-studio, .zara-studio *, .zara-studio *::before, .zara-studio *::after { box-sizing: border-box; }
-.zara-studio button { font: inherit; color: inherit; background: none; border: 0; margin: 0; padding: 0; cursor: pointer; }
-.zara-studio input, .zara-studio textarea, .zara-studio select { font: inherit; color: inherit; }
-.zara-studio img, .zara-studio svg { display: block; max-width: 100%; }
-.zara-studio h1, .zara-studio h2, .zara-studio h3, .zara-studio p { margin: 0; }
-.zara-studio .althea-card { background: var(--color-bg); border: 1px solid var(--color-line); border-radius: 14px; }
-.zara-studio .hover-lift { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
-.zara-studio .hover-lift:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+/* Reset minimal SCOPÉ au studio, DANS la couche base : les utilitaires Tailwind
+   (couche utilities) le surchargent, sinon les boutons perdraient fond/bordure.
+   Le préflight global est volontairement exclu → l'UI B.BOLD reste intacte. */
+@layer base {
+  .zara-studio, .zara-studio *, .zara-studio *::before, .zara-studio *::after { box-sizing: border-box; }
+  .zara-studio button { font: inherit; color: inherit; background: none; border: 0; margin: 0; padding: 0; cursor: pointer; }
+  .zara-studio input, .zara-studio textarea, .zara-studio select { font: inherit; color: inherit; }
+  .zara-studio img, .zara-studio svg { display: block; max-width: 100%; }
+  .zara-studio h1, .zara-studio h2, .zara-studio h3, .zara-studio p { margin: 0; }
+}
+
+@layer components {
+  .zara-studio .althea-card { background: var(--color-bg); border: 1px solid var(--color-line); border-radius: 14px; }
+  .zara-studio .hover-lift { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+  .zara-studio .hover-lift:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+}

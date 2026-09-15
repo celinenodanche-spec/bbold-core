@@ -19,12 +19,16 @@ const PUBLIC_DIR = path.join(process.cwd(), "public");
 const DATA_DIR = path.join(process.cwd(), "studio-data");
 const BLOB_PREFIX = "bbold-studio";
 
+const NO_STORE = "Stockage non configuré sur Vercel : ajoute la variable BLOB_READ_WRITE_TOKEN (Vercel → Storage → ton Blob → connecte le projet), puis redéploie.";
+function assertWritable(): void { if (!useBlob() && process.env.VERCEL) throw new Error(NO_STORE); }
+
 const mime = (name: string) => (/\.png$/i.test(name) ? "image/png" : /\.webp$/i.test(name) ? "image/webp" : /\.jpe?g$/i.test(name) ? "image/jpeg" : "application/octet-stream");
 
 /* ─── VISUELS (rendus PNG servis publiquement) ─────────────────────────── */
 
 /** Enregistre un visuel `content-out/<name>` et renvoie son URL affichable. */
 export async function putVisual(name: string, buf: Buffer): Promise<string> {
+  assertWritable();
   if (useBlob()) {
     const { url } = await put(`${BLOB_PREFIX}/content-out/${name}`, buf, { access: "public", token: TOKEN, contentType: "image/png", addRandomSuffix: false, allowOverwrite: true });
     return url;
@@ -38,6 +42,7 @@ export async function putVisual(name: string, buf: Buffer): Promise<string> {
 /* ─── DONNÉES (inspirations, style.json, store.json) ───────────────────── */
 
 export async function putData(key: string, buf: Buffer, contentType: string): Promise<string> {
+  assertWritable();
   if (useBlob()) {
     const { url } = await put(`${BLOB_PREFIX}/data/${key}`, buf, { access: "public", token: TOKEN, contentType, addRandomSuffix: false, allowOverwrite: true });
     return url;

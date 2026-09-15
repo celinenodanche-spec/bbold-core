@@ -24,8 +24,12 @@ export const DEFAULT_OPENAI_IMAGE_MODEL_BATCH = "gpt-image-2.5-flare";
 export const PUBLIC_IMAGES_DIR = path.join(os.tmpdir(), "bbold-studio-gen");
 export const PUBLIC_IMAGES_URL = "/generated-images";
 
+/** Accepte les deux graphies courantes du nom de variable. */
+export function openaiKey(): string | undefined {
+  return process.env.OPENAI_API_KEY?.trim() || process.env.OPEN_AI_API_KEY?.trim();
+}
 export function isOpenAIImageConfigured(): boolean {
-  return Boolean(process.env.OPENAI_API_KEY?.trim());
+  return Boolean(openaiKey());
 }
 export function openAIImageModel(): string {
   return process.env.OPENAI_IMAGE_MODEL?.trim() || DEFAULT_OPENAI_IMAGE_MODEL;
@@ -62,7 +66,7 @@ export async function generateImageOpenAI(
   prompt: string,
   opts?: { slug?: string; references?: ReferenceImage[]; size?: string; quality?: string; model?: string }
 ): Promise<GenerateResult> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const apiKey = openaiKey();
   if (!apiKey) throw new Error("OPENAI_API_KEY manquante. Ajoute-la via « Connecter mes outils » (ou dans .env.local).");
   const model = opts?.model ?? openAIImageModel();
   const size = opts?.size ?? OPENAI_SIZES["1:1"];

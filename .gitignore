@@ -8,6 +8,3 @@ out/
 studio-data/
 /public/content-out/
 /public/generated-images/
-
-# cache TypeScript
-*.tsbuildinfo
