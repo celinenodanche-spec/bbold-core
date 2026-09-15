@@ -1,108 +1,130 @@
 <!-- =========================================================================
      MY DREAM SQUAD - PAGE 1 : OPT-IN (version SANS carte CTA)
-     BLOC "CODE HTML" pour systeme.io.
+     BLOC "CODE HTML" pour systeme.io. Durci mobile : !important + breakpoints
+     fixes pour que le CSS global de systeme.io ne casse rien.
 
      Ce bloc = hero + teaser du calculateur + 3 arguments.
-     Le call-to-action, c'est TON formulaire natif systeme.io, place JUSTE
-     EN DESSOUS de ce bloc :
-       - champ Saisie -> Prenom
-       - champ Saisie -> Email
-       - Bouton "Soumettre" -> redirige vers la page du calculateur
-
-     Pour un raccord invisible, mets la section systeme.io en fond aubergine
-     (#2e0335) et style le bouton en or (#BC944F).
-
-     Tout est namespace sous #mds-optin.
+     Le call-to-action = TON formulaire natif systeme.io, place JUSTE en dessous
+     (champ Prenom, champ Email, bouton or #BC944F -> redirige vers le calculateur).
      ========================================================================= -->
 <div id="mds-optin">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap');
 
     #mds-optin{
-      --aubergine:#4D0156; --aubergine2:#6a0a75; --aubergine-fonce:#2e0335;
+      --aubergine:#4D0156; --aubergine-fonce:#2e0335;
       --or:#BC944F; --or-clair:#E4C56B;
       --creme:#F4EFE3; --creme2:#EDE6D6;
       --sans:'Jost',system-ui,-apple-system,Segoe UI,sans-serif;
       --serif:'Cormorant Garamond',Georgia,serif;
-      font-family:var(--sans); color:var(--creme); line-height:1.5;
-      background:linear-gradient(165deg,var(--aubergine) 0%,var(--aubergine-fonce) 100%);
-      padding:clamp(30px,6vw,80px) clamp(16px,4vw,40px) clamp(20px,4vw,40px);
+      font-family:var(--sans)!important; color:var(--creme)!important; line-height:1.5!important;
+      background:linear-gradient(165deg,var(--aubergine) 0%,var(--aubergine-fonce) 100%)!important;
+      padding:64px 24px 32px!important;
+      max-width:100%!important; overflow-x:hidden!important;
     }
-    #mds-optin *{box-sizing:border-box;margin:0;padding:0}
-    #mds-optin .wrap{max-width:900px;margin:0 auto}
+    #mds-optin *{box-sizing:border-box!important;margin:0!important;padding:0!important;max-width:100%!important;overflow-wrap:break-word!important}
+    #mds-optin .wrap{max-width:900px!important;margin:0 auto!important}
 
     #mds-optin .eyebrow{
-      font-size:13px;letter-spacing:.28em;text-transform:uppercase;
-      color:var(--or-clair);font-weight:600;text-align:center;margin-bottom:18px
+      font-family:var(--sans)!important;font-size:13px!important;letter-spacing:.28em!important;
+      text-transform:uppercase!important;color:var(--or-clair)!important;font-weight:600!important;
+      text-align:center!important;margin-bottom:16px!important
     }
     #mds-optin h1{
-      font-family:var(--serif);font-weight:600;
-      font-size:clamp(36px,7.5vw,68px);line-height:1.04;
-      text-align:center;color:var(--creme);letter-spacing:-.01em
+      font-family:var(--serif)!important;font-weight:600!important;
+      font-size:44px!important;line-height:1.05!important;
+      text-align:center!important;color:var(--creme)!important;letter-spacing:-.01em!important
     }
-    #mds-optin h1 em{font-style:italic;color:var(--or-clair)}
+    #mds-optin h1 em{font-style:italic!important;color:var(--or-clair)!important}
     #mds-optin .sub{
-      text-align:center;max-width:600px;margin:22px auto 0;
-      font-size:clamp(16px,2.4vw,20px);color:var(--creme2);opacity:.92
+      font-family:var(--sans)!important;text-align:center!important;max-width:600px!important;
+      margin:20px auto 0!important;font-size:18px!important;line-height:1.5!important;
+      color:var(--creme2)!important;opacity:.92!important
     }
 
     #mds-optin .cols{
-      display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,4vw,44px);
-      align-items:center;margin-top:clamp(34px,6vw,56px)
+      display:grid!important;grid-template-columns:1fr 1fr!important;gap:36px!important;
+      align-items:center!important;margin-top:44px!important
     }
 
     #mds-optin .teaser{
-      background:rgba(244,239,227,.05);
-      border:1px solid rgba(228,197,107,.28);
-      border-radius:20px;padding:26px;position:relative;overflow:hidden
+      background:rgba(244,239,227,.05)!important;border:1px solid rgba(228,197,107,.28)!important;
+      border-radius:20px!important;padding:24px!important;overflow:hidden!important
     }
     #mds-optin .teaser .tt{
-      font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--or-clair);
-      font-weight:600;margin-bottom:16px;text-align:center
+      font-family:var(--sans)!important;font-size:12px!important;letter-spacing:.06em!important;
+      text-transform:uppercase!important;color:var(--or-clair)!important;font-weight:600!important;
+      margin-bottom:16px!important;text-align:center!important
     }
-    #mds-optin .teaser .rows{display:grid;gap:8px;margin-bottom:18px}
+    #mds-optin .teaser .rows{display:grid!important;gap:8px!important;margin-bottom:16px!important}
     #mds-optin .teaser .row{
-      display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--creme2);
-      background:rgba(244,239,227,.06);border-radius:9px;padding:9px 12px
+      display:flex!important;align-items:center!important;gap:10px!important;
+      font-family:var(--sans)!important;font-size:14px!important;text-align:left!important;
+      color:var(--creme2)!important;background:rgba(244,239,227,.06)!important;
+      border-radius:9px!important;padding:9px 12px!important
     }
     #mds-optin .teaser .row .tick{
-      flex:0 0 18px;width:18px;height:18px;border-radius:5px;background:var(--or);
-      display:flex;align-items:center;justify-content:center
+      flex:0 0 18px!important;width:18px!important;height:18px!important;border-radius:5px!important;
+      background:var(--or)!important;display:flex!important;align-items:center!important;justify-content:center!important
     }
-    #mds-optin .teaser .row .tick svg{width:11px;height:11px}
-    #mds-optin .teaser .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-    #mds-optin .teaser .g3 .c{text-align:center;padding:14px 6px;border-radius:11px;background:rgba(244,239,227,.06)}
-    #mds-optin .teaser .g3 .c.hot{background:linear-gradient(160deg,rgba(188,148,79,.3),rgba(188,148,79,.12));border:1px solid var(--or)}
-    #mds-optin .teaser .g3 .c .l{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--creme2);opacity:.75;margin-bottom:6px}
-    #mds-optin .teaser .g3 .c.hot .l{color:var(--or-clair);opacity:1}
-    #mds-optin .teaser .g3 .c .n{font-family:var(--serif);font-size:26px;font-weight:600;filter:blur(5px);color:var(--creme)}
-    #mds-optin .teaser .g3 .c.hot .n{color:var(--or-clair)}
+    #mds-optin .teaser .row .tick svg{width:11px!important;height:11px!important}
+    #mds-optin .teaser .g3{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:8px!important}
+    #mds-optin .teaser .g3 .c{text-align:center!important;padding:14px 6px!important;border-radius:11px!important;background:rgba(244,239,227,.06)!important}
+    #mds-optin .teaser .g3 .c.hot{background:linear-gradient(160deg,rgba(188,148,79,.3),rgba(188,148,79,.12))!important;border:1px solid var(--or)!important}
+    #mds-optin .teaser .g3 .c .l{font-family:var(--sans)!important;font-size:10px!important;text-transform:uppercase!important;letter-spacing:.04em!important;color:var(--creme2)!important;opacity:.75!important;margin-bottom:6px!important}
+    #mds-optin .teaser .g3 .c.hot .l{color:var(--or-clair)!important;opacity:1!important}
+    #mds-optin .teaser .g3 .c .n{font-family:var(--serif)!important;font-size:26px!important;font-weight:600!important;filter:blur(5px)!important;color:var(--creme)!important}
+    #mds-optin .teaser .g3 .c.hot .n{color:var(--or-clair)!important}
     #mds-optin .teaser .lock{
-      text-align:center;margin-top:16px;font-size:13px;color:var(--or-clair);font-weight:500
+      font-family:var(--sans)!important;text-align:center!important;margin-top:16px!important;
+      font-size:13px!important;color:var(--or-clair)!important;font-weight:500!important
     }
 
     #mds-optin .pitch h2{
-      font-family:var(--serif);font-size:clamp(24px,3.6vw,32px);font-weight:600;color:var(--creme);margin-bottom:18px;line-height:1.15
+      font-family:var(--serif)!important;font-size:28px!important;font-weight:600!important;
+      color:var(--creme)!important;margin-bottom:18px!important;line-height:1.15!important;text-align:left!important
     }
-    #mds-optin .pitch ul{list-style:none;display:grid;gap:14px}
-    #mds-optin .pitch li{display:flex;gap:12px;font-size:15.5px;color:var(--creme2)}
+    #mds-optin .pitch ul{list-style:none!important;display:grid!important;gap:14px!important}
+    #mds-optin .pitch li{display:flex!important;gap:12px!important;font-family:var(--sans)!important;font-size:16px!important;line-height:1.45!important;text-align:left!important;color:var(--creme2)!important}
     #mds-optin .pitch li .b{
-      flex:0 0 22px;width:22px;height:22px;border-radius:50%;background:var(--or);
-      display:flex;align-items:center;justify-content:center;margin-top:1px
+      flex:0 0 22px!important;width:22px!important;height:22px!important;border-radius:50%!important;
+      background:var(--or)!important;display:flex!important;align-items:center!important;justify-content:center!important;margin-top:1px!important
     }
-    #mds-optin .pitch li .b svg{width:12px;height:12px}
-    #mds-optin .pitch li b{color:var(--creme);font-weight:600}
+    #mds-optin .pitch li .b svg{width:12px!important;height:12px!important}
+    #mds-optin .pitch li b{color:var(--creme)!important;font-weight:600!important}
 
-    /* petite fleche qui pointe vers le formulaire natif systeme.io */
-    #mds-optin .to-form{text-align:center;margin-top:clamp(30px,5vw,46px)}
-    #mds-optin .to-form .lead{font-family:var(--serif);font-size:clamp(22px,3.6vw,30px);font-weight:600;color:var(--or-clair)}
-    #mds-optin .to-form .lead b{color:var(--creme)}
-    #mds-optin .to-form .arrow{font-size:32px;color:var(--or-clair);margin-top:6px;animation:mds-bounce 1.6s infinite}
+    #mds-optin .to-form{text-align:center!important;margin-top:40px!important}
+    #mds-optin .to-form .lead{font-family:var(--serif)!important;font-size:26px!important;line-height:1.2!important;font-weight:600!important;color:var(--or-clair)!important;text-align:center!important}
+    #mds-optin .to-form .lead b{color:var(--creme)!important}
+    #mds-optin .to-form .arrow{font-size:32px!important;color:var(--or-clair)!important;margin-top:6px!important;line-height:1!important;animation:mds-bounce 1.6s infinite}
     @keyframes mds-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(9px)}}
 
+    /* ---------- TABLETTE ---------- */
+    @media(min-width:721px){
+      #mds-optin{padding:80px 40px 40px!important}
+      #mds-optin h1{font-size:60px!important}
+      #mds-optin .sub{font-size:20px!important}
+    }
+    @media(min-width:721px) and (max-width:1000px){
+      #mds-optin h1{font-size:52px!important}
+    }
+
+    /* ---------- MOBILE : on empile et on cale les tailles ---------- */
     @media(max-width:720px){
-      #mds-optin .cols{grid-template-columns:1fr}
-      #mds-optin .teaser{order:2}
+      #mds-optin{padding:44px 18px 28px!important}
+      #mds-optin .cols{grid-template-columns:1fr!important;gap:24px!important;margin-top:32px!important}
+      #mds-optin h1{font-size:34px!important}
+      #mds-optin .sub{font-size:16px!important;margin-top:16px!important}
+      #mds-optin .pitch h2{font-size:23px!important;text-align:center!important}
+      #mds-optin .pitch ul{max-width:360px!important;margin:0 auto!important}
+      #mds-optin .teaser{order:2!important}
+      #mds-optin .teaser .g3 .c .n{font-size:22px!important}
+      #mds-optin .to-form .lead{font-size:22px!important}
+    }
+    @media(max-width:380px){
+      #mds-optin h1{font-size:29px!important}
+      #mds-optin .teaser .g3 .c .n{font-size:19px!important}
+      #mds-optin .teaser .row{font-size:13px!important}
     }
   </style>
 
@@ -137,7 +159,6 @@
       </div>
     </div>
 
-    <!-- Pointe vers le formulaire natif systeme.io place juste en dessous -->
     <div class="to-form">
       <div class="lead">Laisse ton prénom et ton email. <b>Accès immédiat.</b></div>
       <div class="arrow">↓</div>
