@@ -1,9 +1,11 @@
 <!-- =========================================================================
-     MY DREAM SQUAD - PAGE 1 : OPT-IN (version SANS carte CTA)
-     BLOC "CODE HTML" pour systeme.io. Durci mobile : !important + breakpoints
-     fixes pour que le CSS global de systeme.io ne casse rien.
+     MY DREAM SQUAD - PAGE 1 : OPT-IN (colonne unique centree, bulletproof)
+     BLOC "CODE HTML" pour systeme.io.
 
-     Ce bloc = hero + teaser du calculateur + 3 arguments.
+     Une seule colonne : aucune grille 2 colonnes qui puisse casser dans
+     l'apercu mobile de systeme.io (qui scale un rendu desktop et ignore les
+     media queries mobile). Marche partout.
+
      Le call-to-action = TON formulaire natif systeme.io, place JUSTE en dessous
      (champ Prenom, champ Email, bouton or #BC944F -> redirige vers le calculateur).
      ========================================================================= -->
@@ -19,49 +21,47 @@
       --serif:'Cormorant Garamond',Georgia,serif;
       font-family:var(--sans)!important; color:var(--creme)!important; line-height:1.5!important;
       background:linear-gradient(165deg,var(--aubergine) 0%,var(--aubergine-fonce) 100%)!important;
-      padding:64px 24px 32px!important;
+      padding:52px 20px 32px!important;
       max-width:100%!important; overflow-x:hidden!important;
     }
     #mds-optin *{box-sizing:border-box!important;margin:0!important;padding:0!important;max-width:100%!important;overflow-wrap:break-word!important}
-    #mds-optin .wrap{max-width:900px!important;margin:0 auto!important}
+
+    /* colonne unique centree */
+    #mds-optin .wrap{max-width:560px!important;margin:0 auto!important;text-align:center!important}
 
     #mds-optin .eyebrow{
-      font-family:var(--sans)!important;font-size:13px!important;letter-spacing:.28em!important;
+      font-family:var(--sans)!important;font-size:12px!important;letter-spacing:.26em!important;
       text-transform:uppercase!important;color:var(--or-clair)!important;font-weight:600!important;
-      text-align:center!important;margin-bottom:16px!important
+      text-align:center!important;margin-bottom:14px!important
     }
     #mds-optin h1{
       font-family:var(--serif)!important;font-weight:600!important;
-      font-size:44px!important;line-height:1.05!important;
+      font-size:40px!important;line-height:1.06!important;
       text-align:center!important;color:var(--creme)!important;letter-spacing:-.01em!important
     }
     #mds-optin h1 em{font-style:italic!important;color:var(--or-clair)!important}
     #mds-optin .sub{
-      font-family:var(--sans)!important;text-align:center!important;max-width:600px!important;
-      margin:20px auto 0!important;font-size:18px!important;line-height:1.5!important;
+      font-family:var(--sans)!important;text-align:center!important;
+      margin:18px auto 0!important;font-size:16px!important;line-height:1.55!important;
       color:var(--creme2)!important;opacity:.92!important
     }
 
-    #mds-optin .cols{
-      display:grid!important;grid-template-columns:1fr 1fr!important;gap:36px!important;
-      align-items:center!important;margin-top:44px!important
-    }
-
+    /* TEASER */
     #mds-optin .teaser{
       background:rgba(244,239,227,.05)!important;border:1px solid rgba(228,197,107,.28)!important;
-      border-radius:20px!important;padding:24px!important;overflow:hidden!important
+      border-radius:18px!important;padding:22px!important;margin:30px auto 0!important;overflow:hidden!important;text-align:left!important
     }
     #mds-optin .teaser .tt{
       font-family:var(--sans)!important;font-size:12px!important;letter-spacing:.06em!important;
       text-transform:uppercase!important;color:var(--or-clair)!important;font-weight:600!important;
-      margin-bottom:16px!important;text-align:center!important
+      margin-bottom:14px!important;text-align:center!important
     }
-    #mds-optin .teaser .rows{display:grid!important;gap:8px!important;margin-bottom:16px!important}
+    #mds-optin .teaser .rows{display:grid!important;gap:8px!important;margin-bottom:14px!important}
     #mds-optin .teaser .row{
       display:flex!important;align-items:center!important;gap:10px!important;
       font-family:var(--sans)!important;font-size:14px!important;text-align:left!important;
       color:var(--creme2)!important;background:rgba(244,239,227,.06)!important;
-      border-radius:9px!important;padding:9px 12px!important
+      border-radius:9px!important;padding:10px 12px!important
     }
     #mds-optin .teaser .row .tick{
       flex:0 0 18px!important;width:18px!important;height:18px!important;border-radius:5px!important;
@@ -71,21 +71,23 @@
     #mds-optin .teaser .g3{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:8px!important}
     #mds-optin .teaser .g3 .c{text-align:center!important;padding:14px 6px!important;border-radius:11px!important;background:rgba(244,239,227,.06)!important}
     #mds-optin .teaser .g3 .c.hot{background:linear-gradient(160deg,rgba(188,148,79,.3),rgba(188,148,79,.12))!important;border:1px solid var(--or)!important}
-    #mds-optin .teaser .g3 .c .l{font-family:var(--sans)!important;font-size:10px!important;text-transform:uppercase!important;letter-spacing:.04em!important;color:var(--creme2)!important;opacity:.75!important;margin-bottom:6px!important}
+    #mds-optin .teaser .g3 .c .l{font-family:var(--sans)!important;font-size:10px!important;text-transform:uppercase!important;letter-spacing:.03em!important;color:var(--creme2)!important;opacity:.75!important;margin-bottom:6px!important}
     #mds-optin .teaser .g3 .c.hot .l{color:var(--or-clair)!important;opacity:1!important}
-    #mds-optin .teaser .g3 .c .n{font-family:var(--serif)!important;font-size:26px!important;font-weight:600!important;filter:blur(5px)!important;color:var(--creme)!important}
+    #mds-optin .teaser .g3 .c .n{font-family:var(--serif)!important;font-size:24px!important;font-weight:600!important;filter:blur(5px)!important;color:var(--creme)!important}
     #mds-optin .teaser .g3 .c.hot .n{color:var(--or-clair)!important}
     #mds-optin .teaser .lock{
-      font-family:var(--sans)!important;text-align:center!important;margin-top:16px!important;
+      font-family:var(--sans)!important;text-align:center!important;margin-top:14px!important;
       font-size:13px!important;color:var(--or-clair)!important;font-weight:500!important
     }
 
+    /* ARGUMENTS */
+    #mds-optin .pitch{margin-top:30px!important}
     #mds-optin .pitch h2{
-      font-family:var(--serif)!important;font-size:28px!important;font-weight:600!important;
-      color:var(--creme)!important;margin-bottom:18px!important;line-height:1.15!important;text-align:left!important
+      font-family:var(--serif)!important;font-size:26px!important;font-weight:600!important;
+      color:var(--creme)!important;margin-bottom:18px!important;line-height:1.18!important;text-align:center!important
     }
-    #mds-optin .pitch ul{list-style:none!important;display:grid!important;gap:14px!important}
-    #mds-optin .pitch li{display:flex!important;gap:12px!important;font-family:var(--sans)!important;font-size:16px!important;line-height:1.45!important;text-align:left!important;color:var(--creme2)!important}
+    #mds-optin .pitch ul{list-style:none!important;display:grid!important;gap:13px!important;max-width:400px!important;margin:0 auto!important}
+    #mds-optin .pitch li{display:flex!important;gap:12px!important;font-family:var(--sans)!important;font-size:15.5px!important;line-height:1.45!important;text-align:left!important;color:var(--creme2)!important}
     #mds-optin .pitch li .b{
       flex:0 0 22px!important;width:22px!important;height:22px!important;border-radius:50%!important;
       background:var(--or)!important;display:flex!important;align-items:center!important;justify-content:center!important;margin-top:1px!important
@@ -93,38 +95,21 @@
     #mds-optin .pitch li .b svg{width:12px!important;height:12px!important}
     #mds-optin .pitch li b{color:var(--creme)!important;font-weight:600!important}
 
-    #mds-optin .to-form{text-align:center!important;margin-top:40px!important}
-    #mds-optin .to-form .lead{font-family:var(--serif)!important;font-size:26px!important;line-height:1.2!important;font-weight:600!important;color:var(--or-clair)!important;text-align:center!important}
+    /* FLECHE vers le formulaire natif */
+    #mds-optin .to-form{text-align:center!important;margin-top:34px!important}
+    #mds-optin .to-form .lead{font-family:var(--serif)!important;font-size:24px!important;line-height:1.25!important;font-weight:600!important;color:var(--or-clair)!important;text-align:center!important}
     #mds-optin .to-form .lead b{color:var(--creme)!important}
-    #mds-optin .to-form .arrow{font-size:32px!important;color:var(--or-clair)!important;margin-top:6px!important;line-height:1!important;animation:mds-bounce 1.6s infinite}
+    #mds-optin .to-form .arrow{font-size:30px!important;color:var(--or-clair)!important;margin-top:6px!important;line-height:1!important;animation:mds-bounce 1.6s infinite}
     @keyframes mds-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(9px)}}
 
-    /* ---------- TABLETTE ---------- */
-    @media(min-width:721px){
-      #mds-optin{padding:80px 40px 40px!important}
-      #mds-optin h1{font-size:60px!important}
-      #mds-optin .sub{font-size:20px!important}
-    }
-    @media(min-width:721px) and (max-width:1000px){
-      #mds-optin h1{font-size:52px!important}
-    }
-
-    /* ---------- MOBILE : on empile et on cale les tailles ---------- */
-    @media(max-width:720px){
-      #mds-optin{padding:44px 18px 28px!important}
-      #mds-optin .cols{grid-template-columns:1fr!important;gap:24px!important;margin-top:32px!important}
-      #mds-optin h1{font-size:34px!important}
-      #mds-optin .sub{font-size:16px!important;margin-top:16px!important}
-      #mds-optin .pitch h2{font-size:23px!important;text-align:center!important}
-      #mds-optin .pitch ul{max-width:360px!important;margin:0 auto!important}
-      #mds-optin .teaser{order:2!important}
-      #mds-optin .teaser .g3 .c .n{font-size:22px!important}
-      #mds-optin .to-form .lead{font-size:22px!important}
-    }
-    @media(max-width:380px){
-      #mds-optin h1{font-size:29px!important}
-      #mds-optin .teaser .g3 .c .n{font-size:19px!important}
-      #mds-optin .teaser .row{font-size:13px!important}
+    /* desktop : on agrandit juste un peu, la colonne reste centree */
+    @media(min-width:800px){
+      #mds-optin{padding:72px 24px 40px!important}
+      #mds-optin .wrap{max-width:640px!important}
+      #mds-optin h1{font-size:56px!important}
+      #mds-optin .sub{font-size:18px!important}
+      #mds-optin .pitch h2{font-size:30px!important}
+      #mds-optin .to-form .lead{font-size:27px!important}
     }
   </style>
 
@@ -133,30 +118,28 @@
     <h1>Combien de temps<br>tu perds <em>vraiment</em> ?</h1>
     <p class="sub">Le calculateur gratuit qui te montre, en 30 secondes, l'écart entre tout faire à la main, bricoler avec un chatbot, et déléguer à une équipe installée pour toi.</p>
 
-    <div class="cols">
-      <div class="teaser">
-        <div class="tt">Ton calculateur t'attend</div>
-        <div class="rows">
-          <div class="row"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span> Créer les moodboards</div>
-          <div class="row"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span> Relancer les prospects tièdes</div>
-          <div class="row"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span> Rédiger tes posts réseaux</div>
-        </div>
-        <div class="g3">
-          <div class="c"><div class="l">À la main</div><div class="n">14h</div></div>
-          <div class="c"><div class="l">Chatbot</div><div class="n">6h</div></div>
-          <div class="c hot"><div class="l">MDS</div><div class="n">1h</div></div>
-        </div>
-        <div class="lock">🔒 Débloque le calcul complet juste en dessous ↓</div>
+    <div class="teaser">
+      <div class="tt">Ton calculateur t'attend</div>
+      <div class="rows">
+        <div class="row"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span> Créer les moodboards</div>
+        <div class="row"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span> Relancer les prospects tièdes</div>
+        <div class="row"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span> Rédiger tes posts réseaux</div>
       </div>
+      <div class="g3">
+        <div class="c"><div class="l">À la main</div><div class="n">14h</div></div>
+        <div class="c"><div class="l">Chatbot</div><div class="n">6h</div></div>
+        <div class="c hot"><div class="l">MDS</div><div class="n">1h</div></div>
+      </div>
+      <div class="lock">🔒 Débloque le calcul complet juste en dessous ↓</div>
+    </div>
 
-      <div class="pitch">
-        <h2>Coche tes 12 tâches. Le calcul est instantané.</h2>
-        <ul>
-          <li><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Les <b>heures que tu crames chaque semaine</b> sur des tâches délégables.</span></li>
-          <li><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Ce qu'un chatbot te fait gagner... <b>vs ce qu'une vraie équipe te rend.</b></span></li>
-          <li><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>La <b>valeur en € de ton temps récupéré</b> chaque mois.</span></li>
-        </ul>
-      </div>
+    <div class="pitch">
+      <h2>Coche tes 12 tâches. Le calcul est instantané.</h2>
+      <ul>
+        <li><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Les <b>heures que tu crames chaque semaine</b> sur des tâches délégables.</span></li>
+        <li><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Ce qu'un chatbot te fait gagner... <b>vs ce qu'une vraie équipe te rend.</b></span></li>
+        <li><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>La <b>valeur en € de ton temps récupéré</b> chaque mois.</span></li>
+      </ul>
     </div>
 
     <div class="to-form">
