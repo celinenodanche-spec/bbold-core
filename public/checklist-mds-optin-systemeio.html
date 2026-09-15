@@ -1,0 +1,177 @@
+<!-- =========================================================================
+     MY DREAM SQUAD - PAGE 1 : OPT-IN (avant le calculateur)
+     BLOC "CODE HTML" pour systeme.io.
+
+     FUNNEL :
+       Page 1 (celle-ci)  -> capture Prenom + Email
+       Page 2             -> le calculateur "temps perdu" (checklist-mds-systemeio.html)
+
+     UTILISATION :
+     1. Cree une nouvelle page systeme.io (type "Squeeze" / capture).
+     2. Ajoute un element "Code HTML" et colle TOUT ce fichier dedans.
+     3. Juste EN DESSOUS de ce bloc, ajoute un bloc "Formulaire" natif systeme.io
+        avec 2 champs : Prenom + Email.
+     4. Reglages du formulaire systeme.io -> apres inscription : REDIRIGE vers
+        la page du calculateur (page 2). C'est la recompense de l'opt-in.
+
+     Tout est namespace sous #mds-optin : aucun conflit avec le CSS systeme.io.
+     ========================================================================= -->
+<div id="mds-optin">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap');
+
+    #mds-optin{
+      --aubergine:#4D0156; --aubergine2:#6a0a75; --aubergine-fonce:#2e0335;
+      --or:#BC944F; --or-clair:#E4C56B;
+      --creme:#F4EFE3; --creme2:#EDE6D6;
+      --sans:'Jost',system-ui,-apple-system,Segoe UI,sans-serif;
+      --serif:'Cormorant Garamond',Georgia,serif;
+      font-family:var(--sans); color:var(--creme); line-height:1.5;
+      background:linear-gradient(165deg,var(--aubergine) 0%,var(--aubergine-fonce) 100%);
+      padding:clamp(30px,6vw,80px) clamp(16px,4vw,40px);
+    }
+    #mds-optin *{box-sizing:border-box;margin:0;padding:0}
+    #mds-optin .wrap{max-width:900px;margin:0 auto}
+
+    /* ---------- HERO ---------- */
+    #mds-optin .eyebrow{
+      font-size:13px;letter-spacing:.28em;text-transform:uppercase;
+      color:var(--or-clair);font-weight:600;text-align:center;margin-bottom:18px
+    }
+    #mds-optin h1{
+      font-family:var(--serif);font-weight:600;
+      font-size:clamp(36px,7.5vw,68px);line-height:1.04;
+      text-align:center;color:var(--creme);letter-spacing:-.01em
+    }
+    #mds-optin h1 em{font-style:italic;color:var(--or-clair)}
+    #mds-optin .sub{
+      text-align:center;max-width:600px;margin:22px auto 0;
+      font-size:clamp(16px,2.4vw,20px);color:var(--creme2);opacity:.92
+    }
+
+    /* ---------- LAYOUT 2 colonnes ---------- */
+    #mds-optin .cols{
+      display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,4vw,44px);
+      align-items:center;margin-top:clamp(34px,6vw,56px)
+    }
+
+    /* teaser du calculateur (colonne gauche) */
+    #mds-optin .teaser{
+      background:rgba(244,239,227,.05);
+      border:1px solid rgba(228,197,107,.28);
+      border-radius:20px;padding:26px;position:relative;overflow:hidden
+    }
+    #mds-optin .teaser .tt{
+      font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--or-clair);
+      font-weight:600;margin-bottom:16px;text-align:center
+    }
+    #mds-optin .teaser .rows{display:grid;gap:8px;margin-bottom:18px}
+    #mds-optin .teaser .row{
+      display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--creme2);
+      background:rgba(244,239,227,.06);border-radius:9px;padding:9px 12px
+    }
+    #mds-optin .teaser .row .tick{
+      flex:0 0 18px;width:18px;height:18px;border-radius:5px;background:var(--or);
+      display:flex;align-items:center;justify-content:center
+    }
+    #mds-optin .teaser .row .tick svg{width:11px;height:11px}
+    #mds-optin .teaser .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    #mds-optin .teaser .g3 .c{text-align:center;padding:14px 6px;border-radius:11px;background:rgba(244,239,227,.06)}
+    #mds-optin .teaser .g3 .c.hot{background:linear-gradient(160deg,rgba(188,148,79,.3),rgba(188,148,79,.12));border:1px solid var(--or)}
+    #mds-optin .teaser .g3 .c .l{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--creme2);opacity:.75;margin-bottom:6px}
+    #mds-optin .teaser .g3 .c.hot .l{color:var(--or-clair);opacity:1}
+    #mds-optin .teaser .g3 .c .n{font-family:var(--serif);font-size:26px;font-weight:600;filter:blur(5px);color:var(--creme)}
+    #mds-optin .teaser .g3 .c.hot .n{color:var(--or-clair)}
+    #mds-optin .teaser .lock{
+      text-align:center;margin-top:16px;font-size:13px;color:var(--or-clair);font-weight:500
+    }
+
+    /* colonne droite : promesse + CTA */
+    #mds-optin .pitch h2{
+      font-family:var(--serif);font-size:clamp(24px,3.6vw,32px);font-weight:600;color:var(--creme);margin-bottom:18px;line-height:1.15
+    }
+    #mds-optin .pitch ul{list-style:none;display:grid;gap:14px;margin-bottom:26px}
+    #mds-optin .pitch li{display:flex;gap:12px;font-size:15.5px;color:var(--creme2)}
+    #mds-optin .pitch li .b{
+      flex:0 0 22px;width:22px;height:22px;border-radius:50%;background:var(--or);
+      display:flex;align-items:center;justify-content:center;margin-top:1px
+    }
+    #mds-optin .pitch li .b svg{width:12px;height:12px}
+    #mds-optin .pitch li b{color:var(--creme);font-weight:600}
+
+    /* ---------- CTA / formulaire opt-in ---------- */
+    #mds-optin .cta{
+      background:rgba(46,3,53,.5);border:1px solid rgba(228,197,107,.3);
+      border-radius:18px;padding:clamp(22px,4vw,32px)
+    }
+    #mds-optin .cta .kick{font-family:var(--serif);font-size:clamp(22px,3.4vw,28px);font-weight:600;color:var(--or-clair);text-align:center;margin-bottom:8px}
+    #mds-optin .cta .kd{font-size:15px;color:var(--creme2);opacity:.9;text-align:center;margin-bottom:20px}
+    #mds-optin .cta .arrow{text-align:center;font-size:30px;color:var(--or-clair);animation:mds-bounce 1.6s infinite}
+    @keyframes mds-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(9px)}}
+    #mds-optin .cta .reassure{text-align:center;font-size:12.5px;color:var(--creme2);opacity:.6;margin-top:16px}
+
+    /* placeholder a SUPPRIMER une fois le formulaire systeme.io ajoute en dessous */
+    #mds-optin .form-slot{
+      margin-top:16px;border:2px dashed rgba(228,197,107,.5);border-radius:14px;
+      padding:24px;font-size:14px;color:var(--or-clair);background:rgba(74,1,86,.25);text-align:center
+    }
+
+    @media(max-width:720px){
+      #mds-optin .cols{grid-template-columns:1fr}
+      #mds-optin .teaser{order:2}
+    }
+  </style>
+
+  <div class="wrap">
+    <!-- HERO -->
+    <p class="eyebrow">My Dream Squad</p>
+    <h1>Combien de temps<br>tu perds <em>vraiment</em> ?</h1>
+    <p class="sub">Le calculateur gratuit qui te montre, en 30 secondes, l'écart entre tout faire à la main, bricoler avec un chatbot, et déléguer à une équipe installée pour toi.</p>
+
+    <div class="cols">
+      <!-- TEASER -->
+      <div class="teaser">
+        <div class="tt">Ton calculateur t'attend</div>
+        <div class="rows">
+          <div class="row"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span> Créer les moodboards</div>
+          <div class="row"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span> Relancer les prospects tièdes</div>
+          <div class="row"><span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span> Rédiger tes posts réseaux</div>
+        </div>
+        <div class="g3">
+          <div class="c"><div class="l">À la main</div><div class="n">14h</div></div>
+          <div class="c"><div class="l">Chatbot</div><div class="n">6h</div></div>
+          <div class="c hot"><div class="l">MDS</div><div class="n">1h</div></div>
+        </div>
+        <div class="lock">🔒 Débloque le calcul complet juste ici →</div>
+      </div>
+
+      <!-- PITCH + CTA -->
+      <div class="pitch">
+        <h2>Coche tes 12 tâches. Le calcul est instantané.</h2>
+        <ul>
+          <li><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Les <b>heures que tu crames chaque semaine</b> sur des tâches délégables.</span></li>
+          <li><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>Ce qu'un chatbot te fait gagner... <b>vs ce qu'une vraie équipe te rend.</b></span></li>
+          <li><span class="b"><svg viewBox="0 0 24 24" fill="none" stroke="#4D0156" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span>La <b>valeur en € de ton temps récupéré</b> chaque mois.</span></li>
+        </ul>
+
+        <div class="cta">
+          <div class="kick">Accède au calculateur</div>
+          <div class="kd">Laisse ton prénom et ton email. Tu y accèdes tout de suite.</div>
+          <div class="arrow">↓</div>
+
+          <!-- =================================================================
+               SUPPRIME ce bloc pointille, puis ajoute SOUS cet element
+               "Code HTML" un bloc "Formulaire" natif systeme.io :
+               champs Prenom + Email, redirection -> page du calculateur.
+               ================================================================= -->
+          <div class="form-slot">
+            ⬇️ Emplacement du formulaire opt-in systeme.io (Prénom + Email).<br>
+            Ajoute-le comme bloc natif juste en dessous, puis supprime cet encadré.
+          </div>
+
+          <div class="reassure">Gratuit. Instantané. Zéro spam.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
