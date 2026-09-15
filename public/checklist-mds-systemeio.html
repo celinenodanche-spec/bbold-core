@@ -1,185 +1,126 @@
 <!-- =========================================================================
-     MY DREAM SQUAD - Lead magnet "Combien de temps tu perds vraiment ?"
-     BLOC "CODE HTML" pour systeme.io.
+     MY DREAM SQUAD - PAGE 2 : CALCULATEUR "temps perdu"
+     BLOC "CODE HTML" pour systeme.io. Colonne unique, bulletproof mobile.
 
-     UTILISATION :
-     1. Sur ta page systeme.io, ajoute un element "Code HTML" (Code personnalise).
-     2. Colle TOUT ce fichier dedans.
-     3. Juste EN DESSOUS de ce bloc, ajoute un bloc "Formulaire" natif systeme.io
-        avec 2 champs : Prenom + Email. C'est lui qui capture le lead dans ton CRM.
-     4. Dans les reglages du formulaire systeme.io : apres inscription -> redirige
-        vers ta page de reservation de demo (ou envoie la checklist par email).
+     Vient APRES la page opt-in. L'utilisateur coche ses taches et voit en
+     direct l'ecart a la main / chatbot / MDS, + la valeur en euros.
 
-     Tout est namespace sous #mds-lm : aucun conflit avec le CSS de systeme.io.
+     Si tu veux capturer une 2e fois pour la demo, ajoute un bloc formulaire
+     natif systeme.io (ou un bouton vers ton lien de reservation) sous ce bloc.
+
+     Tout est namespace sous #mds-calc.
      ========================================================================= -->
-<div id="mds-lm">
+<div id="mds-calc">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap');
 
-    #mds-lm{
-      --aubergine:#4D0156; --aubergine2:#6a0a75; --aubergine-fonce:#2e0335;
+    #mds-calc{
+      --aubergine:#4D0156; --aubergine-fonce:#2e0335;
       --or:#BC944F; --or-clair:#E4C56B;
       --creme:#F4EFE3; --creme2:#EDE6D6;
-      --encre:#1A1614;
       --sans:'Jost',system-ui,-apple-system,Segoe UI,sans-serif;
       --serif:'Cormorant Garamond',Georgia,serif;
-      font-family:var(--sans);
-      color:var(--creme);
-      line-height:1.5;
-      background:linear-gradient(165deg,var(--aubergine) 0%,var(--aubergine-fonce) 100%);
-      padding:clamp(28px,6vw,72px) clamp(16px,4vw,40px);
+      font-family:var(--sans)!important; color:var(--creme)!important; line-height:1.5!important;
+      background:linear-gradient(165deg,var(--aubergine) 0%,var(--aubergine-fonce) 100%)!important;
+      padding:52px 20px 40px!important; max-width:100%!important; overflow-x:hidden!important;
     }
-    #mds-lm *{box-sizing:border-box;margin:0;padding:0}
-    #mds-lm .wrap{max-width:860px;margin:0 auto}
+    #mds-calc *{box-sizing:border-box!important;margin:0!important;padding:0!important;max-width:100%!important;overflow-wrap:break-word!important}
+    #mds-calc .wrap{max-width:600px!important;margin:0 auto!important}
 
-    /* ---------- HERO ---------- */
-    #mds-lm .eyebrow{
-      font-size:13px;letter-spacing:.28em;text-transform:uppercase;
-      color:var(--or-clair);font-weight:600;text-align:center;margin-bottom:18px
-    }
-    #mds-lm h1{
-      font-family:var(--serif);font-weight:600;
-      font-size:clamp(34px,7vw,64px);line-height:1.05;
-      text-align:center;color:var(--creme);letter-spacing:-.01em
-    }
-    #mds-lm h1 em{font-style:italic;color:var(--or-clair)}
-    #mds-lm .sub{
-      text-align:center;max-width:560px;margin:20px auto 0;
-      font-size:clamp(16px,2.4vw,19px);color:var(--creme2);opacity:.92
-    }
+    /* HERO */
+    #mds-calc .eyebrow{font-family:var(--sans)!important;font-size:12px!important;letter-spacing:.26em!important;text-transform:uppercase!important;color:var(--or-clair)!important;font-weight:600!important;text-align:center!important;margin-bottom:14px!important}
+    #mds-calc h1{font-family:var(--serif)!important;font-weight:600!important;font-size:38px!important;line-height:1.06!important;text-align:center!important;color:var(--creme)!important;letter-spacing:-.01em!important}
+    #mds-calc h1 em{font-style:italic!important;color:var(--or-clair)!important}
+    #mds-calc .sub{font-family:var(--sans)!important;text-align:center!important;margin:18px auto 0!important;font-size:16px!important;line-height:1.55!important;color:var(--creme2)!important;opacity:.92!important}
 
-    /* ---------- CARTE CALCULATEUR ---------- */
-    #mds-lm .card{
-      background:rgba(244,239,227,.05);
-      border:1px solid rgba(228,197,107,.28);
-      border-radius:22px;
-      padding:clamp(20px,4vw,38px);
-      margin-top:clamp(28px,5vw,48px);
-      backdrop-filter:blur(4px)
-    }
-    #mds-lm .card-hint{
-      font-size:14px;color:var(--creme2);opacity:.8;text-align:center;margin-bottom:22px
-    }
+    /* CARTE */
+    #mds-calc .card{background:rgba(244,239,227,.05)!important;border:1px solid rgba(228,197,107,.28)!important;border-radius:18px!important;padding:20px!important;margin-top:30px!important}
+    #mds-calc .card-hint{font-family:var(--sans)!important;font-size:13.5px!important;color:var(--creme2)!important;opacity:.8!important;text-align:center!important;margin-bottom:18px!important}
 
-    /* liste de taches */
-    #mds-lm .tasks{display:grid;gap:8px}
-    #mds-lm .task{
-      display:flex;align-items:center;gap:14px;
-      background:rgba(244,239,227,.06);
-      border:1px solid rgba(244,239,227,.1);
-      border-radius:12px;padding:12px 14px;cursor:pointer;
-      transition:background .15s,border-color .15s,opacity .15s;user-select:none
-    }
-    #mds-lm .task:hover{background:rgba(244,239,227,.1)}
-    #mds-lm .task .cbox{
-      flex:0 0 24px;width:24px;height:24px;border-radius:7px;
-      border:2px solid var(--or);display:flex;align-items:center;justify-content:center;
-      transition:background .15s,border-color .15s
-    }
-    #mds-lm .task .cbox svg{width:15px;height:15px;opacity:0;transition:opacity .15s}
-    #mds-lm .task.on .cbox{background:var(--or);border-color:var(--or)}
-    #mds-lm .task.on .cbox svg{opacity:1}
-    #mds-lm .task .name{flex:1;font-size:15px;font-weight:500;color:var(--creme)}
-    #mds-lm .task .mini{
-      font-size:12.5px;color:var(--creme2);opacity:.7;text-align:right;flex:0 0 auto;white-space:nowrap
-    }
-    #mds-lm .task .mini b{color:var(--or-clair);font-weight:600}
-    #mds-lm .task.off{opacity:.4}
-    #mds-lm .task.off .name{text-decoration:line-through}
+    /* TACHES : checkbox a gauche, nom + timing empiles (jamais de debordement) */
+    #mds-calc .tasks{display:grid!important;gap:8px!important}
+    #mds-calc .task{display:flex!important;align-items:flex-start!important;gap:12px!important;background:rgba(244,239,227,.06)!important;border:1px solid rgba(244,239,227,.1)!important;border-radius:12px!important;padding:12px 14px!important;cursor:pointer!important;transition:background .15s,opacity .15s!important;text-align:left!important}
+    #mds-calc .task:hover{background:rgba(244,239,227,.1)!important}
+    #mds-calc .task .cbox{flex:0 0 24px!important;width:24px!important;height:24px!important;border-radius:7px!important;border:2px solid var(--or)!important;display:flex!important;align-items:center!important;justify-content:center!important;margin-top:1px!important;transition:background .15s!important}
+    #mds-calc .task .cbox svg{width:15px!important;height:15px!important;opacity:0!important;transition:opacity .15s!important}
+    #mds-calc .task.on .cbox{background:var(--or)!important}
+    #mds-calc .task.on .cbox svg{opacity:1!important}
+    #mds-calc .task .body{flex:1 1 auto!important;min-width:0!important}
+    #mds-calc .task .name{font-family:var(--sans)!important;font-size:15px!important;font-weight:500!important;color:var(--creme)!important;line-height:1.3!important}
+    #mds-calc .task .mini{font-family:var(--sans)!important;font-size:12.5px!important;color:var(--creme2)!important;opacity:.72!important;margin-top:3px!important}
+    #mds-calc .task .mini b{color:var(--or-clair)!important;font-weight:600!important}
+    #mds-calc .task.off{opacity:.42!important}
+    #mds-calc .task.off .name{text-decoration:line-through!important}
 
-    /* controles */
-    #mds-lm .controls{
-      display:grid;grid-template-columns:1fr 1fr;gap:18px 26px;
-      margin:26px 0 24px;padding:22px;
-      background:rgba(46,3,53,.4);border-radius:14px
-    }
-    #mds-lm .ctl label{display:block;font-size:13px;font-weight:600;color:var(--creme2);margin-bottom:10px}
-    #mds-lm .ctl label span{color:var(--or-clair)}
-    #mds-lm .ctl input[type=range]{
-      -webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;
-      background:linear-gradient(90deg,var(--or) 0%,var(--or) var(--fill,25%),rgba(244,239,227,.2) var(--fill,25%));outline:none
-    }
-    #mds-lm .ctl input[type=range]::-webkit-slider-thumb{
-      -webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;
-      background:var(--creme);border:3px solid var(--or);cursor:pointer;margin-top:-1px
-    }
-    #mds-lm .ctl input[type=range]::-moz-range-thumb{
-      width:22px;height:22px;border-radius:50%;background:var(--creme);border:3px solid var(--or);cursor:pointer
-    }
-    #mds-lm .rate-field{display:flex;align-items:center;gap:8px}
-    #mds-lm .rate-field input[type=number]{
-      width:110px;font-family:var(--sans);font-size:16px;font-weight:600;
-      background:rgba(244,239,227,.1);border:1px solid rgba(244,239,227,.2);
-      border-radius:9px;padding:10px 12px;color:var(--creme);outline:none
-    }
-    #mds-lm .rate-field input:focus{border-color:var(--or)}
-    #mds-lm .rate-field .cur{font-size:18px;color:var(--or-clair);font-weight:600}
-    #mds-lm .rate-field .opt{font-size:12px;color:var(--creme2);opacity:.6}
+    /* CONTROLES : empiles */
+    #mds-calc .controls{display:grid!important;gap:18px!important;margin:24px 0!important;padding:20px!important;background:rgba(46,3,53,.4)!important;border-radius:14px!important}
+    #mds-calc .ctl label{display:block!important;font-family:var(--sans)!important;font-size:13.5px!important;font-weight:600!important;color:var(--creme2)!important;margin-bottom:12px!important;text-align:left!important}
+    #mds-calc .ctl label span.v{color:var(--or-clair)!important}
+    #mds-calc .ctl label span.opt{font-weight:400!important;font-size:12px!important;color:var(--creme2)!important;opacity:.6!important}
+    #mds-calc .ctl input[type=range]{-webkit-appearance:none!important;appearance:none!important;width:100%!important;height:6px!important;border-radius:99px!important;background:linear-gradient(90deg,var(--or) 0%,var(--or) var(--fill,25%),rgba(244,239,227,.2) var(--fill,25%))!important;outline:none!important}
+    #mds-calc .ctl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none!important;appearance:none!important;width:22px!important;height:22px!important;border-radius:50%!important;background:var(--creme)!important;border:3px solid var(--or)!important;cursor:pointer!important}
+    #mds-calc .ctl input[type=range]::-moz-range-thumb{width:22px!important;height:22px!important;border-radius:50%!important;background:var(--creme)!important;border:3px solid var(--or)!important;cursor:pointer!important}
+    #mds-calc .rate-field{display:flex!important;align-items:center!important;gap:8px!important}
+    #mds-calc .rate-field input[type=number]{width:120px!important;font-family:var(--sans)!important;font-size:16px!important;font-weight:600!important;background:rgba(244,239,227,.1)!important;border:1px solid rgba(244,239,227,.2)!important;border-radius:9px!important;padding:10px 12px!important;color:var(--creme)!important;outline:none!important}
+    #mds-calc .rate-field input:focus{border-color:var(--or)!important}
+    #mds-calc .rate-field .cur{font-size:18px!important;color:var(--or-clair)!important;font-weight:600!important}
+    #mds-calc .rate-field .u{font-size:12px!important;color:var(--creme2)!important;opacity:.6!important}
 
-    /* resultats */
-    #mds-lm .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
-    #mds-lm .col{
-      text-align:center;padding:20px 12px;border-radius:14px;
-      background:rgba(244,239,227,.05);border:1px solid rgba(244,239,227,.1)
+    /* RESULTATS 3 colonnes (comparaison) */
+    #mds-calc .grid3{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:8px!important;margin-bottom:22px!important}
+    #mds-calc .col{text-align:center!important;padding:16px 6px!important;border-radius:13px!important;background:rgba(244,239,227,.05)!important;border:1px solid rgba(244,239,227,.1)!important}
+    #mds-calc .col.mds{background:linear-gradient(160deg,rgba(188,148,79,.28),rgba(188,148,79,.12))!important;border-color:var(--or)!important}
+    #mds-calc .col .lbl{font-family:var(--sans)!important;font-size:10.5px!important;letter-spacing:.03em!important;text-transform:uppercase!important;color:var(--creme2)!important;opacity:.75!important;margin-bottom:8px!important;line-height:1.2!important}
+    #mds-calc .col.mds .lbl{color:var(--or-clair)!important;opacity:1!important;font-weight:600!important}
+    #mds-calc .col .val{font-family:var(--serif)!important;font-size:24px!important;font-weight:600!important;color:var(--creme)!important;line-height:1!important}
+    #mds-calc .col.mds .val{color:var(--or-clair)!important}
+
+    /* VERDICT */
+    #mds-calc .verdict{text-align:center!important;padding-top:4px!important}
+    #mds-calc .verdict .saved-lbl{font-family:var(--sans)!important;font-size:14px!important;color:var(--creme2)!important;opacity:.8!important}
+    #mds-calc .verdict .saved-big{font-family:var(--serif)!important;font-size:52px!important;font-weight:700!important;color:var(--or-clair)!important;line-height:1.05!important;margin:4px 0 2px!important}
+    #mds-calc .verdict .saved-unit{font-family:var(--sans)!important;font-size:14px!important;color:var(--creme2)!important;opacity:.8!important;margin-bottom:16px!important}
+    #mds-calc .verdict .rTwo{font-family:var(--sans)!important;font-size:16px!important;line-height:1.5!important;color:var(--creme)!important;max-width:460px!important;margin:0 auto!important}
+    #mds-calc .verdict .rTwo b{color:var(--or-clair)!important}
+    #mds-calc .verdict .rEuro{font-family:var(--sans)!important;margin-top:14px!important;font-size:15px!important;font-weight:600!important;color:var(--or-clair)!important;min-height:20px!important}
+
+    /* PUNCHLINE */
+    #mds-calc .punch{font-family:var(--serif)!important;font-size:28px!important;font-weight:600!important;text-align:center!important;line-height:1.22!important;margin:40px auto 0!important}
+    #mds-calc .punch b{color:var(--or-clair)!important}
+
+    /* VALEUR (empile) */
+    #mds-calc .value{display:grid!important;gap:14px!important;margin-top:34px!important}
+    #mds-calc .value .v{background:rgba(244,239,227,.05)!important;border:1px solid rgba(244,239,227,.12)!important;border-radius:14px!important;padding:20px!important;text-align:left!important}
+    #mds-calc .value .v .vt{font-family:var(--serif)!important;font-size:20px!important;font-weight:600!important;color:var(--or-clair)!important;margin-bottom:8px!important}
+    #mds-calc .value .v .vd{font-family:var(--sans)!important;font-size:14.5px!important;color:var(--creme2)!important;opacity:.9!important;line-height:1.55!important}
+
+    /* CTA */
+    #mds-calc .cta{text-align:center!important;margin-top:36px!important}
+    #mds-calc .cta .kicker{font-family:var(--serif)!important;font-size:26px!important;font-weight:600!important;line-height:1.2!important;color:var(--creme)!important;margin-bottom:16px!important}
+    #mds-calc .cta .kicker b{color:var(--or-clair)!important}
+    #mds-calc .cta a.btn{display:inline-block!important;font-family:var(--sans)!important;font-size:16px!important;font-weight:600!important;color:var(--creme)!important;background:var(--or)!important;text-decoration:none!important;padding:15px 28px!important;border-radius:12px!important}
+
+    @media(min-width:800px){
+      #mds-calc{padding:72px 24px 48px!important}
+      #mds-calc h1{font-size:52px!important}
+      #mds-calc .sub{font-size:18px!important}
+      #mds-calc .card{padding:32px!important}
+      #mds-calc .col .val{font-size:30px!important}
+      #mds-calc .verdict .saved-big{font-size:62px!important}
+      #mds-calc .punch{font-size:36px!important}
     }
-    #mds-lm .col.mds{background:linear-gradient(160deg,rgba(188,148,79,.28),rgba(188,148,79,.12));border-color:var(--or)}
-    #mds-lm .col .lbl{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--creme2);opacity:.75;margin-bottom:10px}
-    #mds-lm .col.mds .lbl{color:var(--or-clair);opacity:1;font-weight:600}
-    #mds-lm .col .val{font-family:var(--serif);font-size:clamp(26px,5vw,36px);font-weight:600;color:var(--creme);line-height:1}
-    #mds-lm .col.mds .val{color:var(--or-clair)}
-
-    #mds-lm .verdict{text-align:center;padding-top:6px}
-    #mds-lm .verdict .saved-lbl{font-size:14px;color:var(--creme2);opacity:.8}
-    #mds-lm .verdict .saved-big{font-family:var(--serif);font-size:clamp(38px,9vw,68px);font-weight:700;color:var(--or-clair);line-height:1.05;margin:4px 0 2px}
-    #mds-lm .verdict .saved-unit{font-size:15px;color:var(--creme2);opacity:.8;margin-bottom:16px}
-    #mds-lm .verdict .rTwo{font-size:clamp(15px,2.6vw,18px);color:var(--creme);max-width:520px;margin:0 auto}
-    #mds-lm .verdict .rTwo b{color:var(--or-clair)}
-    #mds-lm .verdict .rEuro{margin-top:14px;font-size:15px;font-weight:600;color:var(--or-clair);min-height:20px}
-
-    /* ---------- BANDEAU PUNCHLINE ---------- */
-    #mds-lm .punch{
-      font-family:var(--serif);font-size:clamp(24px,4.6vw,40px);font-weight:600;
-      text-align:center;line-height:1.2;margin:clamp(36px,6vw,60px) auto 0;max-width:640px
-    }
-    #mds-lm .punch b{color:var(--or-clair)}
-
-    /* ---------- VALEUR ---------- */
-    #mds-lm .value{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:clamp(30px,5vw,48px)}
-    #mds-lm .value .v{background:rgba(244,239,227,.05);border:1px solid rgba(244,239,227,.12);border-radius:14px;padding:22px}
-    #mds-lm .value .v .vt{font-family:var(--serif);font-size:20px;font-weight:600;color:var(--or-clair);margin-bottom:8px}
-    #mds-lm .value .v .vd{font-size:14px;color:var(--creme2);opacity:.9;line-height:1.55}
-
-    /* ---------- CTA vers le formulaire opt-in ---------- */
-    #mds-lm .cta{text-align:center;margin-top:clamp(36px,6vw,60px)}
-    #mds-lm .cta .kicker{font-family:var(--serif);font-size:clamp(24px,4.4vw,36px);font-weight:600;color:var(--creme);margin-bottom:10px}
-    #mds-lm .cta .kicker b{color:var(--or-clair)}
-    #mds-lm .cta .desc{font-size:16px;color:var(--creme2);opacity:.9;max-width:460px;margin:0 auto 22px}
-    #mds-lm .cta .arrow{font-size:34px;color:var(--or-clair);animation:mds-bounce 1.6s infinite}
-    @keyframes mds-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(10px)}}
-
-    /* placeholder a SUPPRIMER une fois le formulaire systeme.io ajoute en dessous */
-    #mds-lm .form-slot{
-      margin-top:20px;border:2px dashed rgba(228,197,107,.5);border-radius:14px;
-      padding:26px;font-size:14px;color:var(--or-clair);background:rgba(46,3,53,.35)
-    }
-
-    /* ---------- RESPONSIVE ---------- */
-    @media(max-width:640px){
-      #mds-lm .task{flex-wrap:wrap}
-      #mds-lm .task .mini{flex-basis:100%;text-align:left;padding-left:38px}
-      #mds-lm .controls{grid-template-columns:1fr;gap:20px}
-      #mds-lm .grid3{grid-template-columns:1fr}
-      #mds-lm .value{grid-template-columns:1fr}
+    @media(max-width:360px){
+      #mds-calc h1{font-size:32px!important}
+      #mds-calc .col .val{font-size:20px!important}
+      #mds-calc .verdict .saved-big{font-size:44px!important}
     }
   </style>
 
   <div class="wrap">
-    <!-- HERO -->
     <p class="eyebrow">My Dream Squad</p>
     <h1>Combien de temps<br>tu perds <em>vraiment</em> ?</h1>
-    <p class="sub">Coche les tâches que tu fais chaque semaine. Le calcul est instantané. Tu vas voir l'écart entre tout faire à la main, bricoler avec un chatbot, et déléguer à une équipe installée pour toi.</p>
+    <p class="sub">Coche les tâches que tu fais chaque semaine. Le calcul est instantané.</p>
 
-    <!-- CALCULATEUR -->
     <div class="card">
       <p class="card-hint">Tout est coché par défaut. Décoche ce que tu ne fais pas.</p>
 
@@ -187,15 +128,14 @@
 
       <div class="controls">
         <div class="ctl">
-          <label>Événements par mois : <span id="mds-eventsVal">3</span></label>
+          <label>Événements par mois : <span class="v" id="mds-eventsVal">3</span></label>
           <input type="range" id="mds-events" min="1" max="12" value="3" step="1">
         </div>
         <div class="ctl">
           <label>Ta valeur horaire <span class="opt">(optionnel)</span></label>
           <div class="rate-field">
             <input type="number" id="mds-rate" min="0" step="5" placeholder="0">
-            <span class="cur">€</span>
-            <span class="opt">/ heure</span>
+            <span class="cur">€</span><span class="u">/ heure</span>
           </div>
         </div>
       </div>
@@ -215,36 +155,24 @@
       </div>
     </div>
 
-    <!-- PUNCHLINE -->
     <p class="punch">Le chatbot te rend une demi-journée.<br><b>MDS te rend ta semaine.</b></p>
 
-    <!-- VALEUR -->
     <div class="value">
       <div class="v"><div class="vt">Installée pour toi</div><div class="vd">Pas un outil de plus à apprendre. Une équipe qui tourne toute seule, branchée sur ta façon de bosser.</div></div>
       <div class="v"><div class="vt">Chaque événement</div><div class="vd">Moodboards, devis, rétroplanning, plan B météo : sorti en minutes, pas en heures.</div></div>
       <div class="v"><div class="vt">Chaque semaine</div><div class="vd">Prospects relancés, posts rédigés, paiements suivis. Sans que tu touches à ton clavier.</div></div>
     </div>
 
-    <!-- CTA -> formulaire opt-in systeme.io -->
     <div class="cta">
       <p class="kicker">Récupère ta semaine.<br><b>Réserve ta démo gratuite de 20 min.</b></p>
-      <p class="desc">Laisse ton prénom et ton email juste en dessous. On te montre exactement ce que MDS installe pour toi.</p>
-      <div class="arrow">↓</div>
-
-      <!-- =====================================================================
-           SUPPRIME ce bloc pointille, puis ajoute SOUS cet element "Code HTML"
-           un bloc "Formulaire" natif systeme.io (champs : Prenom + Email).
-           ===================================================================== -->
-      <div class="form-slot">
-        ⬇️ Emplacement du formulaire opt-in systeme.io (Prénom + Email).<br>
-        Ajoute-le comme bloc natif juste en dessous, puis supprime cet encadré.
-      </div>
+      <!-- Remplace le lien ci-dessous par ton URL de reservation de demo -->
+      <a class="btn" href="#" target="_blank" rel="noopener">Réserve ta démo de 20 min →</a>
     </div>
   </div>
 
   <script>
   (function(){
-    var root=document.getElementById('mds-lm');
+    var root=document.getElementById('mds-calc');
     if(!root||root.dataset.init) return; root.dataset.init='1';
 
     var TASKS=[
@@ -271,8 +199,8 @@
       var d=document.createElement('div');
       d.className='task on';
       d.innerHTML='<div class="cbox">'+check+'</div>'+
-        '<div class="name">'+t.n+'</div>'+
-        '<div class="mini">à la main <b>'+t.main+' min</b> · MDS <b>'+t.mds+' min</b></div>';
+        '<div class="body"><div class="name">'+t.n+'</div>'+
+        '<div class="mini">à la main <b>'+t.main+' min</b> · MDS <b>'+t.mds+' min</b></div></div>';
       d.addEventListener('click',function(){
         state[i]=!state[i];
         d.classList.toggle('on',state[i]);
