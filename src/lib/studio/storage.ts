@@ -12,7 +12,20 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { put, list, del } from "@vercel/blob";
 
-const blobToken = (): string | undefined => process.env.BLOB_READ_WRITE_TOKEN;
+/** Nettoie une valeur d'env : enlève guillemets et espaces parasites (cause fréquente de jeton invalide). */
+const clean = (v?: string): string | undefined => {
+  const c = v?.trim().replace(/^["'`]+|["'`]+$/g, "").trim();
+  return c || undefined;
+};
+/** Jeton Blob : d'abord BLOB_READ_WRITE_TOKEN, sinon n'importe quelle variable finissant par _READ_WRITE_TOKEN (Vercel préfixe le nom quand il y a plusieurs stores). */
+const blobToken = (): string | undefined => {
+  const direct = clean(process.env.BLOB_READ_WRITE_TOKEN);
+  if (direct) return direct;
+  for (const [k, v] of Object.entries(process.env)) {
+    if (/BLOB_READ_WRITE_TOKEN$/.test(k)) { const c = clean(v); if (c) return c; }
+  }
+  return undefined;
+};
 export const useBlob = (): boolean => !!blobToken();
 export const storageStatus = () => ({ onVercel: !!process.env.VERCEL, blob: useBlob() });
 
