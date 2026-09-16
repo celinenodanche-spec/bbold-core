@@ -22,7 +22,7 @@ const blobToken = (): string | undefined => {
   const direct = clean(process.env.BLOB_READ_WRITE_TOKEN);
   if (direct) return direct;
   for (const [k, v] of Object.entries(process.env)) {
-    if (/BLOB_READ_WRITE_TOKEN$/.test(k)) { const c = clean(v); if (c) return c; }
+    if (/_READ_WRITE_TOKEN$/.test(k)) { const c = clean(v); if (c) return c; }
   }
   return undefined;
 };
