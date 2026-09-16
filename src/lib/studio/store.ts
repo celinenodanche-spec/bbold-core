@@ -11,6 +11,7 @@ const STORE_KEY = "content/store.json";
 export interface SlideJob { index: number; jobId: string }
 export interface ContentPost {
   id: string;
+  brandSlug?: string;
   platform: Platform;
   format: Format;
   idea: string;
@@ -37,9 +38,10 @@ async function write(s: Store): Promise<void> {
   await putData(STORE_KEY, Buffer.from(JSON.stringify(s, null, 2), "utf-8"), "application/json");
 }
 
-export async function listPosts(): Promise<ContentPost[]> {
+export async function listPosts(brandSlug?: string): Promise<ContentPost[]> {
   const s = await read();
-  return s.posts.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const posts = brandSlug ? s.posts.filter((p) => (p.brandSlug ?? "bbold-core") === brandSlug) : s.posts;
+  return posts.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
 export async function getPost(id: string): Promise<ContentPost | null> {

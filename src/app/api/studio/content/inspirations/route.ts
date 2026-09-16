@@ -2,34 +2,38 @@ import { loadBrand } from "@/lib/studio/brand";
 import { addInspiration, listInspirations, removeInspiration, loadStyleProfile, clearStyleProfile } from "@/lib/studio/inspirations";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-/** GET /api/content/inspirations → liste + profil. */
-export async function GET() {
-  const brand = await loadBrand();
-  if (!brand) return Response.json({ error: "Aucune marque dans clients/." }, { status: 404 });
+const slugOf = (req: Request) => new URL(req.url).searchParams.get("brand") || undefined;
+
+/** GET ?brand=slug → inspirations + profil de la marque. */
+export async function GET(req: Request) {
+  const brand = await loadBrand(slugOf(req));
+  if (!brand) return Response.json({ error: "Aucune marque." }, { status: 404 });
   return Response.json({ inspirations: await listInspirations(brand), profile: await loadStyleProfile(brand) });
 }
 
-/** POST multipart (files[]) → ajoute des visuels d'inspiration. Le profil précédent est invalidé. */
+/** POST multipart (files[], brand) → ajoute des visuels. Le profil est invalidé. */
 export async function POST(req: Request) {
   try {
-    const brand = await loadBrand();
-    if (!brand) return Response.json({ error: "Aucune marque dans clients/." }, { status: 404 });
     const form = await req.formData();
+    const slug = (form.get("brand") as string) || slugOf(req);
+    const brand = await loadBrand(slug);
+    if (!brand) return Response.json({ error: "Aucune marque." }, { status: 404 });
     const files = form.getAll("files").filter((f): f is File => f instanceof File);
     if (!files.length) return Response.json({ error: "Aucun fichier reçu." }, { status: 400 });
     for (const f of files) await addInspiration(brand, f);
-    await clearStyleProfile(brand); // le style devra être ré-analysé avec les nouveaux visuels
+    await clearStyleProfile(brand);
     return Response.json({ success: true, inspirations: await listInspirations(brand), profile: null });
   } catch (err) {
     return Response.json({ error: err instanceof Error ? err.message : "Erreur" }, { status: 500 });
   }
 }
 
-/** DELETE ?name=… → retire un visuel. */
+/** DELETE ?name=…&brand=slug → retire un visuel. */
 export async function DELETE(req: Request) {
-  const brand = await loadBrand();
-  if (!brand) return Response.json({ error: "Aucune marque dans clients/." }, { status: 404 });
+  const brand = await loadBrand(slugOf(req));
+  if (!brand) return Response.json({ error: "Aucune marque." }, { status: 404 });
   const name = new URL(req.url).searchParams.get("name");
   if (!name) return Response.json({ error: "name requis" }, { status: 400 });
   await removeInspiration(brand, name);

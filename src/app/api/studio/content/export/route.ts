@@ -47,7 +47,7 @@ export async function GET(req: Request) {
     if (!ids.length) return Response.json({ error: "ids requis" }, { status: 400 });
     const posts = (await Promise.all(ids.map(getPost))).filter((p): p is ContentPost => !!p);
     if (!posts.length) return Response.json({ error: "Aucun post trouvé" }, { status: 404 });
-    const brand = await loadBrand();
+    const brand = await loadBrand(posts[0].brandSlug);
     const entries: ZipEntry[] = [];
     if (posts.length === 1) {
       entries.push(...(await entriesFor(posts[0], "")));

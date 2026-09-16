@@ -1,23 +1,33 @@
-import { loadBrand } from "@/lib/studio/brand";
+import { loadBrand, listBrands, BBOLD_BRAND, type Brand } from "@/lib/studio/brand";
 import { loadStyleProfile, listInspirations, MIN_INSPIRATIONS } from "@/lib/studio/inspirations";
 import { STYLES } from "@/lib/studio/styles";
 import { aiBackgroundProvider } from "@/lib/studio/providers";
+import { storageStatus } from "@/lib/studio/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** GET /api/studio/content/brand → marque active, profil, inspirations, styles. Ne plante jamais. */
-export async function GET() {
-  const brand = await loadBrand();
+const info = (b: Brand) => ({ slug: b.slug, name: b.name, handle: b.handle, palette: b.palette, fonts: b.fonts, markdown: b.markdown, isTemplate: b.isTemplate });
+
+/** GET /api/studio/content/brand?brand=slug → marque active + liste des marques + profil/inspirations de l'active. */
+export async function GET(req: Request) {
+  const slug = new URL(req.url).searchParams.get("brand");
   const provider = aiBackgroundProvider();
   const providerFast = aiBackgroundProvider(true);
-  if (!brand) return Response.json({ brand: null, profile: null, inspirations: [], styles: STYLES, minInspirations: MIN_INSPIRATIONS, aiBackground: !!provider, aiProvider: provider?.label ?? null, aiProviderBatch: providerFast?.label ?? null });
-  // Les lectures de stockage (Blob) ne doivent JAMAIS faire échouer la marque : on isole leurs erreurs.
-  let profile = null; try { profile = await loadStyleProfile(brand); } catch { profile = null; }
-  let inspirations: unknown[] = []; try { inspirations = await listInspirations(brand); } catch { inspirations = []; }
+  let brands: Brand[] = [];
+  try { brands = await listBrands(); } catch { brands = []; }
+  const active = (slug ? await loadBrand(slug) : null) ?? brands[0] ?? BBOLD_BRAND;
+  if (!brands.length) brands = [active];
+  let profile = null, inspirations: unknown[] = [];
+  if (active) {
+    try { profile = await loadStyleProfile(active); } catch { profile = null; }
+    try { inspirations = await listInspirations(active); } catch { inspirations = []; }
+  }
   return Response.json({
-    brand: { slug: brand.slug, name: brand.name, handle: brand.handle, palette: brand.palette, fonts: brand.fonts, isTemplate: brand.isTemplate },
+    brand: active ? info(active) : null,
+    brands: brands.map(info),
     profile, inspirations, styles: STYLES, minInspirations: MIN_INSPIRATIONS,
     aiBackground: !!provider, aiProvider: provider?.label ?? null, aiProviderBatch: providerFast?.label ?? null,
+    storage: storageStatus(),
   });
 }

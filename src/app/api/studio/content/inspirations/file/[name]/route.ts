@@ -3,9 +3,10 @@ import { readInspirationFile } from "@/lib/studio/inspirations";
 
 export const runtime = "nodejs";
 
-/** GET /api/studio/content/inspirations/file/<name> — sert le visuel d'inspiration. */
-export async function GET(_req: Request, { params }: { params: { name: string } }) {
-  const brand = await loadBrand();
+/** GET /api/studio/content/inspirations/file/<name>?brand=slug — sert un visuel d'inspiration. */
+export async function GET(req: Request, { params }: { params: { name: string } }) {
+  const slug = new URL(req.url).searchParams.get("brand") || undefined;
+  const brand = await loadBrand(slug);
   if (!brand) return new Response("Not found", { status: 404 });
   const f = await readInspirationFile(brand, decodeURIComponent(params.name));
   if (!f) return new Response("Not found", { status: 404 });

@@ -11,7 +11,7 @@ import type { Brand } from "./brand";
 import { putData, getData, listData, delData, useBlob, mimeOf } from "./storage";
 
 export const MIN_INSPIRATIONS = 3;
-const MAX_FILES = 12;
+const MAX_FILES = 20;
 const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 /** Polices Google Fonts que le rendu sait charger. */
@@ -35,16 +35,16 @@ export interface StyleProfile {
 
 export interface Inspiration { name: string; url: string; size: number; addedAt: string }
 
-const INSP = "inspirations";
-const key = (name: string) => `${INSP}/${name}`;
-const PROFILE_KEY = "style.json";
-const uiUrl = (name: string, blobUrl: string) => (useBlob() ? blobUrl : `/api/studio/content/inspirations/file/${encodeURIComponent(name)}`);
+const inspKey = (b: Brand, name: string) => `${b.slug}/inspirations/${name}`;
+const profileKey = (b: Brand) => `${b.slug}/style.json`;
+const inspPrefix = (b: Brand) => `${b.slug}/inspirations`;
+const uiUrl = (b: Brand, name: string, blobUrl: string) => (useBlob() ? blobUrl : `/api/studio/content/inspirations/file/${encodeURIComponent(name)}?brand=${encodeURIComponent(b.slug)}`);
 const safeName = (n: string) => n.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/^\.+/, "").slice(0, 80);
 
-export async function listInspirations(_b: Brand): Promise<Inspiration[]> {
-  const entries = (await listData(INSP)).filter((e) => /\.(png|jpe?g|webp)$/i.test(e.name));
-  entries.sort((a, b) => (a.name < b.name ? -1 : 1));
-  return entries.map((e) => ({ name: e.name, url: uiUrl(e.name, e.url), size: e.size, addedAt: e.addedAt }));
+export async function listInspirations(b: Brand): Promise<Inspiration[]> {
+  const entries = (await listData(inspPrefix(b))).filter((e) => /\.(png|jpe?g|webp)$/i.test(e.name));
+  entries.sort((a, x) => (a.name < x.name ? -1 : 1));
+  return entries.map((e) => ({ name: e.name, url: uiUrl(b, e.name, e.url), size: e.size, addedAt: e.addedAt }));
 }
 
 export async function addInspiration(b: Brand, file: File): Promise<Inspiration> {
@@ -56,31 +56,31 @@ export async function addInspiration(b: Brand, file: File): Promise<Inspiration>
   const base = safeName(file.name.replace(/\.[^.]+$/, "")) || "inspiration";
   const name = `${Date.now().toString(36)}-${base}.${ext}`;
   const buf = Buffer.from(await file.arrayBuffer());
-  const stored = await putData(key(name), buf, file.type);
-  return { name, url: uiUrl(name, stored), size: buf.length, addedAt: new Date().toISOString() };
+  const stored = await putData(inspKey(b, name), buf, file.type);
+  return { name, url: uiUrl(b, name, stored), size: buf.length, addedAt: new Date().toISOString() };
 }
 
-export async function removeInspiration(_b: Brand, name: string): Promise<void> {
+export async function removeInspiration(b: Brand, name: string): Promise<void> {
   const clean = path.basename(name);
   if (!clean || clean === "style.json") return;
-  await delData(key(clean));
+  await delData(inspKey(b, clean));
 }
 
-export async function readInspirationFile(_b: Brand, name: string): Promise<{ buf: Buffer; mime: string } | null> {
+export async function readInspirationFile(b: Brand, name: string): Promise<{ buf: Buffer; mime: string } | null> {
   const clean = path.basename(name);
   if (!/\.(png|jpe?g|webp)$/i.test(clean)) return null;
-  const buf = await getData(key(clean));
+  const buf = await getData(inspKey(b, clean));
   return buf ? { buf, mime: mimeOf(clean) } : null;
 }
 
-export async function loadStyleProfile(_b: Brand): Promise<StyleProfile | null> {
-  const buf = await getData(PROFILE_KEY);
+export async function loadStyleProfile(b: Brand): Promise<StyleProfile | null> {
+  const buf = await getData(profileKey(b));
   if (!buf) return null;
   try { return JSON.parse(buf.toString("utf-8")) as StyleProfile; } catch { return null; }
 }
 
-export async function clearStyleProfile(_b: Brand): Promise<void> {
-  await delData(PROFILE_KEY);
+export async function clearStyleProfile(b: Brand): Promise<void> {
+  await delData(profileKey(b));
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -149,7 +149,7 @@ Les couleurs doivent être des hex 6 caractères, contrastées (le texte doit ê
     analyzedAt: new Date().toISOString(),
     files: files.map((x) => x.name),
   };
-  await putData(PROFILE_KEY, Buffer.from(JSON.stringify(profile, null, 2), "utf-8"), "application/json");
+  await putData(profileKey(b), Buffer.from(JSON.stringify(profile, null, 2), "utf-8"), "application/json");
   return profile;
 }
 

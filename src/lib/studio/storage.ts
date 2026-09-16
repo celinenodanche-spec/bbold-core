@@ -12,8 +12,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { put, list, del } from "@vercel/blob";
 
-const TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
-export const useBlob = (): boolean => !!TOKEN;
+const blobToken = (): string | undefined => process.env.BLOB_READ_WRITE_TOKEN;
+export const useBlob = (): boolean => !!blobToken();
+export const storageStatus = () => ({ onVercel: !!process.env.VERCEL, blob: useBlob() });
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const DATA_DIR = path.join(process.cwd(), "studio-data");
@@ -30,7 +31,7 @@ const mime = (name: string) => (/\.png$/i.test(name) ? "image/png" : /\.webp$/i.
 export async function putVisual(name: string, buf: Buffer): Promise<string> {
   assertWritable();
   if (useBlob()) {
-    const { url } = await put(`${BLOB_PREFIX}/content-out/${name}`, buf, { access: "public", token: TOKEN, contentType: "image/png", addRandomSuffix: false, allowOverwrite: true });
+    const { url } = await put(`${BLOB_PREFIX}/content-out/${name}`, buf, { access: "public", token: blobToken(), contentType: "image/png", addRandomSuffix: false, allowOverwrite: true });
     return url;
   }
   const abs = path.join(PUBLIC_DIR, "content-out", name);
@@ -44,7 +45,7 @@ export async function putVisual(name: string, buf: Buffer): Promise<string> {
 export async function putData(key: string, buf: Buffer, contentType: string): Promise<string> {
   assertWritable();
   if (useBlob()) {
-    const { url } = await put(`${BLOB_PREFIX}/data/${key}`, buf, { access: "public", token: TOKEN, contentType, addRandomSuffix: false, allowOverwrite: true });
+    const { url } = await put(`${BLOB_PREFIX}/data/${key}`, buf, { access: "public", token: blobToken(), contentType, addRandomSuffix: false, allowOverwrite: true });
     return url;
   }
   const abs = path.join(DATA_DIR, key);
@@ -55,7 +56,7 @@ export async function putData(key: string, buf: Buffer, contentType: string): Pr
 
 export async function getData(key: string): Promise<Buffer | null> {
   if (useBlob()) {
-    const { blobs } = await list({ prefix: `${BLOB_PREFIX}/data/${key}`, token: TOKEN, limit: 1 });
+    const { blobs } = await list({ prefix: `${BLOB_PREFIX}/data/${key}`, token: blobToken(), limit: 1 });
     const hit = blobs.find((b) => b.pathname === `${BLOB_PREFIX}/data/${key}`) ?? blobs[0];
     if (!hit) return null;
     const r = await fetch(hit.url, { cache: "no-store" });
@@ -69,7 +70,7 @@ export interface DataEntry { name: string; url: string; size: number; addedAt: s
 /** Liste les fichiers sous `prefix/` (ex. "inspirations"). */
 export async function listData(prefix: string): Promise<DataEntry[]> {
   if (useBlob()) {
-    const { blobs } = await list({ prefix: `${BLOB_PREFIX}/data/${prefix}/`, token: TOKEN });
+    const { blobs } = await list({ prefix: `${BLOB_PREFIX}/data/${prefix}/`, token: blobToken() });
     return blobs.map((b) => ({ name: b.pathname.split("/").pop() || b.pathname, url: b.url, size: b.size, addedAt: (b.uploadedAt instanceof Date ? b.uploadedAt : new Date(b.uploadedAt)).toISOString() }));
   }
   const dir = path.join(DATA_DIR, prefix);
@@ -85,9 +86,9 @@ export async function listData(prefix: string): Promise<DataEntry[]> {
 
 export async function delData(key: string): Promise<void> {
   if (useBlob()) {
-    const { blobs } = await list({ prefix: `${BLOB_PREFIX}/data/${key}`, token: TOKEN, limit: 1 });
+    const { blobs } = await list({ prefix: `${BLOB_PREFIX}/data/${key}`, token: blobToken(), limit: 1 });
     const hit = blobs.find((b) => b.pathname === `${BLOB_PREFIX}/data/${key}`);
-    if (hit) await del(hit.url, { token: TOKEN });
+    if (hit) await del(hit.url, { token: blobToken() });
     return;
   }
   await fs.rm(path.join(DATA_DIR, key), { force: true });

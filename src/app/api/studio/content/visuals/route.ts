@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     if (post.platform !== "instagram")
       return Response.json({ error: "Le rendu des visuels de marque est disponible pour Instagram." }, { status: 400 });
 
-    const brand = await loadBrand();
+    const brand = await loadBrand(post.brandSlug);
     if (!brand) return Response.json({ error: "Marque introuvable." }, { status: 400 });
     const slides = post.result.slides ?? (post.result.headline ? [{ title: post.result.headline, body: post.result.body ?? "" }] : []);
     if (!slides.length) return Response.json({ error: "Ce post n'a pas de texte à mettre en visuel." }, { status: 400 });

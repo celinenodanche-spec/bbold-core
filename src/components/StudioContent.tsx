@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { apiFetch, withAccess } from "@/lib/access";
 import { Icon } from "./Icon";
 import { cn } from "@/lib/studio/utils";
 import { STYLES, DEFAULT_STYLE, type EditorialStyle } from "@/lib/studio/styles";
@@ -23,11 +22,12 @@ interface ContentPost {
 interface BatchItem { idea: string; format: Format; status: "pending" | "text" | "visuals" | "done" | "error"; id?: string; thumb?: string | null; done?: number; total?: number; error?: string }
 
 /* ============ marque (clients/<client>/brand.md) + inspirations ============ */
-interface BrandInfo { slug: string; name: string; handle: string; palette: { bg: string; fg: string; accent: string; accent2: string; muted: string }; fonts: { display: string; body: string }; isTemplate: boolean }
+interface BrandInfo { slug: string; name: string; handle: string; palette: { bg: string; fg: string; accent: string; accent2: string; muted: string }; fonts: { display: string; body: string }; markdown?: string; isTemplate: boolean }
+const FONTS = ["Playfair Display","Inter","DM Serif Display","Space Grotesk","Cormorant Garamond","Montserrat","Bebas Neue","Fraunces","Manrope","Lora","Archivo Black","Poppins"];
 interface Inspiration { name: string; url: string; size: number; addedAt: string }
 interface StyleProfile { summary: string; palette: BrandInfo["palette"]; fonts: BrandInfo["fonts"]; mood: string[]; elements: string[]; avoid: string[]; analyzedAt: string; files: string[] }
-interface BrandState { brand: BrandInfo | null; profile: StyleProfile | null; inspirations: Inspiration[]; styles: EditorialStyle[]; minInspirations: number; aiBackground: boolean; aiProvider: string | null; aiProviderBatch: string | null }
-const NO_BRAND: BrandState = { brand: null, profile: null, inspirations: [], styles: STYLES, minInspirations: 3, aiBackground: false, aiProvider: null, aiProviderBatch: null };
+interface BrandState { brand: BrandInfo | null; brands: BrandInfo[]; profile: StyleProfile | null; inspirations: Inspiration[]; styles: EditorialStyle[]; minInspirations: number; aiBackground: boolean; aiProvider: string | null; aiProviderBatch: string | null; storage?: { onVercel: boolean; blob: boolean } }
+const NO_BRAND: BrandState = { brand: null, brands: [], profile: null, inspirations: [], styles: STYLES, minInspirations: 3, aiBackground: false, aiProvider: null, aiProviderBatch: null, storage: undefined };
 
 /* ============ carousel templates (DA) ============ */
 interface Tmpl { id: string; name: string; bg: string; fg: string; accent: string; sub: string; font: string }
@@ -76,14 +76,25 @@ export function ContentStudio() {
   const [mode, setMode] = useState<"create" | "library">("create");
   const [posts, setPosts] = useState<ContentPost[]>([]);
   const [bs, setBs] = useState<BrandState>(NO_BRAND);
-  const reload = useCallback(async () => {
-    try { const j = await (await apiFetch("/api/studio/content/list", { cache: "no-store" })).json(); setPosts(j.posts ?? []); } catch { /* */ }
+  const [activeBrand, setActiveBrand] = useState<string>("");
+  useEffect(() => { try { const v = localStorage.getItem("zara.activeBrand"); if (v) setActiveBrand(v); } catch { /* */ } }, []);
+  const pickBrand = (slug: string) => { setActiveBrand(slug); try { localStorage.setItem("zara.activeBrand", slug); } catch { /* */ } };
+
+  const reload = useCallback(async (brand: string) => {
+    try { const q = brand ? `?brand=${encodeURIComponent(brand)}` : ""; const j = await (await fetch(`/api/studio/content/list${q}`, { cache: "no-store" })).json(); setPosts(j.posts ?? []); } catch { /* */ }
   }, []);
-  const reloadBrand = useCallback(async () => {
-    try { const j = await (await apiFetch("/api/studio/content/brand", { cache: "no-store" })).json(); setBs({ ...NO_BRAND, ...j, styles: j.styles?.length ? j.styles : STYLES }); } catch { /* */ }
+  const reloadBrand = useCallback(async (brand: string) => {
+    try {
+      const q = brand ? `?brand=${encodeURIComponent(brand)}` : "";
+      const j = await (await fetch(`/api/studio/content/brand${q}`, { cache: "no-store" })).json();
+      setBs({ ...NO_BRAND, ...j, styles: j.styles?.length ? j.styles : STYLES });
+      if (!brand && j.brand?.slug) pickBrand(j.brand.slug);
+    } catch { /* */ }
   }, []);
-  useEffect(() => { void reload(); void reloadBrand(); }, [reload, reloadBrand]);
+  useEffect(() => { void reload(activeBrand); void reloadBrand(activeBrand); }, [activeBrand, reload, reloadBrand]);
+  const refresh = useCallback(() => { void reload(activeBrand); void reloadBrand(activeBrand); }, [activeBrand, reload, reloadBrand]);
   const latestFor = (p: Platform) => posts.find((x) => x.platform === p) ?? null;
+  const brandSlug = activeBrand || bs.brand?.slug || "";
 
   return (
     <div className="space-y-5">
@@ -92,7 +103,7 @@ export function ContentStudio() {
           <h2 className="text-xl font-black tracking-tight text-[var(--color-ink)]">Studio contenu — Zara</h2>
           <p className="text-[13px] text-[var(--color-muted)]">
             Crée du contenu adapté à chaque réseau et visualise le rendu final comme sur la plateforme.
-            {bs.brand && <> Marque : <b className="text-[var(--color-ink)]">{bs.brand.name}</b></>}
+            {bs.brand && <> Marque active : <b className="text-[var(--color-ink)]">{bs.brand.name}</b></>}
           </p>
         </div>
         <div className="flex rounded-xl border border-[var(--color-line)] p-0.5 text-[12px] font-bold">
@@ -103,8 +114,10 @@ export function ContentStudio() {
         </div>
       </div>
 
+      <BrandBar bs={bs} active={brandSlug} onPick={pickBrand} onChanged={refresh} />
+
       {mode === "library" ? (
-        <LibraryView posts={posts} onChange={reload} brand={bs.brand} />
+        <LibraryView posts={posts} onChange={refresh} brand={bs.brand} />
       ) : (
         <>
           <div className="flex gap-2">
@@ -121,7 +134,7 @@ export function ContentStudio() {
               );
             })}
           </div>
-          <PlatformPanel key={platform} platform={platform} saved={latestFor(platform)} onSaved={reload} bs={bs} onBrandChange={reloadBrand} />
+          <PlatformPanel key={`${platform}-${brandSlug}`} platform={platform} saved={latestFor(platform)} onSaved={refresh} bs={bs} activeBrand={brandSlug} onBrandChange={() => reloadBrand(activeBrand)} />
         </>
       )}
     </div>
@@ -129,7 +142,7 @@ export function ContentStudio() {
 }
 
 /* ============ per-platform panel ============ */
-function PlatformPanel({ platform, saved, onSaved, bs, onBrandChange }: { platform: Platform; saved: ContentPost | null; onSaved: () => void; bs: BrandState; onBrandChange: () => void }) {
+function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChange }: { platform: Platform; saved: ContentPost | null; onSaved: () => void; bs: BrandState; activeBrand: string; onBrandChange: () => void }) {
   const formats = FORMATS[platform];
   const tmplByName = (n?: string) => TEMPLATES.find((t) => t.name === n) ?? TEMPLATES[0];
   // Instagram + marque cliente : pipeline "marque" (brand.md + inspirations + style éditorial, rendu HTML → PNG)
@@ -180,7 +193,7 @@ function PlatformPanel({ platform, saved, onSaved, bs, onBrandChange }: { platfo
     if (!ids.length) return;
     setZipping(true);
     try {
-      const r = await apiFetch(`/api/studio/content/export?ids=${ids.join(",")}`);
+      const r = await fetch(`/api/studio/content/export?ids=${ids.join(",")}`);
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? "Export impossible");
       const name = /filename="([^"]+)"/.exec(r.headers.get("Content-Disposition") ?? "")?.[1] ?? "contenu.zip";
       const url = URL.createObjectURL(await r.blob());
@@ -192,9 +205,9 @@ function PlatformPanel({ platform, saved, onSaved, bs, onBrandChange }: { platfo
   /** Idée + format → génère le texte, puis les visuels. Renvoie l'id du post. */
   async function generateOne(f: Format, text: string, onPhase?: (p: "text" | "visuals", done?: number, total?: number) => void, fast = false): Promise<{ id: string; res: Result; images: (string | null)[] }> {
     onPhase?.("text");
-    const r = await apiFetch("/api/studio/content/generate", {
+    const r = await fetch("/api/studio/content/generate", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform, format: f, idea: text, template: showTemplates ? tmpl.name : undefined, refId: igBrand ? undefined : refTpl, style: igBrand ? style : undefined, tools: tools.split(",").map((t) => t.trim()).filter(Boolean) }),
+      body: JSON.stringify({ platform, format: f, idea: text, brand: activeBrand, template: showTemplates ? tmpl.name : undefined, refId: igBrand ? undefined : refTpl, style: igBrand ? style : undefined, tools: tools.split(",").map((t) => t.trim()).filter(Boolean) }),
     });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error ?? "Génération impossible");
@@ -202,11 +215,11 @@ function PlatformPanel({ platform, saved, onSaved, bs, onBrandChange }: { platfo
     let images: (string | null)[] = [];
     if (canVisuals(f) && slideCount > 0) {
       onPhase?.("visuals", 0, slideCount);
-      const vr = await apiFetch("/api/studio/content/visuals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: j.id, fast }) });
+      const vr = await fetch("/api/studio/content/visuals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: j.id, fast }) });
       const vj = await vr.json();
       if (!vr.ok) throw new Error(vj.error ?? "Génération visuels impossible");
       for (let k = 0; k < 90; k++) {
-        const pr = await apiFetch(`/api/studio/content/visuals?id=${j.id}`, { cache: "no-store" });
+        const pr = await fetch(`/api/studio/content/visuals?id=${j.id}`, { cache: "no-store" });
         const pj = await pr.json();
         if (Array.isArray(pj.images)) { images = pj.images; onPhase?.("visuals", images.filter((x) => x).length, images.length); }
         if (pj.done) break;
@@ -253,7 +266,7 @@ function PlatformPanel({ platform, saved, onSaved, bs, onBrandChange }: { platfo
     if (!currentId) return;
     setDownloading(true);
     try {
-      const r = await apiFetch("/api/studio/content/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: currentId }) });
+      const r = await fetch("/api/studio/content/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: currentId }) });
       if (!r.ok) throw new Error("Téléchargement impossible");
       const blob = await r.blob();
       const url = URL.createObjectURL(blob);
@@ -326,7 +339,7 @@ function PlatformPanel({ platform, saved, onSaved, bs, onBrandChange }: { platfo
           </div>
         )}
 
-        {igBrand && <InspirationsPanel bs={bs} onChange={onBrandChange} />}
+        {igBrand && <InspirationsPanel bs={bs} activeBrand={activeBrand} onChange={onBrandChange} />}
 
         {showTemplates && (
           <div>
@@ -460,7 +473,7 @@ function ScheduleModal({ id, current, onClose, onSaved }: { id: string; current:
   const [busy, setBusy] = useState(false);
   const save = async (clear = false) => {
     setBusy(true);
-    try { await apiFetch("/api/studio/content/schedule", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, at: clear ? "" : at }) }); onSaved(); }
+    try { await fetch("/api/studio/content/schedule", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, at: clear ? "" : at }) }); onSaved(); }
     finally { setBusy(false); }
   };
   return (
@@ -517,10 +530,10 @@ function PostDetailModal({ post, onClose, onChange, brand }: { post: ContentPost
   const t = tplByName(post.template);
   const r = post.result;
   const download = async () => {
-    const rr = await apiFetch("/api/studio/content/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: post.id }) });
+    const rr = await fetch("/api/studio/content/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: post.id }) });
     const b = await rr.blob(); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `naiom-${post.platform}.pdf`; a.click(); URL.revokeObjectURL(u);
   };
-  const del = async () => { await apiFetch(`/api/studio/content/schedule?id=${post.id}`, { method: "DELETE" }); onChange(); onClose(); };
+  const del = async () => { await fetch(`/api/studio/content/schedule?id=${post.id}`, { method: "DELETE" }); onChange(); onClose(); };
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" onClick={onClose}>
       <div className="my-6 w-full max-w-lg rounded-2xl bg-[var(--color-bg)] p-4" onClick={(e) => e.stopPropagation()}>
@@ -545,7 +558,7 @@ function PostDetailModal({ post, onClose, onChange, brand }: { post: ContentPost
         <div className="mt-4 flex items-center justify-between gap-2">
           <button onClick={del} className="text-[12px] font-bold text-rose-500">Supprimer</button>
           <div className="flex gap-2">
-            <a href={withAccess(`/api/studio/content/export?ids=${post.id}`)} className="flex items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-3 py-2 text-[12px] font-bold hover:bg-white/60"><Icon name="Download" size={13} /> ZIP</a>
+            <a href={`/api/studio/content/export?ids=${post.id}`} className="flex items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-3 py-2 text-[12px] font-bold hover:bg-white/60"><Icon name="Download" size={13} /> ZIP</a>
             <button onClick={download} className="flex items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-3 py-2 text-[12px] font-bold hover:bg-white/60"><Icon name="FileText" size={13} /> PDF</button>
             <button onClick={() => setSched(true)} className="flex items-center gap-1.5 rounded-lg bg-[var(--color-ink)] px-3 py-2 text-[12px] font-bold text-white"><Icon name="Calendar" size={13} /> {post.status === "scheduled" ? "Reprogrammer" : "Programmer"}</button>
           </div>
@@ -572,7 +585,7 @@ function LibraryView({ posts, onChange, brand }: { posts: ContentPost[]; onChang
           <div key={p}>
             <div className="mb-2 flex items-center gap-2 text-[13px] font-black text-[var(--color-ink)]">
               <Logo s={18} /> {label} <span className="text-[var(--color-muted)]">({list.length})</span>
-              <a href={withAccess(`/api/studio/content/export?ids=${list.map((x) => x.id).join(",")}`)} className="ml-auto flex items-center gap-1 rounded-lg border border-[var(--color-line)] px-2 py-1 text-[11px] font-bold text-[var(--color-muted)] hover:text-[var(--color-ink)]" title="Tous les visuels + légendes en ZIP">
+              <a href={`/api/studio/content/export?ids=${list.map((x) => x.id).join(",")}`} className="ml-auto flex items-center gap-1 rounded-lg border border-[var(--color-line)] px-2 py-1 text-[11px] font-bold text-[var(--color-muted)] hover:text-[var(--color-ink)]" title="Tous les visuels + légendes en ZIP">
                 <Icon name="Download" size={12} /> Tout en ZIP
               </a>
             </div>
@@ -819,7 +832,8 @@ function StoryPreview({ res, images, brand }: { res: Result; images?: (string | 
 }
 
 /* ============ modèles d'inspiration (upload ≥ 3 visuels → profil de style) ============ */
-function InspirationsPanel({ bs, onChange }: { bs: BrandState; onChange: () => void }) {
+function InspirationsPanel({ bs, activeBrand, onChange }: { bs: BrandState; activeBrand: string; onChange: () => void }) {
+  const bq = activeBrand ? `?brand=${encodeURIComponent(activeBrand)}` : "";
   const [busy, setBusy] = useState<"upload" | "analyze" | "delete" | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -832,7 +846,8 @@ function InspirationsPanel({ bs, onChange }: { bs: BrandState; onChange: () => v
     try {
       const fd = new FormData();
       Array.from(files).forEach((f) => fd.append("files", f));
-      const r = await apiFetch("/api/studio/content/inspirations", { method: "POST", body: fd });
+      fd.append("brand", activeBrand);
+      const r = await fetch("/api/studio/content/inspirations", { method: "POST", body: fd });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "Upload impossible");
       onChange();
@@ -843,7 +858,7 @@ function InspirationsPanel({ bs, onChange }: { bs: BrandState; onChange: () => v
   async function analyze() {
     setBusy("analyze"); setErr(null);
     try {
-      const r = await apiFetch("/api/studio/content/inspirations/analyze", { method: "POST" });
+      const r = await fetch(`/api/studio/content/inspirations/analyze${bq}`, { method: "POST" });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "Analyse impossible");
       onChange();
@@ -851,12 +866,18 @@ function InspirationsPanel({ bs, onChange }: { bs: BrandState; onChange: () => v
   }
   async function remove(name: string) {
     setBusy("delete"); setErr(null);
-    try { await apiFetch(`/api/studio/content/inspirations?name=${encodeURIComponent(name)}`, { method: "DELETE" }); onChange(); }
+    try { await fetch(`/api/studio/content/inspirations?name=${encodeURIComponent(name)}${activeBrand ? `&brand=${encodeURIComponent(activeBrand)}` : ""}`, { method: "DELETE" }); onChange(); }
     finally { setBusy(null); }
   }
   const p = bs.profile;
+  const st = bs.storage;
   return (
     <div>
+      {st?.onVercel && !st.blob && (
+        <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-700">
+          ⚠️ Stockage en ligne non connecté : la variable <b>BLOB_READ_WRITE_TOKEN</b> n&apos;est pas active sur ce déploiement. Ajoute-la (Vercel → Storage → ton Blob → connecte le projet) puis <b>redéploie</b>, sinon l&apos;enregistrement des inspirations échouera.
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <Label>Modèles d&apos;inspiration</Label>
         <span className={cn("text-[10px] font-bold", enough ? "text-emerald-600" : "text-[var(--color-muted)]")}>{n}/{min} minimum{enough ? " ✓" : ""}</span>
@@ -865,7 +886,7 @@ function InspirationsPanel({ bs, onChange }: { bs: BrandState; onChange: () => v
       <div className="mt-1.5 flex flex-wrap gap-2">
         {bs.inspirations.map((ins) => (
           <div key={ins.name} className="group relative h-[84px] w-[66px] overflow-hidden rounded-lg border border-[var(--color-line)]">
-            <img src={withAccess(ins.url)} alt="" className="h-full w-full object-cover" />
+            <img src={ins.url} alt="" className="h-full w-full object-cover" />
             <button onClick={() => remove(ins.name)} disabled={busy !== null} title="Retirer"
               className="absolute right-1 top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white group-hover:flex"><Icon name="X" size={11} /></button>
           </div>
@@ -910,6 +931,114 @@ function InspirationsPanel({ bs, onChange }: { bs: BrandState; onChange: () => v
           ? <>🎨 Fond IA actif : <b>{bs.aiProvider}</b> pour une idée seule, <b>{bs.aiProviderBatch}</b> en mode Série — généré à partir de tes inspirations pour le post, la couverture et la 1ʳᵉ story.</>
           : <>Fond IA inactif : ajoute une clé OpenAI (GPT Image 2.5) via « Connecter mes outils » pour des fonds générés à partir de tes inspirations.</>}
       </p>
+    </div>
+  );
+}
+
+/* ============ barre de sélection de marque (multi-clients) ============ */
+function BrandBar({ bs, active, onPick, onChanged }: { bs: BrandState; active: string; onPick: (slug: string) => void; onChanged: () => void }) {
+  const [form, setForm] = useState<null | "new" | "edit">(null);
+  const current = bs.brands.find((b) => b.slug === active) ?? bs.brand;
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-line)] bg-[var(--color-bg-soft,#f7f6fc)] px-3 py-2">
+      <span className="text-[11px] font-black uppercase tracking-[0.1em] text-[var(--color-muted)]">Marque</span>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {bs.brands.map((b) => (
+          <button key={b.slug} onClick={() => onPick(b.slug)}
+            className={cn("flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] font-bold transition",
+              b.slug === active ? "border-[var(--color-ink)] bg-[var(--color-ink)] text-white" : "border-[var(--color-line)] text-[var(--color-ink)] hover:bg-white/60")}>
+            <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full" style={{ background: b.palette.accent }} />
+            {b.name}
+          </button>
+        ))}
+      </div>
+      <div className="ml-auto flex items-center gap-2">
+        {current && <button onClick={() => setForm("edit")} className="text-[11px] font-bold text-[var(--color-muted)] hover:text-[var(--color-ink)]">Modifier</button>}
+        <button onClick={() => setForm("new")} className="flex items-center gap-1 rounded-lg border border-[var(--color-ink)] px-2.5 py-1.5 text-[12px] font-bold hover:bg-white/60">
+          <Icon name="Plus" size={13} /> Nouvelle marque
+        </button>
+      </div>
+      {form && <BrandForm brand={form === "edit" ? current ?? null : null} onClose={() => setForm(null)} onSaved={(slug) => { setForm(null); onPick(slug); onChanged(); }} onDeleted={(slug) => { setForm(null); onPick(slug); onChanged(); }} canDelete={bs.brands.length > 1} />}
+    </div>
+  );
+}
+
+function BrandForm({ brand, onClose, onSaved, onDeleted, canDelete }: { brand: BrandInfo | null; onClose: () => void; onSaved: (slug: string) => void; onDeleted: (slug: string) => void; canDelete: boolean }) {
+  const [name, setName] = useState(brand?.name ?? "");
+  const [handle, setHandle] = useState(brand?.handle ?? "");
+  const [pal, setPal] = useState(brand?.palette ?? { bg: "#0a0008", fg: "#faf8fb", accent: "#c9a84c", accent2: "#7c3aed", muted: "#c4b5fd" });
+  const [fonts, setFonts] = useState(brand?.fonts ?? { display: "Playfair Display", body: "Inter" });
+  const [markdown, setMarkdown] = useState(brand?.markdown ?? "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save() {
+    if (!name.trim()) { setErr("Donne un nom à la marque."); return; }
+    setBusy(true); setErr(null);
+    try {
+      const r = await fetch("/api/studio/brands", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: brand?.slug, name, handle, palette: pal, fonts, markdown }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error ?? "Enregistrement impossible");
+      onSaved(j.brand.slug);
+    } catch (e) { setErr(e instanceof Error ? e.message : "Erreur"); } finally { setBusy(false); }
+  }
+  async function del() {
+    if (!brand || !canDelete) return;
+    if (!confirm(`Supprimer la marque « ${brand.name} » et ses inspirations ?`)) return;
+    setBusy(true);
+    try {
+      const r = await fetch(`/api/studio/brands?slug=${encodeURIComponent(brand.slug)}`, { method: "DELETE" });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error ?? "Suppression impossible");
+      onDeleted((j.brands?.[0]?.slug) ?? "");
+    } catch (e) { setErr(e instanceof Error ? e.message : "Erreur"); setBusy(false); }
+  }
+  const swatch = (key: keyof typeof pal, label: string) => (
+    <label className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--color-muted)]">
+      <input type="color" value={pal[key]} onChange={(e) => setPal({ ...pal, [key]: e.target.value })} className="h-7 w-7 cursor-pointer rounded border border-[var(--color-line)] bg-transparent p-0" />
+      {label}
+    </label>
+  );
+  return (
+    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/50 p-4" onClick={onClose}>
+      <div className="my-8 w-full max-w-lg rounded-2xl bg-[var(--color-bg)] p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-3 flex items-center justify-between">
+          <div className="text-[15px] font-black text-[var(--color-ink)]">{brand ? "Modifier la marque" : "Nouvelle marque"}</div>
+          <button onClick={onClose}><Icon name="X" size={18} /></button>
+        </div>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Nom</Label><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex. Exotic Event" className="cinput2 mt-1" /></div>
+            <div><Label>Handle / @</Label><input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="@exoticevent" className="cinput2 mt-1" /></div>
+          </div>
+          <div>
+            <Label>Couleurs</Label>
+            <div className="mt-1.5 flex flex-wrap gap-3">
+              {swatch("bg", "Fond")}{swatch("fg", "Texte")}{swatch("accent", "Accent")}{swatch("accent2", "Accent 2")}{swatch("muted", "Secondaire")}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Police titres</Label>
+              <select value={fonts.display} onChange={(e) => setFonts({ ...fonts, display: e.target.value })} className="cinput2 mt-1">{FONTS.map((f) => <option key={f} value={f}>{f}</option>)}</select></div>
+            <div><Label>Police texte</Label>
+              <select value={fonts.body} onChange={(e) => setFonts({ ...fonts, body: e.target.value })} className="cinput2 mt-1">{FONTS.map((f) => <option key={f} value={f}>{f}</option>)}</select></div>
+          </div>
+          <div><Label>Ton / cible / interdictions (optionnel)</Label>
+            <textarea value={markdown} onChange={(e) => setMarkdown(e.target.value)} rows={4} placeholder="Ex. Ton chaleureux et premium. Cible : mariées aux Antilles. Éviter le jargon." className="cinput2 mt-1 resize-none" /></div>
+          {err && <div className="rounded-lg border border-red-300 bg-red-50 p-2 text-[12px] text-red-600">{err}</div>}
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-2">
+          {brand && canDelete ? <button onClick={del} disabled={busy} className="text-[12px] font-bold text-rose-500">Supprimer</button> : <span />}
+          <div className="flex gap-2">
+            <button onClick={onClose} className="rounded-lg border border-[var(--color-line)] px-4 py-2 text-[13px] font-bold hover:bg-white/60">Annuler</button>
+            <button onClick={save} disabled={busy || !name.trim()} className="flex items-center gap-1.5 rounded-lg bg-[var(--color-ink)] px-4 py-2 text-[13px] font-black text-white disabled:opacity-50">
+              <Icon name={busy ? "Loader" : "Check"} size={14} className={busy ? "animate-spin" : ""} /> {brand ? "Enregistrer" : "Créer"}
+            </button>
+          </div>
+        </div>
+        <style jsx>{`.cinput2{width:100%;border:1px solid var(--color-line);border-radius:10px;padding:8px 11px;font-size:13px;background:var(--color-bg);color:var(--color-ink)}`}</style>
+      </div>
     </div>
   );
 }
