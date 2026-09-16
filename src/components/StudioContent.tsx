@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "./Icon";
 import { cn } from "@/lib/studio/utils";
 import { STYLES, DEFAULT_STYLE, type EditorialStyle } from "@/lib/studio/styles";
@@ -1000,9 +1001,10 @@ function BrandForm({ brand, onClose, onSaved, onDeleted, canDelete }: { brand: B
       {label}
     </label>
   );
-  return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/50 p-4" onClick={onClose}>
-      <div className="my-8 w-full max-w-lg rounded-2xl bg-[var(--color-bg)] p-5" onClick={(e) => e.stopPropagation()}>
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="zara-studio fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/60 p-4" style={{ position: "fixed", inset: 0 }} onClick={onClose}>
+      <div className="my-8 w-full max-w-lg rounded-2xl bg-[var(--color-bg)] p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between">
           <div className="text-[15px] font-black text-[var(--color-ink)]">{brand ? "Modifier la marque" : "Nouvelle marque"}</div>
           <button onClick={onClose}><Icon name="X" size={18} /></button>
@@ -1039,7 +1041,8 @@ function BrandForm({ brand, onClose, onSaved, onDeleted, canDelete }: { brand: B
         </div>
         <style jsx>{`.cinput2{width:100%;border:1px solid var(--color-line);border-radius:10px;padding:8px 11px;font-size:13px;background:var(--color-bg);color:var(--color-ink)}`}</style>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
