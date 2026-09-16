@@ -17,14 +17,11 @@ import { styleById, type EditorialStyle } from "./styles";
 import type { Slide, Format } from "./generate";
 import { putVisual } from "./storage";
 import { generateImage, isNanoBananaConfigured } from "./nanoBanana";
-import { generateImageOpenAI, isOpenAIImageConfigured, openAIImageModel, openAIImageModelBatch, OPENAI_SIZES } from "./openaiImage";
+import { generateImageOpenAI, openAIImageModel, openAIImageModelBatch, OPENAI_SIZES } from "./openaiImage";
+import { aiBackgroundProvider } from "./providers";
+export { aiBackgroundProvider };
 
-/** Fournisseur de fond IA actif (OpenAI prioritaire, Gemini en secours), ou null. */
-export function aiBackgroundProvider(fast = false): { id: "openai" | "gemini"; label: string } | null {
-  if (isOpenAIImageConfigured()) return { id: "openai", label: `GPT Image 2.5 (${(fast ? openAIImageModelBatch() : openAIImageModel()).replace("gpt-image-2.5-", "")})` };
-  if (isNanoBananaConfigured()) return { id: "gemini", label: "Gemini (Nano Banana)" };
-  return null;
-}
+// aiBackgroundProvider vit désormais dans ./providers (module léger).
 
 export const SIZES: Record<string, { w: number; h: number }> = { "4:5": { w: 1080, h: 1350 }, "9:16": { w: 1080, h: 1920 } };
 export const ratioFor = (format: Format): "4:5" | "9:16" => (format === "story" ? "9:16" : "4:5");
