@@ -277,3 +277,81 @@ fonction en plan **Pro** ou réduis le nombre de slides.
 ## Local — rappel
 `npm install` puis `npm run dev`. Le rendu Chrome utilise le navigateur mis en
 cache par `npx puppeteer browsers install chrome` (à lancer une fois si besoin).
+
+---
+
+# Code d'accès
+
+L'URL était publique. N'importe qui la connaissant lançait les agents, donc
+dépensait les crédits API. C'est fermé.
+
+## Ce que tu dois faire, une fois
+
+Dans Vercel → ton projet → Settings → Environment Variables, ajoute :
+
+    ACCESS_CODE = <ta phrase secrète>
+
+Coche les trois environnements (Production, Preview, Development), puis
+redéploie. Sans cette variable, **toutes les routes `/api` répondent 503** et
+l'app ne sert à rien. C'est voulu : une app qui a l'air protégée sans l'être
+serait pire que pas de protection du tout.
+
+En local, la même ligne dans `.env.local`.
+
+Prends une phrase longue plutôt qu'un mot court. C'est ce qui sépare tes crédits
+API du premier venu.
+
+## Ce que voit la personne qui ouvre l'app
+
+Un écran noir aux couleurs de la marque, un champ, un bouton. Le code saisi est
+mémorisé dans le navigateur : on ne le retape pas à chaque visite.
+
+## Où la protection se joue vraiment
+
+Pas dans l'écran d'entrée. Dans `src/middleware.js`, qui intercepte **toutes**
+les routes `/api` et refuse celles qui n'ont pas le bon code. Contourner
+l'affichage ne donne accès à rien : ni aux agents, ni au studio de Zara, ni à un
+seul appel facturé.
+
+Un seul point de contrôle, donc aucune route oubliée — et celles qu'on ajoutera
+demain sont protégées d'office, sans rien faire.
+
+La comparaison se fait à temps constant. Un `===` classique sort au premier
+caractère qui diffère : le temps de réponse laisse alors deviner le code,
+caractère après caractère.
+
+## Deux façons de présenter le code
+
+| Cas | Mécanisme |
+|---|---|
+| Tous les appels `fetch` | en-tête `x-bbold-access` |
+| `<img src>`, lien de téléchargement ZIP | paramètre `?k=` |
+
+Le second existe parce qu'une balise `<img>` ou un lien de téléchargement ne
+peut pas porter d'en-tête. Les deux passent par `src/lib/access.ts` : `apiFetch()`
+pour le premier cas, `withAccess()` pour le second.
+
+Si tu ajoutes un appel à une route `/api`, passe par `apiFetch()`. Un `fetch()`
+brut recevra un 401.
+
+## Stockage local, pas un cookie
+
+L'app est faite pour tourner dans une iframe Systeme.io, donc en contexte tiers.
+Safari y bloque les cookies purement et simplement : un cookie aurait exclu tous
+les visiteurs iPhone. Le stockage local, lui, fonctionne.
+
+## Si le code est refusé en cours de route
+
+Un 401 vide le code mémorisé et fait réapparaître l'écran d'entrée. L'app reste
+montée derrière : un livrable en cours d'écriture n'est pas perdu.
+
+## Changer le code
+
+Modifie `ACCESS_CODE` dans Vercel et redéploie. Tous les navigateurs qui avaient
+l'ancien code sont éjectés à leur prochain appel et devront retaper le nouveau.
+
+## Ce que ça ne protège pas
+
+Les visuels déjà générés, servis en statique depuis `/content-out/`. Ils restent
+accessibles à qui connaît leur URL exacte. Les mettre derrière le code demande
+de les servir par une route `/api`, ce qui est un autre chantier.
