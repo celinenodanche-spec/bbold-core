@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { apiFetch } from "@/lib/access";
 
 interface Msg { role: "user" | "assistant"; content: string }
 
@@ -20,7 +21,7 @@ export function ZaraChat({ onGoStudio }: { onGoStudio?: () => void }) {
     setMessages(next); setInput(""); setBusy(true);
     setMessages((m) => [...m, { role: "assistant", content: "" }]);
     try {
-      const r = await fetch("/api/studio/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: next, brand: (() => { try { return localStorage.getItem("zara.activeBrand") || undefined; } catch { return undefined; } })() }) });
+      const r = await apiFetch("/api/studio/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: next, brand: (() => { try { return localStorage.getItem("zara.activeBrand") || undefined; } catch { return undefined; } })() }) });
       if (!r.ok || !r.body) throw new Error(await r.text());
       const reader = r.body.getReader();
       const dec = new TextDecoder();

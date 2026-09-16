@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { apiFetch, withAccess } from "@/lib/access";
 import { Icon } from "./Icon";
 import { cn } from "@/lib/studio/utils";
 import { STYLES, DEFAULT_STYLE, type EditorialStyle } from "@/lib/studio/styles";
@@ -82,12 +83,12 @@ export function ContentStudio() {
   const pickBrand = (slug: string) => { setActiveBrand(slug); try { localStorage.setItem("zara.activeBrand", slug); } catch { /* */ } };
 
   const reload = useCallback(async (brand: string) => {
-    try { const q = brand ? `?brand=${encodeURIComponent(brand)}` : ""; const j = await (await fetch(`/api/studio/content/list${q}`, { cache: "no-store" })).json(); setPosts(j.posts ?? []); } catch { /* */ }
+    try { const q = brand ? `?brand=${encodeURIComponent(brand)}` : ""; const j = await (await apiFetch(`/api/studio/content/list${q}`, { cache: "no-store" })).json(); setPosts(j.posts ?? []); } catch { /* */ }
   }, []);
   const reloadBrand = useCallback(async (brand: string) => {
     try {
       const q = brand ? `?brand=${encodeURIComponent(brand)}` : "";
-      const j = await (await fetch(`/api/studio/content/brand${q}`, { cache: "no-store" })).json();
+      const j = await (await apiFetch(`/api/studio/content/brand${q}`, { cache: "no-store" })).json();
       setBs({ ...NO_BRAND, ...j, styles: j.styles?.length ? j.styles : STYLES });
       if (!brand && j.brand?.slug) pickBrand(j.brand.slug);
     } catch { /* */ }
@@ -194,7 +195,7 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
     if (!ids.length) return;
     setZipping(true);
     try {
-      const r = await fetch(`/api/studio/content/export?ids=${ids.join(",")}`);
+      const r = await apiFetch(`/api/studio/content/export?ids=${ids.join(",")}`);
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? "Export impossible");
       const name = /filename="([^"]+)"/.exec(r.headers.get("Content-Disposition") ?? "")?.[1] ?? "contenu.zip";
       const url = URL.createObjectURL(await r.blob());
@@ -206,7 +207,7 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
   /** Idée + format → génère le texte, puis les visuels. Renvoie l'id du post. */
   async function generateOne(f: Format, text: string, onPhase?: (p: "text" | "visuals", done?: number, total?: number) => void, fast = false): Promise<{ id: string; res: Result; images: (string | null)[] }> {
     onPhase?.("text");
-    const r = await fetch("/api/studio/content/generate", {
+    const r = await apiFetch("/api/studio/content/generate", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ platform, format: f, idea: text, brand: activeBrand, template: showTemplates ? tmpl.name : undefined, refId: igBrand ? undefined : refTpl, style: igBrand ? style : undefined, tools: tools.split(",").map((t) => t.trim()).filter(Boolean) }),
     });
@@ -216,11 +217,11 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
     let images: (string | null)[] = [];
     if (canVisuals(f) && slideCount > 0) {
       onPhase?.("visuals", 0, slideCount);
-      const vr = await fetch("/api/studio/content/visuals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: j.id, fast }) });
+      const vr = await apiFetch("/api/studio/content/visuals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: j.id, fast }) });
       const vj = await vr.json();
       if (!vr.ok) throw new Error(vj.error ?? "Génération visuels impossible");
       for (let k = 0; k < 90; k++) {
-        const pr = await fetch(`/api/studio/content/visuals?id=${j.id}`, { cache: "no-store" });
+        const pr = await apiFetch(`/api/studio/content/visuals?id=${j.id}`, { cache: "no-store" });
         const pj = await pr.json();
         if (Array.isArray(pj.images)) { images = pj.images; onPhase?.("visuals", images.filter((x) => x).length, images.length); }
         if (pj.done) break;
@@ -267,7 +268,7 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
     if (!currentId) return;
     setDownloading(true);
     try {
-      const r = await fetch("/api/studio/content/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: currentId }) });
+      const r = await apiFetch("/api/studio/content/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: currentId }) });
       if (!r.ok) throw new Error("Téléchargement impossible");
       const blob = await r.blob();
       const url = URL.createObjectURL(blob);
@@ -474,7 +475,7 @@ function ScheduleModal({ id, current, onClose, onSaved }: { id: string; current:
   const [busy, setBusy] = useState(false);
   const save = async (clear = false) => {
     setBusy(true);
-    try { await fetch("/api/studio/content/schedule", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, at: clear ? "" : at }) }); onSaved(); }
+    try { await apiFetch("/api/studio/content/schedule", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, at: clear ? "" : at }) }); onSaved(); }
     finally { setBusy(false); }
   };
   return (
@@ -531,10 +532,10 @@ function PostDetailModal({ post, onClose, onChange, brand }: { post: ContentPost
   const t = tplByName(post.template);
   const r = post.result;
   const download = async () => {
-    const rr = await fetch("/api/studio/content/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: post.id }) });
+    const rr = await apiFetch("/api/studio/content/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: post.id }) });
     const b = await rr.blob(); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `naiom-${post.platform}.pdf`; a.click(); URL.revokeObjectURL(u);
   };
-  const del = async () => { await fetch(`/api/studio/content/schedule?id=${post.id}`, { method: "DELETE" }); onChange(); onClose(); };
+  const del = async () => { await apiFetch(`/api/studio/content/schedule?id=${post.id}`, { method: "DELETE" }); onChange(); onClose(); };
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" onClick={onClose}>
       <div className="my-6 w-full max-w-lg rounded-2xl bg-[var(--color-bg)] p-4" onClick={(e) => e.stopPropagation()}>
@@ -559,7 +560,7 @@ function PostDetailModal({ post, onClose, onChange, brand }: { post: ContentPost
         <div className="mt-4 flex items-center justify-between gap-2">
           <button onClick={del} className="text-[12px] font-bold text-rose-500">Supprimer</button>
           <div className="flex gap-2">
-            <a href={`/api/studio/content/export?ids=${post.id}`} className="flex items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-3 py-2 text-[12px] font-bold hover:bg-white/60"><Icon name="Download" size={13} /> ZIP</a>
+            <a href={withAccess(`/api/studio/content/export?ids=${post.id}`)} className="flex items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-3 py-2 text-[12px] font-bold hover:bg-white/60"><Icon name="Download" size={13} /> ZIP</a>
             <button onClick={download} className="flex items-center gap-1.5 rounded-lg border border-[var(--color-line)] px-3 py-2 text-[12px] font-bold hover:bg-white/60"><Icon name="FileText" size={13} /> PDF</button>
             <button onClick={() => setSched(true)} className="flex items-center gap-1.5 rounded-lg bg-[var(--color-ink)] px-3 py-2 text-[12px] font-bold text-white"><Icon name="Calendar" size={13} /> {post.status === "scheduled" ? "Reprogrammer" : "Programmer"}</button>
           </div>
@@ -586,7 +587,7 @@ function LibraryView({ posts, onChange, brand }: { posts: ContentPost[]; onChang
           <div key={p}>
             <div className="mb-2 flex items-center gap-2 text-[13px] font-black text-[var(--color-ink)]">
               <Logo s={18} /> {label} <span className="text-[var(--color-muted)]">({list.length})</span>
-              <a href={`/api/studio/content/export?ids=${list.map((x) => x.id).join(",")}`} className="ml-auto flex items-center gap-1 rounded-lg border border-[var(--color-line)] px-2 py-1 text-[11px] font-bold text-[var(--color-muted)] hover:text-[var(--color-ink)]" title="Tous les visuels + légendes en ZIP">
+              <a href={withAccess(`/api/studio/content/export?ids=${list.map((x) => x.id).join(",")}`)} className="ml-auto flex items-center gap-1 rounded-lg border border-[var(--color-line)] px-2 py-1 text-[11px] font-bold text-[var(--color-muted)] hover:text-[var(--color-ink)]" title="Tous les visuels + légendes en ZIP">
                 <Icon name="Download" size={12} /> Tout en ZIP
               </a>
             </div>
@@ -848,7 +849,7 @@ function InspirationsPanel({ bs, activeBrand, onChange }: { bs: BrandState; acti
       const fd = new FormData();
       Array.from(files).forEach((f) => fd.append("files", f));
       fd.append("brand", activeBrand);
-      const r = await fetch("/api/studio/content/inspirations", { method: "POST", body: fd });
+      const r = await apiFetch("/api/studio/content/inspirations", { method: "POST", body: fd });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "Upload impossible");
       onChange();
@@ -859,7 +860,7 @@ function InspirationsPanel({ bs, activeBrand, onChange }: { bs: BrandState; acti
   async function analyze() {
     setBusy("analyze"); setErr(null);
     try {
-      const r = await fetch(`/api/studio/content/inspirations/analyze${bq}`, { method: "POST" });
+      const r = await apiFetch(`/api/studio/content/inspirations/analyze${bq}`, { method: "POST" });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "Analyse impossible");
       onChange();
@@ -867,7 +868,7 @@ function InspirationsPanel({ bs, activeBrand, onChange }: { bs: BrandState; acti
   }
   async function remove(name: string) {
     setBusy("delete"); setErr(null);
-    try { await fetch(`/api/studio/content/inspirations?name=${encodeURIComponent(name)}${activeBrand ? `&brand=${encodeURIComponent(activeBrand)}` : ""}`, { method: "DELETE" }); onChange(); }
+    try { await apiFetch(`/api/studio/content/inspirations?name=${encodeURIComponent(name)}${activeBrand ? `&brand=${encodeURIComponent(activeBrand)}` : ""}`, { method: "DELETE" }); onChange(); }
     finally { setBusy(null); }
   }
   const p = bs.profile;
@@ -887,7 +888,7 @@ function InspirationsPanel({ bs, activeBrand, onChange }: { bs: BrandState; acti
       <div className="mt-1.5 flex flex-wrap gap-2">
         {bs.inspirations.map((ins) => (
           <div key={ins.name} className="group relative h-[84px] w-[66px] overflow-hidden rounded-lg border border-[var(--color-line)]">
-            <img src={ins.url} alt="" className="h-full w-full object-cover" />
+            <img src={withAccess(ins.url)} alt="" className="h-full w-full object-cover" />
             <button onClick={() => remove(ins.name)} disabled={busy !== null} title="Retirer"
               className="absolute right-1 top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white group-hover:flex"><Icon name="X" size={11} /></button>
           </div>
@@ -977,7 +978,7 @@ function BrandForm({ brand, onClose, onSaved, onDeleted, canDelete }: { brand: B
     if (!name.trim()) { setErr("Donne un nom à la marque."); return; }
     setBusy(true); setErr(null);
     try {
-      const r = await fetch("/api/studio/brands", { method: "POST", headers: { "Content-Type": "application/json" },
+      const r = await apiFetch("/api/studio/brands", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug: brand?.slug, name, handle, palette: pal, fonts, markdown }) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "Enregistrement impossible");
@@ -989,7 +990,7 @@ function BrandForm({ brand, onClose, onSaved, onDeleted, canDelete }: { brand: B
     if (!confirm(`Supprimer la marque « ${brand.name} » et ses inspirations ?`)) return;
     setBusy(true);
     try {
-      const r = await fetch(`/api/studio/brands?slug=${encodeURIComponent(brand.slug)}`, { method: "DELETE" });
+      const r = await apiFetch(`/api/studio/brands?slug=${encodeURIComponent(brand.slug)}`, { method: "DELETE" });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "Suppression impossible");
       onDeleted((j.brands?.[0]?.slug) ?? "");
