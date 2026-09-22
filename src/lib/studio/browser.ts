@@ -12,8 +12,10 @@ export async function launchBrowser(): Promise<Browser> {
   if (isServerless()) {
     const chromium = (await import("@sparticuz/chromium")).default;
     const puppeteer = await import("puppeteer-core");
+    // Pas de WebGL/graphismes ici (on rend du HTML/texte) → moins de librairies système requises.
+    chromium.setGraphicsMode = false;
     return puppeteer.launch({
-      args: [...chromium.args, "--disable-dev-shm-usage"],
+      args: [...chromium.args, "--disable-dev-shm-usage", "--no-sandbox"],
       executablePath: await chromium.executablePath(),
       headless: true,
       defaultViewport: { width: 1080, height: 1350 },

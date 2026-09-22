@@ -10,14 +10,14 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.71",
     "@anthropic-ai/sdk": "^0.27.0",
-    "@sparticuz/chromium": "^131.0.0",
+    "@sparticuz/chromium": "^153.0.0",
     "@vercel/blob": "^2.8.0",
     "ai": "^6.0.168",
     "clsx": "^2.1.1",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.400.0",
     "next": "14.2.0",
-    "puppeteer-core": "^24.0.0",
+    "puppeteer-core": "^25.11.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "tailwind-merge": "^3.5.0"
@@ -30,8 +30,5 @@
     "puppeteer": "^24.41.0",
     "tailwindcss": "^4",
     "typescript": "^5"
-  },
-  "engines": {
-    "node": "20.x"
   }
 }
