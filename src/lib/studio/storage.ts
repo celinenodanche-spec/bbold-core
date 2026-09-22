@@ -44,7 +44,7 @@ const mime = (name: string) => (/\.png$/i.test(name) ? "image/png" : /\.webp$/i.
 export async function putVisual(name: string, buf: Buffer): Promise<string> {
   assertWritable();
   if (useBlob()) {
-    const { url } = await put(`${BLOB_PREFIX}/content-out/${name}`, buf, { access: "public", token: blobToken(), contentType: "image/png", addRandomSuffix: false, allowOverwrite: true });
+    const { url } = await put(`${BLOB_PREFIX}/content-out/${name}`, buf, { access: "public", token: blobToken(), contentType: "image/png", addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 30 });
     return url;
   }
   const abs = path.join(PUBLIC_DIR, "content-out", name);
@@ -58,7 +58,7 @@ export async function putVisual(name: string, buf: Buffer): Promise<string> {
 export async function putData(key: string, buf: Buffer, contentType: string): Promise<string> {
   assertWritable();
   if (useBlob()) {
-    const { url } = await put(`${BLOB_PREFIX}/data/${key}`, buf, { access: "public", token: blobToken(), contentType, addRandomSuffix: false, allowOverwrite: true });
+    const { url } = await put(`${BLOB_PREFIX}/data/${key}`, buf, { access: "public", token: blobToken(), contentType, addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 0 });
     return url;
   }
   const abs = path.join(DATA_DIR, key);
@@ -72,7 +72,7 @@ export async function getData(key: string): Promise<Buffer | null> {
     const { blobs } = await list({ prefix: `${BLOB_PREFIX}/data/${key}`, token: blobToken(), limit: 1 });
     const hit = blobs.find((b) => b.pathname === `${BLOB_PREFIX}/data/${key}`) ?? blobs[0];
     if (!hit) return null;
-    const r = await fetch(hit.url, { cache: "no-store" });
+    const r = await fetch(`${hit.url}${hit.url.includes("?") ? "&" : "?"}_=${Date.now()}`, { cache: "no-store" });
     return r.ok ? Buffer.from(await r.arrayBuffer()) : null;
   }
   try { return await fs.readFile(path.join(DATA_DIR, key)); } catch { return null; }
