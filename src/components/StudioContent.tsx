@@ -217,15 +217,23 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
     let images: (string | null)[] = [];
     if (canVisuals(f) && slideCount > 0) {
       onPhase?.("visuals", 0, slideCount);
-      const vr = await apiFetch("/api/studio/content/visuals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: j.id, fast }) });
+      const fallback = { platform: "instagram", format: f, idea: text, style: igBrand ? style : undefined, brand: activeBrand, slides: j.slides, cta: j.cta, headline: j.headline, body: j.body };
+      const vr = await apiFetch("/api/studio/content/visuals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: j.id, fast, fallback }) });
       const vj = await vr.json();
       if (!vr.ok) throw new Error(vj.error ?? "Génération visuels impossible");
-      for (let k = 0; k < 90; k++) {
-        const pr = await apiFetch(`/api/studio/content/visuals?id=${j.id}`, { cache: "no-store" });
-        const pj = await pr.json();
-        if (Array.isArray(pj.images)) { images = pj.images; onPhase?.("visuals", images.filter((x) => x).length, images.length); }
-        if (pj.done) break;
-        await new Promise((res) => setTimeout(res, igBrand ? 1500 : 5000));
+      if (Array.isArray(vj.images) && vj.images.length) {
+        // rendu synchrone (marque) : les images arrivent directement, pas besoin de relire le stockage
+        images = vj.images;
+        onPhase?.("visuals", images.filter((x) => x).length, images.length);
+      } else {
+        // secours (chemin asynchrone) : on interroge l'état
+        for (let k = 0; k < 90; k++) {
+          const pr = await apiFetch(`/api/studio/content/visuals?id=${j.id}`, { cache: "no-store" });
+          const pj = await pr.json();
+          if (Array.isArray(pj.images)) { images = pj.images; onPhase?.("visuals", images.filter((x) => x).length, images.length); }
+          if (pj.done) break;
+          await new Promise((res) => setTimeout(res, igBrand ? 1500 : 5000));
+        }
       }
     }
     return { id: j.id as string, res: j as Result, images };
