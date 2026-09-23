@@ -45,8 +45,15 @@ export async function listPosts(brandSlug?: string): Promise<ContentPost[]> {
 }
 
 export async function getPost(id: string): Promise<ContentPost | null> {
-  const s = await read();
-  return s.posts.find((p) => p.id === id) ?? null;
+  // Vercel Blob indexe une écriture avec un léger délai : on relit quelques fois
+  // le temps que le post fraîchement créé apparaisse (corrige "Post introuvable").
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const s = await read();
+    const p = s.posts.find((x) => x.id === id);
+    if (p) return p;
+    if (attempt < 5) await new Promise((r) => setTimeout(r, 500));
+  }
+  return null;
 }
 
 export async function addPost(p: Omit<ContentPost, "id" | "createdAt" | "status">): Promise<ContentPost> {
