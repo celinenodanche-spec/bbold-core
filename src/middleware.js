@@ -18,6 +18,13 @@ function memeCode(fourni, attendu) {
 }
 
 export function middleware(request) {
+  // La capture de leads des pages publiques (ex. Le Rituel 3 Minutes) reste
+  // ouverte : ses visiteurs n'ont pas, et ne doivent pas avoir, le code
+  // d'accès interne de l'outil agence.
+  if (request.nextUrl.pathname.startsWith('/api/leads/')) {
+    return NextResponse.next()
+  }
+
   const attendu = process.env.ACCESS_CODE
 
   // Pas de code configuré côté serveur → on ferme. Laisser passer serait pire
