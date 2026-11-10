@@ -1,5 +1,6 @@
 /**
- * Rendu des visuels Instagram (post 4:5, carrousel 4:5, story 9:16) en HTML → PNG.
+ * Rendu des visuels de marque (post 4:5, carrousel 4:5, story 9:16) en HTML → PNG,
+ * pour Instagram, LinkedIn et X.
  * 100 % déterministe : le texte est composé par le navigateur (zéro faute, zéro
  * hallucination), la mise en page suit la marque (brand.md), le profil de style
  * déduit des visuels d'inspiration, et le style éditorial choisi dans le studio.
@@ -14,7 +15,7 @@ import type { Brand } from "./brand";
 import type { StyleProfile } from "./inspirations";
 import { listInspirations, readInspirationFile } from "./inspirations";
 import { styleById, type EditorialStyle } from "./styles";
-import type { Slide, Format } from "./generate";
+import type { Slide, Format, Platform } from "./generate";
 import { putVisual } from "./storage";
 import { generateImage, isNanoBananaConfigured } from "./nanoBanana";
 import { generateImageOpenAI, openAIImageModel, openAIImageModelBatch, OPENAI_SIZES } from "./openaiImage";
@@ -192,7 +193,7 @@ async function aiBackground(brand: Brand, profile: StyleProfile | null, th: Them
       const r = await readInspirationFile(brand, f.name);
       if (r) refs.push({ buf: r.buf, mime: r.mime, name: f.name });
     }
-    const prompt = `Crée un FOND VISUEL abstrait ou photographique pour un post Instagram ${ratio === "9:16" ? "story vertical 9:16" : "portrait 4:5"}, dans le style exact des images de référence (couleurs, textures, ambiance : ${profile?.summary ?? "premium, éditorial"}). Palette dominante ${th.bg} / ${th.accent}. Sujet suggéré : « ${idea} ». Composition avec de larges zones calmes (surtout en bas) pour poser du texte par-dessus. AUCUN texte, aucune lettre, aucun logo, aucun filigrane, aucune personne identifiable.`;
+    const prompt = `Crée un FOND VISUEL abstrait ou photographique pour un visuel de réseau social ${ratio === "9:16" ? "story vertical 9:16" : "portrait 4:5"}, dans le style exact des images de référence (couleurs, textures, ambiance : ${profile?.summary ?? "premium, éditorial"}). Palette dominante ${th.bg} / ${th.accent}. Sujet suggéré : « ${idea} ». Composition avec de larges zones calmes (surtout en bas) pour poser du texte par-dessus. AUCUN texte, aucune lettre, aucun logo, aucun filigrane, aucune personne identifiable.`;
     const r = provider.id === "openai"
       ? await generateImageOpenAI(prompt, { slug: "bg", size: OPENAI_SIZES[ratio], model: fast ? openAIImageModelBatch() : openAIImageModel(), references: refs.map((x) => ({ data: x.buf, mimeType: x.mime, name: x.name })) })
       : await generateImage(prompt, { slug: "bg", references: refs.map((x) => ({ data: x.buf.toString("base64"), mimeType: x.mime })) });
@@ -208,21 +209,22 @@ async function aiBackground(brand: Brand, profile: StyleProfile | null, th: Them
 
 /* ---------- pipeline ---------- */
 export interface RenderInput {
-  postId: string; format: Format; idea: string;
+  postId: string; platform?: Platform; format: Format; idea: string;
   slides: Slide[]; cta?: string;
   brand: Brand; profile: StyleProfile | null; styleId?: string | null;
   aiBackground?: boolean; // par défaut : oui si une clé image (OpenAI / Gemini) est configurée
   fast?: boolean;         // mode « Série » : modèle rapide (OPENAI_IMAGE_MODEL_BATCH, défaut gpt-image-2.5-flare)
 }
 
-export async function renderInstagram(inp: RenderInput): Promise<string[]> {
+/** Rend les visuels d'un post (tous réseaux). `image` (LinkedIn / X) se compose comme un post : une accroche, un visuel. */
+export async function renderVisuals(inp: RenderInput): Promise<string[]> {
   const ratio = ratioFor(inp.format);
   const { w, h } = SIZES[ratio];
   const th = buildTheme(inp.brand, inp.profile, inp.styleId);
   const total = inp.slides.length;
   const frames: Frame[] = inp.slides.map((slide, i) => ({
     slide, i, total, cta: inp.cta,
-    kind: inp.format === "post" ? "post" : inp.format === "story" ? "story" : i === 0 ? "cover" : i === total - 1 ? "cta" : "content",
+    kind: inp.format === "post" || inp.format === "image" ? "post" : inp.format === "story" ? "story" : i === 0 ? "cover" : i === total - 1 ? "cta" : "content",
   }));
   if (inp.aiBackground !== false && frames.length) {
     const bg = await aiBackground(inp.brand, inp.profile, th, inp.idea, ratio, !!inp.fast);

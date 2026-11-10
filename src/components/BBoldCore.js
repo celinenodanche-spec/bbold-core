@@ -2373,8 +2373,14 @@ export default function BBoldCore() {
   return (
     <div style={{ minHeight:'100vh', background:`linear-gradient(160deg,#120010 0%,#0a0008 55%,#0f000e 100%)`,
       color:B.white, fontFamily:'system-ui,sans-serif' }}>
+      {/* Remise à zéro globale, SAUF dans le studio de Zara (.zara-studio).
+          Le studio a sa propre feuille Tailwind, rangée en couches CSS. Or une règle hors couche
+          l'emporte sur toutes les couches : un « * » nu remettait à zéro chaque padding et chaque
+          marge du studio. :where() garde une spécificité nulle, donc rien ne change ailleurs.
+          Ce commentaire reste en JSX et non dans la balise style : une apostrophe dans le CSS est
+          échappée côté serveur mais pas côté navigateur, ce qui casse l'hydratation React. */}
       <style>{`
-        * { box-sizing:border-box; margin:0; padding:0; }
+        :where(:not(.zara-studio, .zara-studio *)) { box-sizing:border-box; margin:0; padding:0; }
         ::-webkit-scrollbar { width:4px; }
         ::-webkit-scrollbar-thumb { background:${B.gold}44; border-radius:2px; }
         input::placeholder, textarea::placeholder { color:rgba(250,248,251,0.22); }

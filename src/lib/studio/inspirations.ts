@@ -47,16 +47,27 @@ export async function listInspirations(b: Brand): Promise<Inspiration[]> {
   return entries.map((e) => ({ name: e.name, url: uiUrl(b, e.name, e.url), size: e.size, addedAt: e.addedAt }));
 }
 
+/** Reconnaît PNG / JPEG / WebP à leur signature binaire. */
+function sniffImage(buf: Buffer): { ext: "png" | "jpg" | "webp"; mime: string } | null {
+  if (buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return { ext: "png", mime: "image/png" };
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return { ext: "jpg", mime: "image/jpeg" };
+  if (buf.length >= 12 && buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP") return { ext: "webp", mime: "image/webp" };
+  return null;
+}
+
 export async function addInspiration(b: Brand, file: File): Promise<Inspiration> {
   if (!ALLOWED.has(file.type)) throw new Error(`Format non supporté (${file.type || "inconnu"}). Utilise PNG, JPG ou WebP.`);
   if (file.size > 12 * 1024 * 1024) throw new Error("Image trop lourde (12 Mo max).");
   const existing = await listInspirations(b);
   if (existing.length >= MAX_FILES) throw new Error(`Maximum ${MAX_FILES} visuels d'inspiration.`);
-  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-  const base = safeName(file.name.replace(/\.[^.]+$/, "")) || "inspiration";
-  const name = `${Date.now().toString(36)}-${base}.${ext}`;
   const buf = Buffer.from(await file.arrayBuffer());
-  const stored = await putData(inspKey(b, name), buf, file.type);
+  // On se fie au CONTENU, pas au type annoncé : un fichier renommé en .png finirait en vignette cassée,
+  // puis ferait échouer l'analyse du style et le fond IA.
+  const kind = sniffImage(buf);
+  if (!kind) throw new Error("ce fichier n'est pas une image PNG, JPG ou WebP lisible");
+  const base = safeName(file.name.replace(/\.[^.]+$/, "")) || "inspiration";
+  const name = `${Date.now().toString(36)}-${base}.${kind.ext}`;
+  const stored = await putData(inspKey(b, name), buf, kind.mime);
   return { name, url: uiUrl(b, name, stored), size: buf.length, addedAt: new Date().toISOString() };
 }
 

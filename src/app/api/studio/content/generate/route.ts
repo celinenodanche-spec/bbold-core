@@ -23,7 +23,8 @@ export async function POST(req: Request) {
       result.slides = [{ title: result.headline, body: result.body ?? "" }];
     }
     const post = await addPost({ platform, format, idea: idea.trim(), template, refId, tools, style, brandSlug: brand?.slug, result });
-    return Response.json({ success: true, id: post.id, ...result });
+    // `post` repart vers le navigateur : il le renverra à /visuals, qui n'a ainsi pas à relire le stockage.
+    return Response.json({ success: true, id: post.id, post, ...result });
   } catch (err) {
     return Response.json({ error: err instanceof Error ? err.message : "Erreur" }, { status: 500 });
   }

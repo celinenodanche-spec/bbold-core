@@ -80,21 +80,43 @@ export async function getData(key: string): Promise<Buffer | null> {
 
 export interface DataEntry { name: string; url: string; size: number; addedAt: string }
 
-/** Liste les fichiers sous `prefix/` (ex. "inspirations"). */
-export async function listData(prefix: string): Promise<DataEntry[]> {
+/** Liste les fichiers sous `prefix/` (ex. "inspirations"), éventuellement restreints à ceux dont le nom commence par `startsWith`. Suit la pagination Blob jusqu'au bout. */
+export async function listData(prefix: string, startsWith = ""): Promise<DataEntry[]> {
   if (useBlob()) {
-    const { blobs } = await list({ prefix: `${BLOB_PREFIX}/data/${prefix}/`, token: blobToken() });
-    return blobs.map((b) => ({ name: b.pathname.split("/").pop() || b.pathname, url: b.url, size: b.size, addedAt: (b.uploadedAt instanceof Date ? b.uploadedAt : new Date(b.uploadedAt)).toISOString() }));
+    const out: DataEntry[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await list({ prefix: `${BLOB_PREFIX}/data/${prefix}/${startsWith}`, token: blobToken(), cursor, limit: 1000 });
+      for (const b of page.blobs) out.push({ name: b.pathname.split("/").pop() || b.pathname, url: b.url, size: b.size, addedAt: (b.uploadedAt instanceof Date ? b.uploadedAt : new Date(b.uploadedAt)).toISOString() });
+      cursor = page.hasMore ? page.cursor : undefined;
+    } while (cursor);
+    return out;
   }
   const dir = path.join(DATA_DIR, prefix);
   let names: string[] = [];
   try { names = await fs.readdir(dir); } catch { return []; }
   const out: DataEntry[] = [];
   for (const n of names) {
+    if (startsWith && !n.startsWith(startsWith)) continue;
     const st = await fs.stat(path.join(dir, n));
     if (st.isFile()) out.push({ name: n, url: "", size: st.size, addedAt: st.mtime.toISOString() });
   }
   return out;
+}
+
+/**
+ * Lit un fichier déjà listé par `listData`, sans refaire d'appel de listing :
+ * en Blob on va droit à son URL, en local on lit `prefix/name`.
+ */
+export async function readEntry(prefix: string, e: DataEntry): Promise<Buffer | null> {
+  if (useBlob()) {
+    if (!e.url) return null;
+    try {
+      const r = await fetch(`${e.url}${e.url.includes("?") ? "&" : "?"}_=${Date.now()}`, { cache: "no-store" });
+      return r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+    } catch { return null; }
+  }
+  try { return await fs.readFile(path.join(DATA_DIR, prefix, e.name)); } catch { return null; }
 }
 
 export async function delData(key: string): Promise<void> {

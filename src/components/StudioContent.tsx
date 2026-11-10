@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { apiFetch, withAccess } from "@/lib/access";
 import { Icon } from "./Icon";
@@ -21,7 +21,13 @@ interface ContentPost {
   visuals?: { images: (string | null)[]; done: boolean };
 }
 
-interface BatchItem { idea: string; format: Format; status: "pending" | "text" | "visuals" | "done" | "error"; id?: string; thumb?: string | null; done?: number; total?: number; error?: string }
+interface BatchItem { idea: string; format: Format; status: "pending" | "text" | "visuals" | "done" | "error"; id?: string; thumb?: string | null; done?: number; total?: number; error?: string; res?: Result; images?: (string | null)[]; warn?: string }
+
+/** Brief préparé dans l'onglet Discussion, à déposer dans le Studio. `nonce` distingue deux envois identiques. */
+export interface Handoff { idea: string; platform?: Platform | null; format?: Format | null; nonce: number }
+
+/** Formats qui portent un visuel, par réseau (les autres sont du texte seul). Doit rester aligné avec /api/studio/content/visuals. */
+const VISUAL_FORMATS: Record<Platform, Format[]> = { instagram: ["post", "carousel", "story"], linkedin: ["image", "carousel"], twitter: ["image"] };
 
 /* ============ marque (clients/<client>/brand.md) + inspirations ============ */
 interface BrandInfo { slug: string; name: string; handle: string; palette: { bg: string; fg: string; accent: string; accent2: string; muted: string }; fonts: { display: string; body: string }; markdown?: string; isTemplate: boolean }
@@ -39,13 +45,6 @@ const TEMPLATES: Tmpl[] = [
   { id: "gradient", name: "Gradient", bg: "linear-gradient(135deg,#F5411C,#5B4DEE)", fg: "#ffffff", accent: "#ffffff", sub: "rgba(255,255,255,.8)", font: "'Archivo',sans-serif" },
   { id: "editorial", name: "Éditorial", bg: "#FAF6F4", fg: "#1a1a1a", accent: "#5B4DEE", sub: "#7a7a7a", font: "Georgia,'Times New Roman',serif" },
 ];
-
-// Modèles de référence (images de Zeyneb) servis depuis /public/templates
-const REF_TEMPLATES: Record<Platform, { id: string; src: string }[]> = {
-  linkedin: ["1", "2", "3", "4", "6", "7", "8", "9", "10", "13", "14", "15", "16"].map((n) => ({ id: `li-${n}`, src: `/templates/li/${n}.png` })),
-  twitter: ["1", "2", "3", "4", "6", "7", "8", "9", "10", "13", "14", "15", "16"].map((n) => ({ id: `li-${n}`, src: `/templates/li/${n}.png` })),
-  instagram: ["type1", "type2", "type3", "type4"].map((t) => ({ id: `ig-${t}`, src: `/templates/ig/${t}.png` })),
-};
 
 const tplByName = (n?: string) => TEMPLATES.find((t) => t.name === n) ?? TEMPLATES[0];
 
@@ -73,9 +72,15 @@ const XLogo = ({ s = 18 }: { s?: number }) => (
 );
 
 /* ============ main ============ */
-export function ContentStudio() {
+export function ContentStudio({ handoff = null, onHandoffDone }: { handoff?: Handoff | null; onHandoffDone?: () => void } = {}) {
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [mode, setMode] = useState<"create" | "library">("create");
+  // Un brief arrive de la Discussion : on se place sur « Créer » et sur le réseau qu'il vise.
+  useEffect(() => {
+    if (!handoff) return;
+    setMode("create");
+    if (handoff.platform) setPlatform(handoff.platform);
+  }, [handoff]);
   const [posts, setPosts] = useState<ContentPost[]>([]);
   const [bs, setBs] = useState<BrandState>(NO_BRAND);
   const [activeBrand, setActiveBrand] = useState<string>("");
@@ -136,7 +141,7 @@ export function ContentStudio() {
               );
             })}
           </div>
-          <PlatformPanel key={`${platform}-${brandSlug}`} platform={platform} saved={latestFor(platform)} onSaved={refresh} bs={bs} activeBrand={brandSlug} onBrandChange={() => reloadBrand(activeBrand)} />
+          <PlatformPanel key={`${platform}-${brandSlug}`} platform={platform} saved={latestFor(platform)} onSaved={refresh} bs={bs} activeBrand={brandSlug} onBrandChange={() => reloadBrand(activeBrand)} handoff={handoff} onHandoffDone={onHandoffDone} />
         </>
       )}
     </div>
@@ -144,21 +149,20 @@ export function ContentStudio() {
 }
 
 /* ============ per-platform panel ============ */
-function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChange }: { platform: Platform; saved: ContentPost | null; onSaved: () => void; bs: BrandState; activeBrand: string; onBrandChange: () => void }) {
+function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChange, handoff, onHandoffDone }: { platform: Platform; saved: ContentPost | null; onSaved: () => void; bs: BrandState; activeBrand: string; onBrandChange: () => void; handoff?: Handoff | null; onHandoffDone?: () => void }) {
   const formats = FORMATS[platform];
   const tmplByName = (n?: string) => TEMPLATES.find((t) => t.name === n) ?? TEMPLATES[0];
-  // Instagram + marque cliente : pipeline "marque" (brand.md + inspirations + style éditorial, rendu HTML → PNG)
-  const igBrand = platform === "instagram" && !!bs.brand;
+  // Pipeline "marque" sur TOUS les réseaux : marque + inspirations + style éditorial, rendu HTML → PNG.
+  const brandOn = !!bs.brand;
   // reprise de la session précédente
   const [format, setFormat] = useState<Format>(saved?.format && formats.some((f) => f.key === saved.format) ? saved.format : formats[0].key);
   const [idea, setIdea] = useState(saved?.idea ?? "");
   const [tmpl, setTmpl] = useState<Tmpl>(tmplByName(saved?.template));
-  const [refTpl, setRefTpl] = useState<string | null>(REF_TEMPLATES[platform]?.[0]?.id ?? null);
   const [style, setStyle] = useState<string>(saved?.style ?? DEFAULT_STYLE);
-  const [tools, setTools] = useState<string>(saved?.tools?.join(", ") ?? "");
   const [res, setRes] = useState<Result | null>(saved?.result ?? null);
   const [currentId, setCurrentId] = useState<string | null>(saved?.id ?? null);
   const [err, setErr] = useState<string | null>(null);
+  const [warn, setWarn] = useState<string | null>(null); // visuels rendus mais pas enregistrés : pas une erreur, mais à dire
   const [sched, setSched] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [slideImages, setSlideImages] = useState<(string | null)[]>(saved?.visuals?.images ?? []);
@@ -166,8 +170,8 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   // automatisation : téléchargement ZIP automatique + mode série (plusieurs idées × formats)
   const [autoDl, setAutoDl] = useState(true);
-  useEffect(() => { try { const v = localStorage.getItem("lea.autoDownload"); if (v !== null) setAutoDl(v === "1"); } catch { /* */ } }, []);
-  const toggleAutoDl = (v: boolean) => { setAutoDl(v); try { localStorage.setItem("lea.autoDownload", v ? "1" : "0"); } catch { /* */ } };
+  useEffect(() => { try { const v = localStorage.getItem("zara.autoDownload") ?? localStorage.getItem("lea.autoDownload"); if (v !== null) setAutoDl(v === "1"); } catch { /* */ } }, []);
+  const toggleAutoDl = (v: boolean) => { setAutoDl(v); try { localStorage.setItem("zara.autoDownload", v ? "1" : "0"); } catch { /* */ } };
   const [batch, setBatch] = useState(false);
   const [batchIdeas, setBatchIdeas] = useState("");
   const [batchFormats, setBatchFormats] = useState<Format[]>([formats[0].key]);
@@ -182,13 +186,32 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
     setHydrated(true);
     if (formats.some((f) => f.key === saved.format)) setFormat(saved.format);
     setIdea(saved.idea); setTmpl(tmplByName(saved.template)); setStyle(saved.style ?? DEFAULT_STYLE);
-    setTools(saved.tools?.join(", ") ?? ""); setRes(saved.result); setCurrentId(saved.id); setSlideImages(saved.visuals?.images ?? []);
+    setRes(saved.result); setCurrentId(saved.id); setSlideImages(saved.visuals?.images ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saved, hydrated]);
 
-  const showTemplates = !igBrand && (format === "carousel" || format === "post" || format === "image");
+  /** Repart d'une page blanche (ou d'un brief) : plus rien de la création précédente à l'écran. */
+  function startNew(text = "", fmt?: Format | null) {
+    setHydrated(true); // la reprise de session ne doit pas réécrire par-dessus
+    setIdea(text); setRes(null); setCurrentId(null); setSlideImages([]); setErr(null); setWarn(null); setProgress(null); setBatchItems([]);
+    if (text) setBatch(false);
+    if (fmt && formats.some((f) => f.key === fmt)) setFormat(fmt);
+  }
+
+  // Brief envoyé depuis la Discussion. Déclaré APRÈS la reprise de session : s'ils tombent ensemble, le brief gagne.
+  const appliedHandoff = useRef<number | null>(null);
+  useEffect(() => {
+    if (!handoff || appliedHandoff.current === handoff.nonce) return;
+    if (handoff.platform && handoff.platform !== platform) return; // le studio bascule de réseau : c'est le panneau suivant qui le prendra
+    if (phase !== "idle" || batchRunning) return; // une génération tourne : on ne lui retire pas le tapis
+    appliedHandoff.current = handoff.nonce;
+    startNew(handoff.idea, handoff.format);
+    onHandoffDone?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handoff, platform, phase, batchRunning]);
+
   const loading = phase !== "idle" || batchRunning;
-  const canVisuals = (f: Format) => igBrand || (!igBrand && (f === "carousel" || f === "post" || f === "image") && !!refTpl);
+  const canVisuals = (f: Format) => brandOn && VISUAL_FORMATS[platform].includes(f);
 
   /** Télécharge un ZIP (PNG + légende) pour un ou plusieurs posts. */
   async function downloadZip(ids: string[]) {
@@ -205,19 +228,21 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
   }
 
   /** Idée + format → génère le texte, puis les visuels. Renvoie l'id du post. */
-  async function generateOne(f: Format, text: string, onPhase?: (p: "text" | "visuals", done?: number, total?: number) => void, fast = false): Promise<{ id: string; res: Result; images: (string | null)[] }> {
+  async function generateOne(f: Format, text: string, onPhase?: (p: "text" | "visuals", done?: number, total?: number) => void, fast = false): Promise<{ id: string; res: Result; images: (string | null)[]; warn?: string }> {
     onPhase?.("text");
     const r = await apiFetch("/api/studio/content/generate", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform, format: f, idea: text, brand: activeBrand, template: showTemplates ? tmpl.name : undefined, refId: igBrand ? undefined : refTpl, style: igBrand ? style : undefined, tools: tools.split(",").map((t) => t.trim()).filter(Boolean) }),
+      body: JSON.stringify({ platform, format: f, idea: text, brand: activeBrand, style: brandOn ? style : undefined }),
     });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error ?? "Génération impossible");
     const slideCount = (j.slides?.length as number) || (j.headline ? 1 : 0);
     let images: (string | null)[] = [];
+    let warn: string | undefined;
     if (canVisuals(f) && slideCount > 0) {
       onPhase?.("visuals", 0, slideCount);
-      const fallback = { platform: "instagram", format: f, idea: text, style: igBrand ? style : undefined, brand: activeBrand, slides: j.slides, cta: j.cta, headline: j.headline, body: j.body };
+      // `post` = le post complet tel que le serveur vient de le créer : /visuals rend et enregistre sans avoir à le relire.
+      const fallback = { platform, format: f, idea: text, style: brandOn ? style : undefined, brand: activeBrand, slides: j.slides, cta: j.cta, headline: j.headline, body: j.body, post: j.post };
       const vr = await apiFetch("/api/studio/content/visuals", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: j.id, fast, fallback }) });
       const vj = await vr.json();
       if (!vr.ok) throw new Error(vj.error ?? "Génération visuels impossible");
@@ -225,6 +250,7 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
         // rendu synchrone (marque) : les images arrivent directement, pas besoin de relire le stockage
         images = vj.images;
         onPhase?.("visuals", images.filter((x) => x).length, images.length);
+        if (vj.saved === false) warn = "Visuels créés mais pas enregistrés dans la bibliothèque (stockage indisponible). Télécharge-les depuis l'aperçu, ou relance.";
       } else {
         // secours (chemin asynchrone) : on interroge l'état
         for (let k = 0; k < 90; k++) {
@@ -232,11 +258,12 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
           const pj = await pr.json();
           if (Array.isArray(pj.images)) { images = pj.images; onPhase?.("visuals", images.filter((x) => x).length, images.length); }
           if (pj.done) break;
-          await new Promise((res) => setTimeout(res, igBrand ? 1500 : 5000));
+          await new Promise((res) => setTimeout(res, 1500));
         }
       }
+      if (!images.some((x) => x)) throw new Error("Le texte est prêt mais aucun visuel n'a été produit. Relance la génération.");
     }
-    return { id: j.id as string, res: j as Result, images };
+    return { id: j.id as string, res: j as Result, images, warn };
   }
 
   /** Mode série : chaque idée × chaque format, puis un seul ZIP. */
@@ -244,13 +271,14 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
     const ideas = batchIdeas.split("\n").map((l) => l.replace(/^[-•\d.)\s]+/, "").trim()).filter(Boolean);
     if (!ideas.length || !batchFormats.length) return;
     const items: BatchItem[] = ideas.flatMap((text) => batchFormats.map((f) => ({ idea: text, format: f, status: "pending" as const })));
-    setBatchItems(items); setBatchRunning(true); setErr(null);
+    setBatchItems(items); setBatchRunning(true); setErr(null); setWarn(null);
     const upd = (i: number, patch: Partial<BatchItem>) => setBatchItems((prev) => prev.map((it, k) => (k === i ? { ...it, ...patch } : it)));
     const ids: string[] = [];
     for (let i = 0; i < items.length; i++) {
       try {
         const out = await generateOne(items[i].format, items[i].idea, (p, done, total) => upd(i, { status: p, done, total }), true);
-        ids.push(out.id); upd(i, { status: "done", id: out.id, thumb: out.images.find((x) => x) ?? null });
+        ids.push(out.id); upd(i, { status: "done", id: out.id, thumb: out.images.find((x) => x) ?? null, res: out.res, images: out.images, warn: out.warn });
+        if (out.warn) setWarn(out.warn);
         setRes(out.res); setCurrentId(out.id); setSlideImages(out.images); setFormat(items[i].format);
       } catch (e) { upd(i, { status: "error", error: e instanceof Error ? e.message : "Erreur" }); }
     }
@@ -260,13 +288,14 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
 
   async function run() {
     if (!idea.trim()) return;
-    setPhase("text"); setErr(null); setRes(null); setCurrentId(null); setSlideImages([]); setProgress(null);
+    setPhase("text"); setErr(null); setWarn(null); setRes(null); setCurrentId(null); setSlideImages([]); setProgress(null); setBatchItems([]);
     try {
       const out = await generateOne(format, idea.trim(), (p, done, total) => {
         setPhase(p);
         if (p === "visuals" && typeof total === "number") setProgress({ done: done ?? 0, total });
       });
       setRes(out.res); setCurrentId(out.id); setSlideImages(out.images);
+      if (out.warn) setWarn(out.warn);
       onSaved();
       if (autoDl) await downloadZip([out.id]);
     } catch (e) { setErr(e instanceof Error ? e.message : "Erreur"); } finally { setPhase("idle"); setProgress(null); }
@@ -277,12 +306,12 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
     setDownloading(true);
     try {
       const r = await apiFetch("/api/studio/content/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: currentId }) });
-      if (!r.ok) throw new Error("Téléchargement impossible");
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? "Téléchargement impossible");
       const blob = await r.blob();
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = `${bs.brand?.slug ?? "naiom"}-${platform}-${format}.pdf`; a.click();
+      const a = document.createElement("a"); a.href = url; a.download = `${bs.brand?.slug ?? "contenu"}-${platform}-${format}.pdf`; a.click();
       URL.revokeObjectURL(url);
-    } catch (e) { alert(e instanceof Error ? e.message : "Erreur"); } finally { setDownloading(false); }
+    } catch (e) { setErr(e instanceof Error ? e.message : "Erreur"); } finally { setDownloading(false); }
   }
 
   return (
@@ -304,11 +333,19 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
         <div>
           <div className="flex items-center justify-between">
             <Label>{batch ? "Tes idées (une par ligne)" : "Ton idée de contenu"}</Label>
+            <div className="flex items-center gap-2">
+            {(res || idea || batchItems.length > 0) && !loading && (
+              <button onClick={() => startNew()} title="Vider l'idée et l'aperçu pour repartir de zéro (le contenu précédent reste dans la Bibliothèque)"
+                className="flex items-center gap-1 rounded-lg border border-[var(--color-line)] px-2 py-1 text-[10px] font-bold text-[var(--color-muted)] hover:border-[var(--color-ink)] hover:text-[var(--color-ink)]">
+                <Icon name="Plus" size={11} /> Nouveau
+              </button>
+            )}
             <div className="flex rounded-lg border border-[var(--color-line)] p-0.5 text-[10px] font-bold">
               {([[false, "Une idée"], [true, "Série"]] as const).map(([v, l]) => (
                 <button key={l} onClick={() => setBatch(v)} disabled={loading}
                   className={cn("rounded-md px-2 py-0.5 transition", batch === v ? "bg-[var(--color-ink)] text-white" : "text-[var(--color-muted)] hover:text-[var(--color-ink)]")}>{l}</button>
               ))}
+            </div>
             </div>
           </div>
           {batch ? (
@@ -328,13 +365,13 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
               </div>
             </>
           ) : (
-            <textarea value={idea} onChange={(e) => setIdea(e.target.value)} rows={4}
-              placeholder="Ex. 5 erreurs que font les agences quand elles automatisent leur prospection"
+            <textarea value={idea} onChange={(e) => setIdea(e.target.value)} rows={idea.length > 220 ? 9 : 4}
+              placeholder="Ex. 3 erreurs qui font fuir un client premium"
               className="cinput mt-1.5 resize-none" />
           )}
         </div>
 
-        {igBrand && (
+        {brandOn && (
           <div>
             <Label>Style éditorial</Label>
             <div className="mt-1.5 grid grid-cols-3 gap-1.5">
@@ -349,52 +386,14 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
           </div>
         )}
 
-        {igBrand && <InspirationsPanel bs={bs} activeBrand={activeBrand} onChange={onBrandChange} />}
-
-        {showTemplates && (
-          <div>
-            <Label>Direction artistique (template)</Label>
-            <div className="mt-1.5 grid grid-cols-4 gap-2">
-              {TEMPLATES.map((t) => (
-                <button key={t.id} onClick={() => setTmpl(t)}
-                  className={cn("overflow-hidden rounded-lg border-2 transition", tmpl.id === t.id ? "border-[var(--color-ink)]" : "border-transparent")}>
-                  <div className="flex h-12 items-center justify-center text-[11px] font-black" style={{ background: t.bg, color: t.fg, fontFamily: t.font }}>Aa</div>
-                  <div className="bg-white py-0.5 text-center text-[9px] font-bold text-[var(--color-muted)]">{t.name}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {!igBrand && <div>
-          <Label>Modèle {platform === "instagram" ? "Instagram" : "photo (LinkedIn/X)"}</Label>
-          <p className="mt-0.5 text-[10px] text-[var(--color-muted)]">Style éditorial du modèle, adapté à ton sujet : carrousel explicatif (schémas, graphs, logos).</p>
-          <div className="mt-1.5 flex gap-2 overflow-x-auto pb-1">
-            {(REF_TEMPLATES[platform] ?? []).map((t) => (
-              <button key={t.id} onClick={() => setRefTpl(t.id)}
-                className={cn("relative shrink-0 overflow-hidden rounded-lg border-2 transition", refTpl === t.id ? "border-[var(--color-ink)]" : "border-transparent opacity-80 hover:opacity-100")}>
-                <img src={t.src} alt="" className="h-[92px] w-[72px] object-cover" />
-                {refTpl === t.id && <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-ink)] text-[9px] text-white">✓</span>}
-              </button>
-            ))}
-          </div>
-        </div>}
-
-        {showTemplates && (
-          <div>
-            <Label>Outils / logos à afficher</Label>
-            <input value={tools} onChange={(e) => setTools(e.target.value)} placeholder="Ex. Claude, Obsidian, n8n"
-              className="cinput mt-1.5" />
-            <p className="mt-0.5 text-[10px] text-[var(--color-muted)]">Seuls ces logos apparaîtront (vrais logos officiels). Sépare par des virgules.</p>
-          </div>
-        )}
+        {brandOn && <InspirationsPanel bs={bs} activeBrand={activeBrand} onChange={onBrandChange} />}
 
         {batch ? (() => {
           const nIdeas = batchIdeas.split("\n").map((l) => l.trim()).filter(Boolean).length;
           const total = nIdeas * batchFormats.length;
           const done = batchItems.filter((x) => x.status === "done" || x.status === "error").length;
           return (
-            <button onClick={runBatch} disabled={!total || loading}
+            <button onClick={runBatch} disabled={!total || loading || !brandOn}
               className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-[13px] font-bold text-white transition hover:opacity-90 disabled:opacity-40"
               style={{ background: PLAT[platform].color }}>
               <Icon name={batchRunning ? "Loader" : "Zap"} size={15} className={batchRunning ? "animate-spin" : ""} />
@@ -402,13 +401,13 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
             </button>
           );
         })() : (
-          <button onClick={run} disabled={!idea.trim() || loading}
+          <button onClick={run} disabled={!idea.trim() || loading || !brandOn}
             className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-[13px] font-bold text-white transition hover:opacity-90 disabled:opacity-40"
             style={{ background: PLAT[platform].color }}>
             <Icon name={loading ? "Loader" : "Sparkles"} size={15} className={loading ? "animate-spin" : ""} />
             {phase === "text" ? "Zara rédige le contenu…"
-              : phase === "visuals" ? (igBrand ? `Zara compose les visuels… ${progress ? `(${progress.done}/${progress.total})` : ""}` : `Higgsfield crée les visuels… ${progress ? `(${progress.done}/${progress.total})` : ""}`)
-              : res ? "Regénérer" : "Générer + visuels"}
+              : phase === "visuals" ? `Zara compose les visuels… ${progress ? `(${progress.done}/${progress.total})` : ""}`
+              : res ? "Regénérer" : canVisuals(format) ? "Générer + visuels" : "Générer le texte"}
           </button>
         )}
         <label className="flex cursor-pointer items-center gap-2 text-[11px] text-[var(--color-muted)]">
@@ -418,7 +417,9 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
         {batchItems.length > 0 && (
           <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-[var(--color-line)] p-2">
             {batchItems.map((it, i) => (
-              <div key={i} className="flex items-center gap-2 text-[11px]">
+              <button key={i} type="button" disabled={!it.res} title={it.res ? "Afficher ce contenu dans l'aperçu" : undefined}
+                onClick={() => { if (!it.res) return; setRes(it.res); setCurrentId(it.id ?? null); setSlideImages(it.images ?? []); setFormat(it.format); }}
+                className={cn("flex w-full items-center gap-2 rounded-md px-1 py-0.5 text-left text-[11px]", it.res && "hover:bg-black/5", it.id && it.id === currentId && "bg-black/5")}>
                 <span className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-black text-white",
                   it.status === "done" ? "bg-emerald-500" : it.status === "error" ? "bg-rose-500" : it.status === "pending" ? "bg-neutral-300" : "bg-[var(--color-ink)]")}>
                   {it.status === "done" ? "✓" : it.status === "error" ? "!" : it.status === "pending" ? "" : <Icon name="Loader" size={9} className="animate-spin" />}
@@ -427,9 +428,9 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
                 <span className="shrink-0 rounded bg-black/5 px-1 text-[9px] font-bold text-[var(--color-muted)]">{formats.find((f) => f.key === it.format)?.label ?? it.format}</span>
                 <span className="min-w-0 flex-1 truncate text-[var(--color-ink)]" title={it.idea}>{it.idea}</span>
                 <span className="shrink-0 text-[var(--color-muted)]">
-                  {it.status === "text" ? "texte…" : it.status === "visuals" ? `visuels ${it.done ?? 0}/${it.total ?? "?"}` : it.status === "error" ? (it.error ?? "erreur") : ""}
+                  {it.status === "text" ? "texte…" : it.status === "visuals" ? `visuels ${it.done ?? 0}/${it.total ?? "?"}` : it.status === "error" ? (it.error ?? "erreur") : it.status === "done" && it.images?.length ? `${it.images.filter((x) => x).length} visuel${it.images.filter((x) => x).length > 1 ? "s" : ""}` : ""}
                 </span>
-              </div>
+              </button>
             ))}
             {!batchRunning && batchItems.some((x) => x.status === "done") && (
               <button onClick={() => downloadZip(batchItems.filter((x) => x.id).map((x) => x.id!))} disabled={zipping}
@@ -439,8 +440,7 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
             )}
           </div>
         )}
-        {phase === "visuals" && !igBrand && <div className="text-[11px] text-[var(--color-muted)]">Chaque slide est créée avec ton template (≈1 min/slide).</div>}
-        {phase === "visuals" && igBrand && <div className="text-[11px] text-[var(--color-muted)]">Rendu {format === "story" ? "9:16" : "4:5"} aux couleurs de {bs.brand?.name}{bs.profile ? " + ton profil d'inspiration" : ""}{bs.aiBackground ? ` + fond IA ${bs.aiProvider ?? ""}` : ""}.</div>}
+        {phase === "visuals" && brandOn && <div className="text-[11px] text-[var(--color-muted)]">Rendu {format === "story" ? "9:16" : "4:5"} aux couleurs de {bs.brand?.name}{bs.profile ? " + ton profil d'inspiration" : ""}{bs.aiBackground ? ` + fond IA ${bs.aiProvider ?? ""}` : ""}.</div>}
 
         {res && currentId && !loading && (
           <div className="flex gap-2">
@@ -455,8 +455,9 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
             </button>
           </div>
         )}
-        {res && saved?.id === currentId && !loading && <div className="text-[11px] font-semibold text-emerald-600">✓ Enregistré (repris de ta session)</div>}
+        {res && saved?.id === currentId && !loading && <div className="text-[11px] font-semibold text-emerald-600">✓ Enregistré dans la bibliothèque</div>}
         {err && <div className="rounded-lg border border-red-300 bg-red-50 p-2.5 text-[12px] text-red-600">{err}</div>}
+        {warn && <div className="rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-[12px] text-amber-700">{warn}</div>}
         {res && <CaptionBlock res={res} />}
       </div>
 
@@ -467,8 +468,8 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
             L&apos;aperçu du post apparaîtra ici,<br />comme sur {PLAT[platform].label}.
           </div>
         ) : platform === "instagram" ? (format === "story" ? <StoryPreview res={res} images={slideImages} brand={bs.brand} /> : <InstagramPreview res={res} tmpl={tmpl} images={slideImages} brand={bs.brand} />)
-          : platform === "linkedin" ? <LinkedInPreview res={res} tmpl={tmpl} images={slideImages} />
-          : <TwitterPreview res={res} images={slideImages} />}
+          : platform === "linkedin" ? <LinkedInPreview res={res} tmpl={tmpl} images={slideImages} brand={bs.brand} />
+          : <TwitterPreview res={res} images={slideImages} brand={bs.brand} />}
       </div>
 
       {sched && currentId && <ScheduleModal id={currentId} current={saved?.schedule?.at ?? null} onClose={() => setSched(false)} onSaved={() => { setSched(false); onSaved(); }} />}
@@ -509,14 +510,14 @@ function MiniVisual({ post, brand }: { post: ContentPost; brand: BrandInfo | nul
   if (genImg) return <div className="relative aspect-square w-full overflow-hidden"><img src={genImg} alt="" className="h-full w-full object-cover" /></div>;
   if (r.slides?.length || r.headline) {
     const s = r.slides?.[0] ?? { title: r.headline ?? "", body: "" };
-    const ig = post.platform === "instagram" && brand;
+    const ig = brand; // aux couleurs de la marque, quel que soit le réseau
     const bg = ig ? brand.palette.bg : t.bg, fg = ig ? brand.palette.fg : t.fg, acc = ig ? brand.palette.accent : t.accent, sub = ig ? brand.palette.muted : t.sub;
     return (
       <div className="relative aspect-square w-full overflow-hidden" style={{ background: bg, color: fg, fontFamily: ig ? `'${brand.fonts.display}',Georgia,serif` : t.font }}>
         <div className="flex h-full flex-col justify-between p-4">
-          <span className="text-[9px] font-black tracking-widest" style={{ color: acc }}>{brand?.name ?? "NAIOM"}</span>
+          <span className="text-[9px] font-black tracking-widest" style={{ color: acc }}>{brand?.name ?? ""}</span>
           <div className="line-clamp-4 text-[15px] font-black leading-tight">{s.title}</div>
-          <span className="text-[9px] font-bold" style={{ color: sub }}>{brand?.handle ?? "@naiom.agency"}</span>
+          <span className="text-[9px] font-bold" style={{ color: sub }}>{brand?.handle ?? ""}</span>
         </div>
       </div>
     );
@@ -528,7 +529,7 @@ function MiniVisual({ post, brand }: { post: ContentPost; brand: BrandInfo | nul
       <div className="flex h-full flex-col justify-between">
         <span>{post.platform === "twitter" ? <XLogo s={16} /> : <span className="text-[13px] font-black">in</span>}</span>
         <div className="line-clamp-5 text-[12px] font-semibold leading-snug">{txt}</div>
-        <span className="text-[9px] opacity-80">{brand?.handle ?? "@naiom"}</span>
+        <span className="text-[9px] opacity-80">{brand?.handle ?? ""}</span>
       </div>
     </div>
   );
@@ -537,11 +538,14 @@ function MiniVisual({ post, brand }: { post: ContentPost; brand: BrandInfo | nul
 /* ============ modal détail d'un post ============ */
 function PostDetailModal({ post, onClose, onChange, brand }: { post: ContentPost; onClose: () => void; onChange: () => void; brand: BrandInfo | null }) {
   const [sched, setSched] = useState(false);
+  const [dlErr, setDlErr] = useState<string | null>(null);
   const t = tplByName(post.template);
   const r = post.result;
   const download = async () => {
     const rr = await apiFetch("/api/studio/content/download", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: post.id }) });
-    const b = await rr.blob(); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `naiom-${post.platform}.pdf`; a.click(); URL.revokeObjectURL(u);
+    if (!rr.ok) { setDlErr((await rr.json().catch(() => ({}))).error ?? "PDF indisponible pour ce contenu."); return; }
+    setDlErr(null);
+    const b = await rr.blob(); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `${brand?.slug ?? "contenu"}-${post.platform}-${post.format}.pdf`; a.click(); URL.revokeObjectURL(u);
   };
   const del = async () => { await apiFetch(`/api/studio/content/schedule?id=${post.id}`, { method: "DELETE" }); onChange(); onClose(); };
   return (
@@ -556,8 +560,8 @@ function PostDetailModal({ post, onClose, onChange, brand }: { post: ContentPost
         {/* VISUEL d'abord */}
         <div className="flex justify-center rounded-xl p-3" style={{ background: post.platform === "twitter" ? "#f7f9f9" : "#f0f0f3" }}>
           {post.platform === "instagram" ? (post.format === "story" ? <StoryPreview res={r} images={post.visuals?.images} brand={brand} /> : <InstagramPreview res={r} tmpl={t} images={post.visuals?.images} brand={brand} />)
-            : post.platform === "linkedin" ? <LinkedInPreview res={r} tmpl={t} images={post.visuals?.images} />
-            : <TwitterPreview res={r} images={post.visuals?.images} />}
+            : post.platform === "linkedin" ? <LinkedInPreview res={r} tmpl={t} images={post.visuals?.images} brand={brand} />
+            : <TwitterPreview res={r} images={post.visuals?.images} brand={brand} />}
         </div>
         {/* puis le texte */}
         <div className="mt-3">
@@ -573,6 +577,7 @@ function PostDetailModal({ post, onClose, onChange, brand }: { post: ContentPost
             <button onClick={() => setSched(true)} className="flex items-center gap-1.5 rounded-lg bg-[var(--color-ink)] px-3 py-2 text-[12px] font-bold text-white"><Icon name="Calendar" size={13} /> {post.status === "scheduled" ? "Reprogrammer" : "Programmer"}</button>
           </div>
         </div>
+        {dlErr && <div className="mt-2 rounded-lg border border-red-300 bg-red-50 p-2 text-[12px] text-red-600">{dlErr}</div>}
         {sched && <ScheduleModal id={post.id} current={post.schedule?.at ?? null} onClose={() => setSched(false)} onSaved={() => { setSched(false); onChange(); }} />}
       </div>
     </div>
@@ -641,7 +646,7 @@ function SlideCard({ slide, i, total, tmpl, brandName, handle }: { slide: Slide;
   return (
     <div className="relative flex h-full w-full flex-col justify-between p-7" style={{ background: tmpl.bg, color: tmpl.fg, fontFamily: tmpl.font }}>
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-black tracking-widest" style={{ color: tmpl.accent }}>{brandName ?? "NAIOM"}</span>
+        <span className="text-[11px] font-black tracking-widest" style={{ color: tmpl.accent }}>{brandName ?? ""}</span>
         {!isCover && <span className="text-[11px] font-bold" style={{ color: tmpl.sub }}>{i + 1}/{total}</span>}
       </div>
       <div className="flex-1 flex flex-col justify-center py-4">
@@ -650,7 +655,7 @@ function SlideCard({ slide, i, total, tmpl, brandName, handle }: { slide: Slide;
         {slide.body && <p className={cn("mt-3 leading-snug", isCover ? "text-[15px]" : "text-[14px]")} style={{ color: tmpl.sub }}>{slide.body}</p>}
       </div>
       <div className="flex items-center justify-between text-[11px] font-bold" style={{ color: tmpl.sub }}>
-        <span>{handle ?? "@naiom.agency"}</span>
+        <span>{handle ?? ""}</span>
         {isCover ? <span style={{ color: tmpl.accent }}>Swipe →</span> : isLast ? <span style={{ color: tmpl.accent }}>↗ Contactez-nous</span> : <span>→</span>}
       </div>
     </div>
@@ -686,13 +691,13 @@ function NavBtn({ dir, onClick }: { dir: "left" | "right"; onClick: () => void }
 /* ============ INSTAGRAM preview ============ */
 function InstagramPreview({ res, tmpl, images, brand }: { res: Result; tmpl: Tmpl; images?: (string | null)[]; brand?: BrandInfo | null }) {
   const slides = res.slides ?? (res.headline ? [{ title: res.headline, body: res.body ?? "" }] : []);
-  const handle = (brand?.handle ?? "@naiom.agency").replace(/^@/, "");
+  const handle = (brand?.handle ?? "").replace(/^@/, "");
   const ratio = brand ? "4/5" : images?.some((x) => x) ? "4/5" : "1/1";
   const t: Tmpl = brand ? { id: "brand", name: brand.name, bg: brand.palette.bg, fg: brand.palette.fg, accent: brand.palette.accent, sub: brand.palette.muted, font: `'${brand.fonts.display}',Georgia,serif` } : tmpl;
   return (
     <div className="w-full max-w-[400px] self-start overflow-hidden rounded-2xl border border-[#dbdbdb] bg-white">
       <div className="flex items-center gap-2.5 px-3 py-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-black text-white" style={{ background: brand ? `linear-gradient(135deg,${brand.palette.accent},${brand.palette.accent2})` : "linear-gradient(135deg,#F5411C,#5B4DEE)" }}>{(brand?.name ?? "N")[0]}</div>
+        <div className="flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-black text-white" style={{ background: brand ? `linear-gradient(135deg,${brand.palette.accent},${brand.palette.accent2})` : "linear-gradient(135deg,#F5411C,#5B4DEE)" }}>{(brand?.name ?? "•")[0]}</div>
         <div className="flex-1"><div className="text-[13px] font-bold leading-none text-black">{handle}</div><div className="mt-0.5 text-[11px] text-neutral-500">{res.format === "carousel" ? "Carrousel" : "Post"} · {ratio.replace("/", ":")}</div></div>
         <Icon name="MoreHorizontal" size={18} className="text-black" />
       </div>
@@ -719,17 +724,20 @@ function InstagramPreview({ res, tmpl, images, brand }: { res: Result; tmpl: Tmp
 }
 
 /* ============ LINKEDIN preview ============ */
-function LinkedInPreview({ res, tmpl, images }: { res: Result; tmpl: Tmpl; images?: (string | null)[] }) {
+function LinkedInPreview({ res, tmpl, images, brand }: { res: Result; tmpl: Tmpl; images?: (string | null)[]; brand?: BrandInfo | null }) {
   const isCarousel = res.format === "carousel" && res.slides?.length;
   const isImage = res.format === "image" && res.headline;
   const hasImg = images?.some((x) => x);
+  const name = brand?.name ?? "";
+  // aperçu de secours (avant rendu) aux couleurs de la marque, comme sur Instagram
+  const t: Tmpl = brand ? { id: "brand", name: brand.name, bg: brand.palette.bg, fg: brand.palette.fg, accent: brand.palette.accent, sub: brand.palette.muted, font: `'${brand.fonts.display}',Georgia,serif` } : tmpl;
   return (
-    <div className="w-full max-w-[500px] overflow-hidden rounded-xl border border-[#e0e0e0] bg-white">
+    <div className="w-full max-w-[500px] self-start overflow-hidden rounded-xl border border-[#e0e0e0] bg-white">
       <div className="flex items-start gap-2.5 p-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full text-[15px] font-black text-white" style={{ background: "#141414" }}>N</div>
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-black text-white" style={{ background: brand ? `linear-gradient(135deg,${brand.palette.accent},${brand.palette.accent2})` : "#141414" }}>{(name || "•")[0]}</div>
         <div className="flex-1">
-          <div className="flex items-center gap-1 text-[14px] font-bold leading-tight text-[#000000e0]">NAIOM <span className="text-[12px] font-normal text-neutral-500">• Vous</span></div>
-          <div className="text-[12px] leading-tight text-neutral-500">Ingénierie d&apos;agents IA & automatisations · 4 380 abonnés</div>
+          <div className="flex items-center gap-1 text-[14px] font-bold leading-tight text-[#000000e0]">{name} <span className="text-[12px] font-normal text-neutral-500">• Vous</span></div>
+          {brand?.handle && <div className="text-[12px] leading-tight text-neutral-500">{brand.handle}</div>}
           <div className="flex items-center gap-1 text-[12px] text-neutral-500">2 h · <Icon name="Globe" size={11} /></div>
         </div>
         <LiLogo s={22} />
@@ -741,16 +749,19 @@ function LinkedInPreview({ res, tmpl, images }: { res: Result; tmpl: Tmpl; image
       )}
       {isCarousel && (
         <div className="mx-3 mb-2 overflow-hidden rounded-lg border border-[#e0e0e0]">
-          <Carousel slides={res.slides!} tmpl={tmpl} rounded={false} images={images} ratio="1/1" />
+          <Carousel slides={res.slides!} tmpl={t} rounded={false} images={images} ratio={hasImg ? "4/5" : "1/1"} brandName={brand?.name} handle={brand?.handle} />
         </div>
       )}
       {isImage && (
         hasImg && images![0] ? (
-          <img src={images![0]!} alt="" className="mb-0 w-full object-cover" style={{ aspectRatio: "1/1" }} />
+          <div className="relative">
+            <img src={images![0]!} alt="" className="mb-0 w-full object-cover" style={{ aspectRatio: "4/5" }} />
+            <a href={images![0]!} download className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70" title="Télécharger ce visuel (PNG)"><Icon name="Download" size={14} /></a>
+          </div>
         ) : (
-          <div className="mx-0 mb-0 aspect-[1.91/1] w-full" style={{ background: tmpl.bg, fontFamily: tmpl.font }}>
-            <div className="flex h-full flex-col justify-center p-7" style={{ color: tmpl.fg }}>
-              <span className="text-[11px] font-black tracking-widest" style={{ color: tmpl.accent }}>NAIOM</span>
+          <div className="mx-0 mb-0 aspect-[1.91/1] w-full" style={{ background: t.bg, fontFamily: t.font }}>
+            <div className="flex h-full flex-col justify-center p-7" style={{ color: t.fg }}>
+              <span className="text-[11px] font-black tracking-widest" style={{ color: t.accent }}>{name}</span>
               <div className="mt-2 text-[26px] font-black leading-tight" style={{ letterSpacing: "-.01em" }}>{res.headline}</div>
             </div>
           </div>
@@ -770,26 +781,33 @@ function LinkedInPreview({ res, tmpl, images }: { res: Result; tmpl: Tmpl; image
 }
 
 /* ============ TWITTER/X preview ============ */
-function TwitterPreview({ res, images }: { res: Result; images?: (string | null)[] }) {
+function TwitterPreview({ res, images, brand }: { res: Result; images?: (string | null)[]; brand?: BrandInfo | null }) {
   const tweets = res.tweets?.length ? res.tweets : res.body ? [res.body] : [];
   const hookImg = images?.find((x) => x) ?? null;
+  const name = brand?.name ?? "";
+  const handle = brand?.handle ? (brand.handle.startsWith("@") ? brand.handle : `@${brand.handle}`) : "";
   return (
-    <div className="w-full max-w-[500px] rounded-2xl border border-[#e1e8ed] bg-white p-4">
+    <div className="w-full max-w-[500px] self-start rounded-2xl border border-[#e1e8ed] bg-white p-4">
       {tweets.map((t, i) => (
         <div key={i} className="flex gap-3">
           <div className="flex flex-col items-center">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full text-[15px] font-black text-white" style={{ background: "linear-gradient(135deg,#F5411C,#5B4DEE)" }}>N</div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-full text-[15px] font-black text-white" style={{ background: brand ? `linear-gradient(135deg,${brand.palette.accent},${brand.palette.accent2})` : "#141414" }}>{(name || "•")[0]}</div>
             {i < tweets.length - 1 && <div className="my-1 w-0.5 flex-1 bg-[#e1e8ed]" />}
           </div>
-          <div className="flex-1 pb-3">
+          <div className="min-w-0 flex-1 pb-3">
             <div className="flex items-center gap-1 text-[15px] leading-tight">
-              <span className="font-bold text-black">NAIOM</span>
-              <Icon name="BadgeCheck" size={15} className="text-[#1d9bf0]" />
-              <span className="text-neutral-500">@naiom_agency · 2h</span>
-              <span className="ml-auto text-black"><XLogo s={15} /></span>
+              <span className="truncate font-bold text-black">{name}</span>
+              <Icon name="BadgeCheck" size={15} className="shrink-0 text-[#1d9bf0]" />
+              <span className="truncate text-neutral-500">{handle} · 2h</span>
+              <span className="ml-auto shrink-0 text-black"><XLogo s={15} /></span>
             </div>
             <p className="mt-1 whitespace-pre-wrap text-[15px] leading-snug text-black">{t}</p>
-            {i === 0 && hookImg && <img src={hookImg} alt="" className="mt-2 w-full rounded-2xl border border-[#e1e8ed] object-cover" />}
+            {i === 0 && hookImg && (
+              <div className="relative mt-2">
+                <img src={hookImg} alt="" className="w-full rounded-2xl border border-[#e1e8ed] object-cover" />
+                <a href={hookImg} download className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70" title="Télécharger ce visuel (PNG)"><Icon name="Download" size={14} /></a>
+              </div>
+            )}
             {res.hashtags?.length && i === tweets.length - 1 ? <p className="mt-1 text-[15px] text-[#1d9bf0]">{res.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}</p> : null}
             <div className="mt-2.5 flex max-w-[320px] items-center justify-between text-neutral-500">
               <span className="flex items-center gap-1 text-[12px]"><Icon name="MessageCircle" size={16} /> 24</span>
@@ -812,7 +830,7 @@ function StoryPreview({ res, images, brand }: { res: Result; images?: (string | 
   const total = slides.length;
   const img = images?.[i];
   const pal = brand?.palette ?? { bg: "#141414", fg: "#ffffff", accent: "#F5411C", accent2: "#5B4DEE", muted: "#a7abb6" };
-  const handle = (brand?.handle ?? "@naiom.agency").replace(/^@/, "");
+  const handle = (brand?.handle ?? "").replace(/^@/, "");
   if (!total) return <div className="text-neutral-400">—</div>;
   return (
     <div className="relative w-full max-w-[300px] self-start overflow-hidden rounded-[28px] border-[6px] border-black bg-black" style={{ aspectRatio: "9/16" }}>
@@ -827,7 +845,7 @@ function StoryPreview({ res, images, brand }: { res: Result; images?: (string | 
         {/* overlay UI Instagram */}
         <div className="absolute left-3 right-3 top-2 flex gap-1">{slides.map((_, k) => <span key={k} className="h-0.5 flex-1 rounded-full" style={{ background: k <= i ? "#fff" : "rgba(255,255,255,.4)" }} />)}</div>
         <div className="absolute left-3 top-4 flex items-center gap-2 text-[11px] font-bold text-white drop-shadow">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full text-[10px]" style={{ background: `linear-gradient(135deg,${pal.accent},${pal.accent2})` }}>{(brand?.name ?? "N")[0]}</span>{handle} <span className="font-normal opacity-80">2 h</span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full text-[10px]" style={{ background: `linear-gradient(135deg,${pal.accent},${pal.accent2})` }}>{(brand?.name ?? "•")[0]}</span>{handle} <span className="font-normal opacity-80">2 h</span>
         </div>
         <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2">
           <div className="flex-1 rounded-full border border-white/60 px-3 py-1.5 text-[11px] text-white/80">Envoyer un message…</div>
@@ -841,32 +859,74 @@ function StoryPreview({ res, images, brand }: { res: Result; images?: (string | 
   );
 }
 
+/**
+ * Réduit une image côté navigateur avant envoi (plus grand côté 1600 px, JPEG).
+ * Une photo de téléphone pèse 5 à 12 Mo ; une fonction Vercel coupe à 4,5 Mo.
+ * 1600 px suffisent largement pour lire une palette, une typo, une composition.
+ * Si le navigateur ne sait pas décoder le fichier, on renvoie l'original tel quel.
+ */
+async function shrinkImage(file: File, maxSide = 1600, quality = 0.86): Promise<File> {
+  const LIMIT = 4 * 1024 * 1024;
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+    if (scale === 1 && file.size <= 1.5 * 1024 * 1024) { bmp.close?.(); return file; } // déjà léger : on ne le dégrade pas
+    const w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("canvas");
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, h); // un PNG transparent passe en JPEG : fond blanc, pas noir
+    ctx.drawImage(bmp, 0, 0, w, h);
+    bmp.close?.();
+    const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/jpeg", quality));
+    if (!blob) throw new Error("encodage");
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch {
+    if (file.size > LIMIT) throw new Error("trop lourde et impossible à réduire ici : exporte-la en JPG de moins de 4 Mo");
+    return file;
+  }
+}
+
 /* ============ modèles d'inspiration (upload ≥ 3 visuels → profil de style) ============ */
 function InspirationsPanel({ bs, activeBrand, onChange }: { bs: BrandState; activeBrand: string; onChange: () => void }) {
   const bq = activeBrand ? `?brand=${encodeURIComponent(activeBrand)}` : "";
   const [busy, setBusy] = useState<"upload" | "analyze" | "delete" | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [uploadStep, setUploadStep] = useState<string | null>(null);
   const n = bs.inspirations.length, min = bs.minInspirations;
   const enough = n >= min;
 
   async function upload(files: FileList | null) {
     if (!files?.length) return;
     setBusy("upload"); setErr(null);
-    try {
-      const fd = new FormData();
-      Array.from(files).forEach((f) => fd.append("files", f));
-      fd.append("brand", activeBrand);
-      const r = await apiFetch("/api/studio/content/inspirations", { method: "POST", body: fd });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error ?? "Upload impossible");
-      onChange();
-      // dès que le minimum est atteint, on analyse automatiquement
-      if ((j.inspirations?.length ?? 0) >= min) await analyze();
-    } catch (e) { setErr(e instanceof Error ? e.message : "Erreur"); } finally { setBusy(null); }
+    const list = Array.from(files);
+    const failed: string[] = [];
+    let count = n;
+    // Un fichier par requête : une fonction Vercel refuse tout envoi de plus de 4,5 Mo,
+    // et trois photos de téléphone d'un coup dépassent largement.
+    for (let k = 0; k < list.length; k++) {
+      setUploadStep(`${k + 1}/${list.length}`);
+      try {
+        const file = await shrinkImage(list[k]);
+        const fd = new FormData();
+        fd.append("files", file, file.name);
+        fd.append("brand", activeBrand);
+        const r = await apiFetch("/api/studio/content/inspirations", { method: "POST", body: fd });
+        const j = await r.json().catch(() => ({} as { error?: string; inspirations?: unknown[] }));
+        if (!r.ok) throw new Error(j.error ?? (r.status === 413 ? "image trop lourde" : `erreur ${r.status}`));
+        count = j.inspirations?.length ?? count + 1;
+        onChange(); // la vignette apparaît dès que son fichier est en ligne
+      } catch (e) { failed.push(`${list[k].name} (${e instanceof Error ? e.message : "échec"})`); }
+    }
+    setUploadStep(null);
+    if (failed.length) setErr(`${failed.length === list.length ? "Aucun visuel importé" : `${list.length - failed.length} importé(s), ${failed.length} refusé(s)`} : ${failed.join(" · ")}`);
+    // dès que le minimum est atteint, on analyse automatiquement
+    if (failed.length < list.length && count >= min) await analyze(failed.length > 0); else setBusy(null);
   }
-  async function analyze() {
-    setBusy("analyze"); setErr(null);
+  async function analyze(keepErr = false) {
+    setBusy("analyze"); if (!keepErr) setErr(null);
     try {
       const r = await apiFetch(`/api/studio/content/inspirations/analyze${bq}`, { method: "POST" });
       const j = await r.json();
@@ -876,8 +936,11 @@ function InspirationsPanel({ bs, activeBrand, onChange }: { bs: BrandState; acti
   }
   async function remove(name: string) {
     setBusy("delete"); setErr(null);
-    try { await apiFetch(`/api/studio/content/inspirations?name=${encodeURIComponent(name)}${activeBrand ? `&brand=${encodeURIComponent(activeBrand)}` : ""}`, { method: "DELETE" }); onChange(); }
-    finally { setBusy(null); }
+    try {
+      const r = await apiFetch(`/api/studio/content/inspirations?name=${encodeURIComponent(name)}${activeBrand ? `&brand=${encodeURIComponent(activeBrand)}` : ""}`, { method: "DELETE" });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? "Suppression impossible");
+      onChange();
+    } catch (e) { setErr(e instanceof Error ? e.message : "Erreur"); } finally { setBusy(null); }
   }
   const p = bs.profile;
   const st = bs.storage;
@@ -892,23 +955,23 @@ function InspirationsPanel({ bs, activeBrand, onChange }: { bs: BrandState; acti
         <Label>Modèles d&apos;inspiration</Label>
         <span className={cn("text-[10px] font-bold", enough ? "text-emerald-600" : "text-[var(--color-muted)]")}>{n}/{min} minimum{enough ? " ✓" : ""}</span>
       </div>
-      <p className="mt-0.5 text-[10px] text-[var(--color-muted)]">Charge au moins {min} visuels que tu aimes : Zara en déduit palette, typo et ambiance pour tes posts, carrousels et stories.</p>
+      <p className="mt-0.5 text-[10px] text-[var(--color-muted)]">Charge au moins {min} visuels que tu aimes (PNG, JPG ou WebP) : Zara en déduit palette, typo et ambiance pour les visuels de <b>{bs.brand?.name}</b>. Chaque marque a ses propres modèles ; retire-en un avec la croix.</p>
       <div className="mt-1.5 flex flex-wrap gap-2">
         {bs.inspirations.map((ins) => (
           <div key={ins.name} className="group relative h-[84px] w-[66px] overflow-hidden rounded-lg border border-[var(--color-line)]">
             <img src={withAccess(ins.url)} alt="" className="h-full w-full object-cover" />
-            <button onClick={() => remove(ins.name)} disabled={busy !== null} title="Retirer"
-              className="absolute right-1 top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white group-hover:flex"><Icon name="X" size={11} /></button>
+            <button onClick={() => remove(ins.name)} disabled={busy !== null} title="Retirer ce modèle" aria-label="Retirer ce modèle"
+              className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white hover:bg-rose-600 disabled:opacity-40"><Icon name="X" size={11} /></button>
           </div>
         ))}
         <label className={cn("flex h-[84px] w-[66px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[var(--color-line)] text-[var(--color-muted)] hover:border-[var(--color-ink)] hover:text-[var(--color-ink)]", busy && "pointer-events-none opacity-50")}>
           <Icon name={busy === "upload" ? "Loader" : "Plus"} size={18} className={busy === "upload" ? "animate-spin" : ""} />
-          <span className="mt-1 text-[9px] font-bold">Ajouter</span>
+          <span className="mt-1 text-[9px] font-bold">{busy === "upload" && uploadStep ? uploadStep : "Ajouter"}</span>
           <input type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden" onChange={(e) => { void upload(e.target.files); e.target.value = ""; }} />
         </label>
       </div>
       {enough && !p && (
-        <button onClick={analyze} disabled={busy !== null} className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--color-ink)] px-3 py-2 text-[12px] font-bold hover:bg-white/60 disabled:opacity-50">
+        <button onClick={() => analyze()} disabled={busy !== null} className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--color-ink)] px-3 py-2 text-[12px] font-bold hover:bg-white/60 disabled:opacity-50">
           <Icon name={busy === "analyze" ? "Loader" : "Sparkles"} size={13} className={busy === "analyze" ? "animate-spin" : ""} /> {busy === "analyze" ? "Zara analyse tes visuels…" : "Analyser le style"}
         </button>
       )}
@@ -921,7 +984,7 @@ function InspirationsPanel({ bs, activeBrand, onChange }: { bs: BrandState; acti
               <span className="ml-1 text-[10px] font-bold text-[var(--color-ink)]">{p.fonts.display} · {p.fonts.body}</span>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={analyze} disabled={busy !== null} className="text-[10px] font-bold text-[var(--color-muted)] hover:text-[var(--color-ink)]">Ré-analyser</button>
+              <button onClick={() => analyze()} disabled={busy !== null} className="text-[10px] font-bold text-[var(--color-muted)] hover:text-[var(--color-ink)]">Ré-analyser</button>
               <button onClick={() => setOpen(!open)} className="text-[10px] font-bold text-[var(--color-muted)] hover:text-[var(--color-ink)]">{open ? "Réduire" : "Détails"}</button>
             </div>
           </div>

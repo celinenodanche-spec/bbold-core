@@ -16,10 +16,14 @@
    Le préflight global est volontairement exclu → l'UI B.BOLD reste intacte. */
 @layer base {
   .zara-studio, .zara-studio *, .zara-studio *::before, .zara-studio *::after { box-sizing: border-box; }
+  /* Remise à zéro des marges/paddings, DANS la couche base : les utilitaires Tailwind (p-3, mt-2…) passent par-dessus. */
+  .zara-studio * { margin: 0; padding: 0; }
   .zara-studio button { font: inherit; color: inherit; background: none; border: 0; margin: 0; padding: 0; cursor: pointer; }
   .zara-studio input, .zara-studio textarea, .zara-studio select { font: inherit; color: inherit; }
   .zara-studio img, .zara-studio svg { display: block; max-width: 100%; }
   .zara-studio h1, .zara-studio h2, .zara-studio h3, .zara-studio p { margin: 0; }
+  /* Sans préflight Tailwind, les liens gardent le bleu souligné du navigateur : ici ce sont des boutons. */
+  .zara-studio a { color: inherit; text-decoration: none; }
 }
 
 @layer components {
@@ -27,3 +31,10 @@
   .zara-studio .hover-lift { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
   .zara-studio .hover-lift:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
 }
+
+/* Hors couche, à dessein : l'app B.BOLD pose des règles globales (placeholder blanc à 22 %,
+   bordure dorée forcée au focus) pensées pour son fond sombre. Sur le fond blanc du studio,
+   elles rendaient les champs illisibles. Spécificité supérieure → le studio reprend la main. */
+.zara-studio input::placeholder, .zara-studio textarea::placeholder { color: #9a98a3; }
+.zara-studio input:focus, .zara-studio textarea:focus, .zara-studio select:focus { border-color: var(--color-ink) !important; outline: none; }
+.zara-studio select option { background: #ffffff; color: #0A0A0A; }

@@ -1,5 +1,5 @@
 /**
- * Génération de contenu structuré par plateforme (agent Léa — createur-contenu).
+ * Génération de contenu structuré par plateforme (agent Zara).
  * Instagram / LinkedIn / Twitter(X). Claude renvoie un JSON adapté au réseau,
  * ensuite affiché dans un aperçu qui imite le rendu réel du réseau.
  */
@@ -32,15 +32,15 @@ export interface ContentResult {
   cta?: string; // texte court d'appel à l'action (story / post IG)
 }
 
-const VOICE = `Voix NAIOM : experte mais accessible, zéro jargon creux (pas de "synergie", "game-changer"), phrases courtes, on parle AU lecteur ("vous"/"tu" selon le réseau). NAIOM = agence d'ingénierie d'agents IA + automatisations n8n.`;
+// Filet de sécurité : la marque active fournit toujours sa propre voix (brand.markdown).
+// Ces deux blocs ne servent que si aucune marque n'a pu être chargée.
+const VOICE = `Voix : experte mais accessible, zéro jargon creux (pas de "synergie", "game-changer"), phrases courtes, on parle AU lecteur ("vous"/"tu" selon le réseau).`;
 
-// Voix LinkedIn de Zeyneb (d'après ses posts réels)
-const LI_VOICE = `VOIX ZEYNEB (à respecter absolument) :
-- 1re ligne = HOOK choc / breaking-news / affirmation forte (ex. "🚨 ALERTE : Anthropic vient de sortir Claude…", "Claude vient de tuer la recherche de clients."). Court, ça claque, ça donne envie de cliquer "voir plus".
+const LI_VOICE = `VOIX (à respecter) :
+- 1re ligne = HOOK fort : une affirmation nette qui donne envie de cliquer "voir plus".
 - Ligne vide, puis corps TRÈS AÉRÉ : une idée par ligne, phrases courtes, beaucoup de sauts de ligne (\\n\\n).
-- Utilise des flèches "→" pour énumérer des points concrets.
-- Ton direct, tutoiement, zéro corporate, zéro jargon creux. Concret, orienté résultat.
-- Termine par un CTA clair : soit "Commente « MOT » et je t'envoie X en DM", soit une question ouverte.
+- Ton direct, zéro corporate, zéro jargon creux. Concret, orienté résultat.
+- Termine par un CTA clair ou une question ouverte.
 - Pas de hashtags dans le body (ils vont dans "hashtags").`;
 
 function instructions(platform: Platform, format: Format, template?: string, hasBrand = false): string {
@@ -119,10 +119,10 @@ export async function generateContent(
 ): Promise<ContentResult> {
   if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY absente dans .env.local.");
   const brand = opts.brand ?? null;
-  const who = brand ? `Tu es Zara, copywriter senior pour ${brand.name}.` : `Tu es Zara, copywriter senior chez NAIOM.\n${VOICE}`;
+  const who = brand ? `Tu es Zara, copywriter senior pour ${brand.name}.` : `Tu es Zara, copywriter senior.\n${VOICE}`;
   const system = `${who} Tu écris du contenu réseaux sociaux qui performe.
 Tu réponds UNIQUEMENT avec un objet JSON valide conforme au format demandé (aucun texte autour, pas de bloc markdown).${brandSystemBlock(brand)}`;
-  const style = platform === "instagram" && opts.styleId ? styleById(opts.styleId) : null;
+  const style = opts.styleId ? styleById(opts.styleId) : null;
   const prompt = `Plateforme : ${platform}
 ${instructions(platform, format, template, !!brand)}${style ? `\n\n${style.text}` : ""}${styleProfileBlock(opts.profile ?? null)}
 
