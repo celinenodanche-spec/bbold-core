@@ -1,15 +1,23 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, type ModelMessage } from "ai";
 import { loadBrand } from "@/lib/studio/brand";
+import { ENABLED_PLATFORMS } from "@/lib/studio/platforms";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const PLATFORMS = ["instagram", "linkedin", "twitter"] as const;
-const FORMATS: Record<(typeof PLATFORMS)[number], string[]> = {
+// Seuls les réseaux proposés dans ce studio (cf. lib/studio/platforms.ts) peuvent sortir d'un brief.
+const PLATFORMS = ENABLED_PLATFORMS;
+const FORMATS: Record<"instagram" | "linkedin" | "twitter", string[]> = {
   instagram: ["post", "carousel", "story"],
   linkedin: ["image", "carousel", "post"],
   twitter: ["image", "tweet", "thread"],
+};
+
+const FORMAT_HELP: Record<"instagram" | "linkedin" | "twitter", string> = {
+  instagram: "post, carousel, story",
+  linkedin: "image (post avec visuel), carousel, post (texte seul)",
+  twitter: "image (post avec visuel), tweet, thread",
 };
 
 /** Dernière réponse de Zara, raccourcie : le brief de secours si le résumé échoue. */
@@ -54,8 +62,8 @@ Règles :
 - Texte brut, sans markdown, sans titre, sans phrase d'introduction. 1200 caractères maximum.
 
 Réponds UNIQUEMENT avec un JSON valide :
-{"idea":"le brief","platform":"instagram|linkedin|twitter ou null si non précisé","format":"post|carousel|story|image|tweet|thread ou null si non précisé"}
-Formats possibles par réseau — instagram : post, carousel, story · linkedin : image (post avec visuel), carousel, post (texte seul) · twitter : image (post avec visuel), tweet, thread.`;
+{"idea":"le brief","platform":"${PLATFORMS.join("|")} ou null si non précisé","format":"un format du réseau choisi, ou null si non précisé"}
+Formats possibles par réseau : ${PLATFORMS.map((p) => `${p} = ${FORMAT_HELP[p]}`).join(" · ")}.`;
 
     const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const { text } = await generateText({

@@ -355,3 +355,41 @@ l'ancien code sont éjectés à leur prochain appel et devront retaper le nouvea
 Les visuels déjà générés, servis en statique depuis `/content-out/`. Ils restent
 accessibles à qui connaît leur URL exacte. Les mettre derrière le code demande
 de les servir par une route `/api`, ce qui est un autre chantier.
+
+---
+
+# Réseaux du Studio (Instagram, LinkedIn, X)
+
+Le Studio de Zara sait produire pour trois réseaux. Un seul est affiché par
+défaut : **Instagram**. LinkedIn et X ne sont pas supprimés, ils sont masqués.
+
+## Les rallumer (studio dupliqué pour quelqu'un qui les utilise)
+
+Dans Vercel → le projet → Settings → Environment Variables, ajoute :
+
+    NEXT_PUBLIC_STUDIO_PLATFORMS = instagram,linkedin,twitter
+
+Puis **redéploie**. Sans redéploiement rien ne change : la valeur est inscrite
+dans le code du navigateur au moment du build. En local, même ligne dans
+`.env.local`, puis relance `npm run dev`.
+
+Valeurs acceptées : `instagram`, `linkedin`, `twitter` (ou `x`), séparées par des
+virgules. Variable absente ou mal écrite = Instagram seul.
+
+## Ce que le réglage pilote
+
+- les onglets de réseau du Studio (masqués s'il n'y en a qu'un) ;
+- les formats que Zara propose dans la Discussion ;
+- le réseau qu'un brief peut viser en arrivant dans le Studio.
+
+Un contenu LinkedIn ou X déjà créé reste visible dans la Bibliothèque.
+
+## Formats par réseau
+
+| Réseau | Avec visuel | Texte seul |
+|---|---|---|
+| Instagram | post 4:5, carrousel 4:5, story 9:16 | |
+| LinkedIn | post avec visuel, carrousel | post texte |
+| X | post avec visuel | tweet, thread |
+
+Tout se règle dans un seul fichier : `src/lib/studio/platforms.ts`.

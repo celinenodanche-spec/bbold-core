@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ContentStudio, type Handoff } from "./StudioContent";
 import { ZaraChat, WELCOME, type Msg } from "./ZaraChat";
 import { apiFetch } from "@/lib/access";
+import { isPlatformEnabled } from "@/lib/studio/platforms";
 
 /**
  * Zara (B.BOLD Core) :
@@ -39,7 +40,11 @@ export default function ZaraStudio({ onClose }: { onClose: () => void }) {
       const brand = (() => { try { return localStorage.getItem("zara.activeBrand") || undefined; } catch { return undefined; } })();
       const r = await apiFetch("/api/studio/chat/brief", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: said, brand }) });
       const j = await r.json();
-      if (r.ok && typeof j.idea === "string") { idea = j.idea.trim(); platform = j.platform ?? null; format = j.format ?? null; viaZara = j.source === "zara"; }
+      if (r.ok && typeof j.idea === "string") {
+        idea = j.idea.trim(); viaZara = j.source === "zara";
+        // un réseau non proposé dans ce studio est ignoré, et son format avec lui (il n'existerait pas ailleurs)
+        if (isPlatformEnabled(j.platform)) { platform = j.platform; format = j.format ?? null; }
+      }
     } catch { /* réseau : on retombe sur le dernier échange ci-dessous */ }
     if (!idea) {
       // Secours : la dernière proposition de Zara, à défaut la dernière demande.

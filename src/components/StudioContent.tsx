@@ -6,6 +6,7 @@ import { apiFetch, withAccess } from "@/lib/access";
 import { Icon } from "./Icon";
 import { cn } from "@/lib/studio/utils";
 import { STYLES, DEFAULT_STYLE, type EditorialStyle } from "@/lib/studio/styles";
+import { ENABLED_PLATFORMS, isPlatformEnabled } from "@/lib/studio/platforms";
 
 /* ============ types ============ */
 type Platform = "instagram" | "linkedin" | "twitter";
@@ -73,13 +74,13 @@ const XLogo = ({ s = 18 }: { s?: number }) => (
 
 /* ============ main ============ */
 export function ContentStudio({ handoff = null, onHandoffDone }: { handoff?: Handoff | null; onHandoffDone?: () => void } = {}) {
-  const [platform, setPlatform] = useState<Platform>("instagram");
+  const [platform, setPlatform] = useState<Platform>(ENABLED_PLATFORMS[0]);
   const [mode, setMode] = useState<"create" | "library">("create");
   // Un brief arrive de la Discussion : on se place sur « Créer » et sur le réseau qu'il vise.
   useEffect(() => {
     if (!handoff) return;
     setMode("create");
-    if (handoff.platform) setPlatform(handoff.platform);
+    if (handoff.platform && isPlatformEnabled(handoff.platform)) setPlatform(handoff.platform);
   }, [handoff]);
   const [posts, setPosts] = useState<ContentPost[]>([]);
   const [bs, setBs] = useState<BrandState>(NO_BRAND);
@@ -109,7 +110,7 @@ export function ContentStudio({ handoff = null, onHandoffDone }: { handoff?: Han
         <div>
           <h2 className="text-xl font-black tracking-tight text-[var(--color-ink)]">Studio contenu — Zara</h2>
           <p className="text-[13px] text-[var(--color-muted)]">
-            Crée du contenu adapté à chaque réseau et visualise le rendu final comme sur la plateforme.
+            {ENABLED_PLATFORMS.length > 1 ? "Crée du contenu adapté à chaque réseau et visualise le rendu final comme sur la plateforme." : "Crée tes contenus Instagram et visualise le rendu final comme sur la plateforme."}
             {bs.brand && <> Marque active : <b className="text-[var(--color-ink)]">{bs.brand.name}</b></>}
           </p>
         </div>
@@ -127,8 +128,9 @@ export function ContentStudio({ handoff = null, onHandoffDone }: { handoff?: Han
         <LibraryView posts={posts} onChange={refresh} brand={bs.brand} />
       ) : (
         <>
-          <div className="flex gap-2">
-            {(["instagram", "linkedin", "twitter"] as Platform[]).map((p) => {
+          {/* Un seul réseau proposé (cf. lib/studio/platforms.ts) : pas d'onglets, il n'y a rien à choisir. */}
+          <div className={cn("flex gap-2", ENABLED_PLATFORMS.length < 2 && "hidden")}>
+            {ENABLED_PLATFORMS.map((p) => {
               const active = platform === p;
               const Logo = p === "instagram" ? IgLogo : p === "linkedin" ? LiLogo : XLogo;
               return (
@@ -202,7 +204,7 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
   const appliedHandoff = useRef<number | null>(null);
   useEffect(() => {
     if (!handoff || appliedHandoff.current === handoff.nonce) return;
-    if (handoff.platform && handoff.platform !== platform) return; // le studio bascule de réseau : c'est le panneau suivant qui le prendra
+    if (handoff.platform && isPlatformEnabled(handoff.platform) && handoff.platform !== platform) return; // le studio bascule de réseau : c'est le panneau suivant qui le prendra
     if (phase !== "idle" || batchRunning) return; // une génération tourne : on ne lui retire pas le tapis
     appliedHandoff.current = handoff.nonce;
     startNew(handoff.idea, handoff.format);
