@@ -4,7 +4,8 @@ import { readInspirationFile } from "@/lib/studio/inspirations";
 export const runtime = "nodejs";
 
 /** GET /api/studio/content/inspirations/file/<name>?brand=slug — sert un visuel d'inspiration. */
-export async function GET(req: Request, { params }: { params: { name: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ name: string }> }) {
+  const params = await props.params;
   const slug = new URL(req.url).searchParams.get("brand") || undefined;
   const brand = await loadBrand(slug);
   if (!brand) return new Response("Not found", { status: 404 });
