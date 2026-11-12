@@ -35,7 +35,7 @@ interface BrandInfo { slug: string; name: string; handle: string; palette: { bg:
 const FONTS = ["Playfair Display","Inter","DM Serif Display","Space Grotesk","Cormorant Garamond","Montserrat","Bebas Neue","Fraunces","Manrope","Lora","Archivo Black","Poppins"];
 interface Inspiration { name: string; url: string; size: number; addedAt: string }
 interface StyleProfile { summary: string; palette: BrandInfo["palette"]; fonts: BrandInfo["fonts"]; mood: string[]; elements: string[]; avoid: string[]; analyzedAt: string; files: string[] }
-interface BrandState { brand: BrandInfo | null; brands: BrandInfo[]; profile: StyleProfile | null; inspirations: Inspiration[]; styles: EditorialStyle[]; minInspirations: number; aiBackground: boolean; aiProvider: string | null; aiProviderBatch: string | null; storage?: { onVercel: boolean; blob: boolean } }
+interface BrandState { brand: BrandInfo | null; brands: BrandInfo[]; profile: StyleProfile | null; inspirations: Inspiration[]; styles: EditorialStyle[]; minInspirations: number; aiBackground: boolean; aiProvider: string | null; aiProviderBatch: string | null; storage?: { onVercel: boolean; blob: boolean; driver?: "s3" | "blob" | "local"; publicUrls?: boolean } }
 const NO_BRAND: BrandState = { brand: null, brands: [], profile: null, inspirations: [], styles: STYLES, minInspirations: 3, aiBackground: false, aiProvider: null, aiProviderBatch: null, storage: undefined };
 
 /* ============ carousel templates (DA) ============ */
@@ -426,7 +426,7 @@ function PlatformPanel({ platform, saved, onSaved, bs, activeBrand, onBrandChang
                   it.status === "done" ? "bg-emerald-500" : it.status === "error" ? "bg-rose-500" : it.status === "pending" ? "bg-neutral-300" : "bg-[var(--color-ink)]")}>
                   {it.status === "done" ? "✓" : it.status === "error" ? "!" : it.status === "pending" ? "" : <Icon name="Loader" size={9} className="animate-spin" />}
                 </span>
-                {it.thumb ? <img src={it.thumb} alt="" className="h-6 w-5 rounded object-cover" /> : <span className="h-6 w-5 rounded bg-neutral-200" />}
+                {it.thumb ? <img src={withAccess(it.thumb)} alt="" className="h-6 w-5 rounded object-cover" /> : <span className="h-6 w-5 rounded bg-neutral-200" />}
                 <span className="shrink-0 rounded bg-black/5 px-1 text-[9px] font-bold text-[var(--color-muted)]">{formats.find((f) => f.key === it.format)?.label ?? it.format}</span>
                 <span className="min-w-0 flex-1 truncate text-[var(--color-ink)]" title={it.idea}>{it.idea}</span>
                 <span className="shrink-0 text-[var(--color-muted)]">
@@ -509,7 +509,7 @@ function MiniVisual({ post, brand }: { post: ContentPost; brand: BrandInfo | nul
   const r = post.result;
   const t = tplByName(post.template);
   const genImg = post.visuals?.images?.find((x) => x);
-  if (genImg) return <div className="relative aspect-square w-full overflow-hidden"><img src={genImg} alt="" className="h-full w-full object-cover" /></div>;
+  if (genImg) return <div className="relative aspect-square w-full overflow-hidden"><img src={withAccess(genImg)} alt="" className="h-full w-full object-cover" /></div>;
   if (r.slides?.length || r.headline) {
     const s = r.slides?.[0] ?? { title: r.headline ?? "", body: "" };
     const ig = brand; // aux couleurs de la marque, quel que soit le réseau
@@ -671,7 +671,7 @@ function Carousel({ slides, tmpl, rounded = true, images, ratio = "1/1", brandNa
   return (
     <div className="relative w-full" style={{ aspectRatio: ratio }}>
       <div className={cn("h-full w-full overflow-hidden", rounded && "rounded-lg")}>
-        {img ? <img src={img} alt={`slide ${i + 1}`} className="h-full w-full object-cover" /> : <SlideCard slide={slides[i]} i={i} total={total} tmpl={tmpl} brandName={brandName} handle={handle} />}
+        {img ? <img src={withAccess(img)} alt={`slide ${i + 1}`} className="h-full w-full object-cover" /> : <SlideCard slide={slides[i]} i={i} total={total} tmpl={tmpl} brandName={brandName} handle={handle} />}
       </div>
       {img && <a href={img} download className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70" title="Télécharger ce visuel (PNG)"><Icon name="Download" size={14} /></a>}
       {i > 0 && <NavBtn dir="left" onClick={() => setI(i - 1)} />}
@@ -757,7 +757,7 @@ function LinkedInPreview({ res, tmpl, images, brand }: { res: Result; tmpl: Tmpl
       {isImage && (
         hasImg && images![0] ? (
           <div className="relative">
-            <img src={images![0]!} alt="" className="mb-0 w-full object-cover" style={{ aspectRatio: "4/5" }} />
+            <img src={withAccess(images![0]!)} alt="" className="mb-0 w-full object-cover" style={{ aspectRatio: "4/5" }} />
             <a href={images![0]!} download className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70" title="Télécharger ce visuel (PNG)"><Icon name="Download" size={14} /></a>
           </div>
         ) : (
@@ -806,7 +806,7 @@ function TwitterPreview({ res, images, brand }: { res: Result; images?: (string 
             <p className="mt-1 whitespace-pre-wrap text-[15px] leading-snug text-black">{t}</p>
             {i === 0 && hookImg && (
               <div className="relative mt-2">
-                <img src={hookImg} alt="" className="w-full rounded-2xl border border-[#e1e8ed] object-cover" />
+                <img src={withAccess(hookImg)} alt="" className="w-full rounded-2xl border border-[#e1e8ed] object-cover" />
                 <a href={hookImg} download className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70" title="Télécharger ce visuel (PNG)"><Icon name="Download" size={14} /></a>
               </div>
             )}
@@ -837,7 +837,7 @@ function StoryPreview({ res, images, brand }: { res: Result; images?: (string | 
   return (
     <div className="relative w-full max-w-[300px] self-start overflow-hidden rounded-[28px] border-[6px] border-black bg-black" style={{ aspectRatio: "9/16" }}>
       <div className="absolute inset-0 overflow-hidden rounded-[22px]" style={{ background: pal.bg, color: pal.fg }}>
-        {img ? <img src={img} alt={`story ${i + 1}`} className="h-full w-full object-cover" /> : (
+        {img ? <img src={withAccess(img)} alt={`story ${i + 1}`} className="h-full w-full object-cover" /> : (
           <div className="flex h-full flex-col justify-end p-6 pb-20" style={{ fontFamily: brand ? `'${brand.fonts.display}',Georgia,serif` : "inherit" }}>
             <div className="text-[22px] font-black leading-tight">{slides[i].title}</div>
             {slides[i].body && <p className="mt-2 text-[12px] leading-snug" style={{ color: pal.muted }}>{slides[i].body}</p>}
@@ -950,7 +950,7 @@ function InspirationsPanel({ bs, activeBrand, onChange }: { bs: BrandState; acti
     <div>
       {st?.onVercel && !st.blob && (
         <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-700">
-          ⚠️ Stockage en ligne non connecté : la variable <b>BLOB_READ_WRITE_TOKEN</b> n&apos;est pas active sur ce déploiement. Ajoute-la (Vercel → Storage → ton Blob → connecte le projet) puis <b>redéploie</b>, sinon l&apos;enregistrement des inspirations échouera.
+          ⚠️ Stockage en ligne non connecté sur ce déploiement. Ajoute les variables <b>S3_BUCKET</b>, <b>S3_ACCESS_KEY_ID</b>, <b>S3_SECRET_ACCESS_KEY</b>, <b>S3_ENDPOINT</b> et <b>S3_PUBLIC_URL</b> (Cloudflare R2 conseillé) dans Vercel, puis <b>redéploie</b>. Sinon l&apos;enregistrement des inspirations et des visuels échouera.
         </div>
       )}
       <div className="flex items-center justify-between">

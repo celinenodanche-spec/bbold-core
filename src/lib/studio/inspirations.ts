@@ -8,7 +8,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
 import path from "node:path";
 import type { Brand } from "./brand";
-import { putData, getData, listData, delData, useBlob, mimeOf } from "./storage";
+import { putData, getData, listData, delData, hasPublicUrls, mimeOf } from "./storage";
 
 export const MIN_INSPIRATIONS = 3;
 const MAX_FILES = 20;
@@ -38,7 +38,7 @@ export interface Inspiration { name: string; url: string; size: number; addedAt:
 const inspKey = (b: Brand, name: string) => `${b.slug}/inspirations/${name}`;
 const profileKey = (b: Brand) => `${b.slug}/style.json`;
 const inspPrefix = (b: Brand) => `${b.slug}/inspirations`;
-const uiUrl = (b: Brand, name: string, blobUrl: string) => (useBlob() ? blobUrl : `/api/studio/content/inspirations/file/${encodeURIComponent(name)}?brand=${encodeURIComponent(b.slug)}`);
+const uiUrl = (b: Brand, name: string, remoteUrl: string) => (hasPublicUrls() && remoteUrl ? remoteUrl : `/api/studio/content/inspirations/file/${encodeURIComponent(name)}?brand=${encodeURIComponent(b.slug)}`);
 const safeName = (n: string) => n.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/^\.+/, "").slice(0, 80);
 
 export async function listInspirations(b: Brand): Promise<Inspiration[]> {
