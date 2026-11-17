@@ -18,7 +18,9 @@ function memeCode(fourni, attendu) {
 }
 
 export function middleware(request) {
-  const attendu = process.env.ACCESS_CODE
+  // trim : une valeur collée dans Vercel garde souvent un espace ou un retour à
+  // la ligne final, alors que le formulaire envoie le code saisi sans espaces.
+  const attendu = process.env.ACCESS_CODE?.trim()
 
   // Pas de code configuré côté serveur → on ferme. Laisser passer serait pire
   // que de ne rien faire : l'app aurait l'air protégée sans l'être.
@@ -32,10 +34,11 @@ export function middleware(request) {
   // Deux façons de présenter le code. L'en-tête pour tout ce qui passe par
   // fetch(). Le paramètre ?k= pour ce qui ne peut pas porter d'en-tête : un
   // <img src>, un lien de téléchargement ZIP.
-  const fourni =
+  const fourni = (
     request.headers.get('x-bbold-access') ||
     request.nextUrl.searchParams.get('k') ||
     ''
+  ).trim()
 
   if (!memeCode(fourni, attendu)) {
     return NextResponse.json({ error: "Code d'accès invalide." }, { status: 401 })
