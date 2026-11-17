@@ -90,7 +90,7 @@ function decor(th: Theme, i: number, total: number, kind: "cover" | "content" | 
   const num = String(kind === "content" ? i : i + 1).padStart(2, "0");
   if (d === "lines") return `<div class="deco-line"></div><div class="deco-vline"></div>`;
   if (d === "blocks") return `<div class="deco-block"></div>${kind === "content" ? `<div class="deco-num-block">${num}</div>` : ""}`;
-  if (d === "numbers") return kind === "content" ? `<div class="deco-bignum">${num}</div>` : `<div class="deco-dots">${Array.from({ length: Math.min(total, 10) }, (_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>`;
+  if (d === "numbers") return kind === "content" ? `<div class="deco-bignum">${num}</div>` : "";
   if (d === "grid") return `<div class="deco-grid"></div><div class="deco-frame"></div>`;
   return "";
 }
@@ -135,18 +135,16 @@ function css(th: Theme, ratio: "4:5" | "9:16"): string {
   .bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;filter:saturate(1.12) contrast(1.06)}
   .scrim{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.42) 0%,rgba(0,0,0,0) 16%,rgba(0,0,0,0) 48%,rgba(0,0,0,.62) 82%,rgba(0,0,0,.78) 100%)}
   .slide.hasimg{color:#ffffff}
-  .hasimg .head,.hasimg .title .acc,.hasimg .foot .cta{color:${imgAccent}}
-  .hasimg .head .pg,.hasimg .body,.hasimg .foot{color:rgba(255,255,255,.9)}
-  .hasimg .head,.hasimg .title,.hasimg .body,.hasimg .foot{text-shadow:0 2px 18px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.5)}
+  .hasimg .title .acc,.hasimg .foot .cta{color:${imgAccent}}
+  .hasimg .body,.hasimg .foot{color:rgba(255,255,255,.9)}
+  .hasimg .title,.hasimg .body,.hasimg .foot{text-shadow:0 2px 18px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.5)}
   .hasimg .bars i{background:rgba(255,255,255,.35)}.hasimg .bars i.on{background:#ffffff}
-  .head,.mid,.foot{position:relative;z-index:2}
-  .head{display:flex;justify-content:space-between;align-items:center;font-size:24px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:${th.accent}}
-  .head .pg{color:${th.muted};letter-spacing:.08em}
+  .mid,.foot{position:relative;z-index:2}
   .mid{flex:1;display:flex;flex-direction:column;justify-content:${center || ratio === "9:16" ? "center" : "flex-end"};align-items:${center ? "center" : "flex-start"};text-align:${center ? "center" : "left"};padding:${airy ? 60 : 36}px 0}
   .title{font-family:${dispStack};font-weight:${th.style.visual.display === "serif" ? 700 : 800};line-height:${th.style.visual.upper ? 1.0 : 1.06};letter-spacing:${th.style.visual.upper ? ".01em" : "-.015em"};max-width:${center ? "100%" : "96%"}}
   .title .acc{color:${th.accent};font-style:${th.style.visual.accentItalic ? "italic" : "normal"}}
   .body{margin-top:${airy ? 34 : 26}px;line-height:1.32;color:${th.muted};font-weight:500;max-width:${center ? "92%" : "90%"}}
-  .foot{display:flex;justify-content:space-between;align-items:center;font-size:24px;font-weight:600;color:${th.muted};letter-spacing:.02em}
+  .foot{display:flex;justify-content:flex-end;align-items:center;font-size:24px;font-weight:600;color:${th.muted};letter-spacing:.02em}
   .foot .cta{color:${th.accent};font-weight:700}
   .num{display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:${th.style.visual.decor === "blocks" ? "10px" : "999px"};border:3px solid ${th.accent};color:${th.accent};font-family:'${th.displayFont}',serif;font-size:32px;font-weight:700;margin-bottom:34px}
   .pill{display:inline-block;margin-top:44px;padding:22px 40px;border-radius:999px;background:${th.accent};color:${contrast(th.accent, "#111111") >= 4.5 ? "#111111" : "#ffffff"};font-size:30px;font-weight:700;letter-spacing:.02em}
@@ -157,10 +155,8 @@ function css(th: Theme, ratio: "4:5" | "9:16"): string {
   .deco-block{position:absolute;left:0;top:0;bottom:0;width:26px;background:${th.accent};z-index:1}
   .deco-num-block{position:absolute;right:${pad}px;top:${pad + safeTop + 70}px;padding:10px 22px;background:${th.accent};color:${contrast(th.accent, "#111111") >= 4.5 ? "#111111" : "#ffffff"};font-family:'${th.displayFont}',serif;font-size:40px;font-weight:800;z-index:1}
   .deco-bignum{position:absolute;right:${pad - 20}px;top:${pad + safeTop + 30}px;font-family:'${th.displayFont}',serif;font-size:360px;font-weight:900;line-height:1;color:${alpha(th.accent, 0.13)};z-index:1}
-  .deco-dots{position:absolute;left:${pad}px;top:${pad + safeTop + 64}px;display:flex;gap:10px;z-index:1}.deco-dots i{width:12px;height:12px;border-radius:999px;background:${alpha(th.fg, 0.25)}}.deco-dots i.on{background:${th.accent}}
   .deco-grid{position:absolute;inset:0;z-index:1;background-image:linear-gradient(${alpha(th.fg, 0.06)} 1px,transparent 1px),linear-gradient(90deg,${alpha(th.fg, 0.06)} 1px,transparent 1px);background-size:72px 72px}
-  .deco-frame{position:absolute;inset:${Math.round(pad * 0.5)}px;border:2px solid ${alpha(th.accent, 0.6)};z-index:1;pointer-events:none}
-  .mark{display:inline-block;width:14px;height:14px;border-radius:999px;background:${th.accent};margin-right:14px;vertical-align:middle}`;
+  .deco-frame{position:absolute;inset:${Math.round(pad * 0.5)}px;border:2px solid ${alpha(th.accent, 0.6)};z-index:1;pointer-events:none}`;
 }
 
 function frameHTML(f: Frame, th: Theme, ratio: "4:5" | "9:16"): string {
@@ -179,14 +175,13 @@ function frameHTML(f: Frame, th: Theme, ratio: "4:5" | "9:16"): string {
   return `<div class="slide ${f.bgImage ? "hasimg" : ""}">
     ${f.bgImage ? `<img class="bgimg" src="${f.bgImage}"/><div class="scrim"></div>` : decor(th, i, total, kind)}
     ${bars}
-    <div class="head"><span><span class="mark"></span>${esc(th.brandName)}</span>${kind === "content" || kind === "cta" ? `<span class="pg">${i + 1}/${total}</span>` : ""}</div>
     <div class="mid">
       ${showNum ? `<span class="num">${i}</span>` : ""}
       <div class="title" style="font-size:${tSize}px">${titleHTML(slide.title, th)}</div>
       ${slide.body ? `<div class="body" style="font-size:${bSize}px">${esc(slide.body)}</div>` : ""}
       ${pill}
     </div>
-    <div class="foot"><span>${esc(th.handle)}</span>${foot}</div>
+    <div class="foot">${foot}</div>
   </div>`;
 }
 

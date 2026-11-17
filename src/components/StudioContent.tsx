@@ -513,13 +513,11 @@ function MiniVisual({ post, brand }: { post: ContentPost; brand: BrandInfo | nul
   if (r.slides?.length || r.headline) {
     const s = r.slides?.[0] ?? { title: r.headline ?? "", body: "" };
     const ig = brand; // aux couleurs de la marque, quel que soit le réseau
-    const bg = ig ? brand.palette.bg : t.bg, fg = ig ? brand.palette.fg : t.fg, acc = ig ? brand.palette.accent : t.accent, sub = ig ? brand.palette.muted : t.sub;
+    const bg = ig ? brand.palette.bg : t.bg, fg = ig ? brand.palette.fg : t.fg;
     return (
       <div className="relative aspect-square w-full overflow-hidden" style={{ background: bg, color: fg, fontFamily: ig ? `'${brand.fonts.display}',Georgia,serif` : t.font }}>
-        <div className="flex h-full flex-col justify-between p-4">
-          <span className="text-[9px] font-black tracking-widest" style={{ color: acc }}>{brand?.name ?? ""}</span>
+        <div className="flex h-full flex-col justify-center p-4">
           <div className="line-clamp-4 text-[15px] font-black leading-tight">{s.title}</div>
-          <span className="text-[9px] font-bold" style={{ color: sub }}>{brand?.handle ?? ""}</span>
         </div>
       </div>
     );
@@ -643,35 +641,30 @@ function CaptionBlock({ res }: { res: Result }) {
 }
 
 /* ============ carousel slide renderer ============ */
-function SlideCard({ slide, i, total, tmpl, brandName, handle }: { slide: Slide; i: number; total: number; tmpl: Tmpl; brandName?: string; handle?: string }) {
+function SlideCard({ slide, i, total, tmpl }: { slide: Slide; i: number; total: number; tmpl: Tmpl }) {
   const isCover = i === 0, isLast = i === total - 1;
   return (
     <div className="relative flex h-full w-full flex-col justify-between p-7" style={{ background: tmpl.bg, color: tmpl.fg, fontFamily: tmpl.font }}>
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-black tracking-widest" style={{ color: tmpl.accent }}>{brandName ?? ""}</span>
-        {!isCover && <span className="text-[11px] font-bold" style={{ color: tmpl.sub }}>{i + 1}/{total}</span>}
-      </div>
       <div className="flex-1 flex flex-col justify-center py-4">
         {!isCover && !isLast && <span className="mb-3 inline-flex h-7 w-7 items-center justify-center rounded-lg text-[13px] font-black" style={{ background: tmpl.accent, color: tmpl.bg.includes("gradient") ? "#F5411C" : tmpl.bg }}>{i}</span>}
         <div className={cn("font-black leading-tight", isCover ? "text-[30px]" : "text-[22px]")} style={{ letterSpacing: "-0.01em" }}>{slide.title}</div>
         {slide.body && <p className={cn("mt-3 leading-snug", isCover ? "text-[15px]" : "text-[14px]")} style={{ color: tmpl.sub }}>{slide.body}</p>}
       </div>
-      <div className="flex items-center justify-between text-[11px] font-bold" style={{ color: tmpl.sub }}>
-        <span>{handle ?? ""}</span>
+      <div className="flex items-center justify-end text-[11px] font-bold" style={{ color: tmpl.sub }}>
         {isCover ? <span style={{ color: tmpl.accent }}>Swipe →</span> : isLast ? <span style={{ color: tmpl.accent }}>↗ Contactez-nous</span> : <span>→</span>}
       </div>
     </div>
   );
 }
 
-function Carousel({ slides, tmpl, rounded = true, images, ratio = "1/1", brandName, handle }: { slides: Slide[]; tmpl: Tmpl; rounded?: boolean; images?: (string | null)[]; ratio?: string; brandName?: string; handle?: string }) {
+function Carousel({ slides, tmpl, rounded = true, images, ratio = "1/1" }: { slides: Slide[]; tmpl: Tmpl; rounded?: boolean; images?: (string | null)[]; ratio?: string }) {
   const [i, setI] = useState(0);
   const total = slides.length;
   const img = images?.[i];
   return (
     <div className="relative w-full" style={{ aspectRatio: ratio }}>
       <div className={cn("h-full w-full overflow-hidden", rounded && "rounded-lg")}>
-        {img ? <img src={withAccess(img)} alt={`slide ${i + 1}`} className="h-full w-full object-cover" /> : <SlideCard slide={slides[i]} i={i} total={total} tmpl={tmpl} brandName={brandName} handle={handle} />}
+        {img ? <img src={withAccess(img)} alt={`slide ${i + 1}`} className="h-full w-full object-cover" /> : <SlideCard slide={slides[i]} i={i} total={total} tmpl={tmpl} />}
       </div>
       {img && <a href={img} download className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70" title="Télécharger ce visuel (PNG)"><Icon name="Download" size={14} /></a>}
       {i > 0 && <NavBtn dir="left" onClick={() => setI(i - 1)} />}
@@ -704,7 +697,7 @@ function InstagramPreview({ res, tmpl, images, brand }: { res: Result; tmpl: Tmp
         <Icon name="MoreHorizontal" size={18} className="text-black" />
       </div>
       <div className="w-full bg-neutral-100" style={{ aspectRatio: ratio }}>
-        {slides.length ? <Carousel slides={slides} tmpl={t} rounded={false} images={images} ratio={ratio} brandName={brand?.name} handle={brand?.handle} /> : <div className="flex h-full items-center justify-center text-neutral-400">—</div>}
+        {slides.length ? <Carousel slides={slides} tmpl={t} rounded={false} images={images} ratio={ratio} /> : <div className="flex h-full items-center justify-center text-neutral-400">—</div>}
       </div>
       <div className="flex items-center gap-4 px-3 pt-2.5 text-black">
         <Icon name="Heart" size={22} /><Icon name="MessageCircle" size={22} /><Icon name="Send" size={22} />
@@ -751,7 +744,7 @@ function LinkedInPreview({ res, tmpl, images, brand }: { res: Result; tmpl: Tmpl
       )}
       {isCarousel && (
         <div className="mx-3 mb-2 overflow-hidden rounded-lg border border-[#e0e0e0]">
-          <Carousel slides={res.slides!} tmpl={t} rounded={false} images={images} ratio={hasImg ? "4/5" : "1/1"} brandName={brand?.name} handle={brand?.handle} />
+          <Carousel slides={res.slides!} tmpl={t} rounded={false} images={images} ratio={hasImg ? "4/5" : "1/1"} />
         </div>
       )}
       {isImage && (
