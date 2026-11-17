@@ -126,12 +126,19 @@ function css(th: Theme, ratio: "4:5" | "9:16"): string {
   const center = th.style.visual.align === "center";
   const serif = th.style.visual.display === "serif";
   const dispStack = `'${th.displayFont}',${serif ? "Georgia,serif" : "system-ui,sans-serif"}`;
+  // Sur fond image : texte blanc + ombre locale, l'image reste à pleine intensité.
+  const imgAccent = [th.accent, th.accent2].find((c) => c.startsWith("#") && contrast(c, "#141414") >= 4) ?? "#ffffff";
   return `*{margin:0;padding:0;box-sizing:border-box}
   html,body{width:${w}px;height:${h}px;overflow:hidden;background:${th.bg}}
   .slide{position:relative;width:${w}px;height:${h}px;background:${th.bg};color:${th.fg};font-family:'${th.bodyFont}',system-ui,sans-serif;padding:${pad + safeTop}px ${pad}px ${pad + safeBot}px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
   .slide.hasimg{background:${th.bg}}
-  .bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
-  .scrim{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,${alpha(th.bg, 0.55)} 0%,${alpha(th.bg, 0.25)} 40%,${alpha(th.bg, 0.92)} 100%)}
+  .bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;filter:saturate(1.12) contrast(1.06)}
+  .scrim{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.42) 0%,rgba(0,0,0,0) 16%,rgba(0,0,0,0) 48%,rgba(0,0,0,.62) 82%,rgba(0,0,0,.78) 100%)}
+  .slide.hasimg{color:#ffffff}
+  .hasimg .head,.hasimg .title .acc,.hasimg .foot .cta{color:${imgAccent}}
+  .hasimg .head .pg,.hasimg .body,.hasimg .foot{color:rgba(255,255,255,.9)}
+  .hasimg .head,.hasimg .title,.hasimg .body,.hasimg .foot{text-shadow:0 2px 18px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.5)}
+  .hasimg .bars i{background:rgba(255,255,255,.35)}.hasimg .bars i.on{background:#ffffff}
   .head,.mid,.foot{position:relative;z-index:2}
   .head{display:flex;justify-content:space-between;align-items:center;font-size:24px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:${th.accent}}
   .head .pg{color:${th.muted};letter-spacing:.08em}
@@ -193,7 +200,16 @@ async function aiBackground(brand: Brand, profile: StyleProfile | null, th: Them
       const r = await readInspirationFile(brand, f.name);
       if (r) refs.push({ buf: r.buf, mime: r.mime, name: f.name });
     }
-    const prompt = `Crée un FOND VISUEL abstrait ou photographique pour un visuel de réseau social ${ratio === "9:16" ? "story vertical 9:16" : "portrait 4:5"}, dans le style exact des images de référence (couleurs, textures, ambiance : ${profile?.summary ?? "premium, éditorial"}). Palette dominante ${th.bg} / ${th.accent}. Sujet suggéré : « ${idea} ». Composition avec de larges zones calmes (surtout en bas) pour poser du texte par-dessus. AUCUN texte, aucune lettre, aucun logo, aucun filigrane, aucune personne identifiable.`;
+    const prompt = [
+      `Crée un FOND VISUEL photographique ou graphique pour un visuel de réseau social ${ratio === "9:16" ? "story vertical 9:16" : "portrait 4:5"}, inspiré des images de référence (sujet, textures, ambiance : ${profile?.summary ?? "premium, éditorial"}).`,
+      `Palette dominante ${th.bg} / ${th.accent}, poussée à pleine intensité.`,
+      `Sujet suggéré : « ${idea} ».`,
+      `RENDU OBLIGATOIRE : couleurs vives et saturées, contraste fort, noirs profonds et hautes lumières franches, image nette et piquée sur toute la surface, contours précis, éclairage directionnel marqué.`,
+      `INTERDIT : effet fondu, délavé, pastel, voile, brume, flou, flou artistique, bokeh, lumière diffuse laiteuse, rendu mat ou désaturé, dégradés estompés, vignettage doux, grain de film.`,
+      `Si les images de référence sont plus douces ou délavées, garde leur sujet et leur composition mais PAS leur traitement des couleurs.`,
+      `Composition : laisse une zone moins chargée en bas pour poser du texte, sans la rendre floue ni la fondre.`,
+      `AUCUN texte, aucune lettre, aucun logo, aucun filigrane, aucune personne identifiable.`,
+    ].join(" ");
     const r = provider.id === "openai"
       ? await generateImageOpenAI(prompt, { slug: "bg", size: OPENAI_SIZES[ratio], model: fast ? openAIImageModelBatch() : openAIImageModel(), references: refs.map((x) => ({ data: x.buf, mimeType: x.mime, name: x.name })) })
       : await generateImage(prompt, { slug: "bg", references: refs.map((x) => ({ data: x.buf.toString("base64"), mimeType: x.mime })) });
