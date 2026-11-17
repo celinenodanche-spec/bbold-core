@@ -85,12 +85,10 @@ function titleHTML(t: string, th: Theme): string {
 }
 
 /* ---------- décors ---------- */
-function decor(th: Theme, i: number, total: number, kind: "cover" | "content" | "cta" | "post" | "story"): string {
+function decor(th: Theme): string {
   const d = th.style.visual.decor;
-  const num = String(kind === "content" ? i : i + 1).padStart(2, "0");
   if (d === "lines") return `<div class="deco-line"></div><div class="deco-vline"></div>`;
-  if (d === "blocks") return `<div class="deco-block"></div>${kind === "content" ? `<div class="deco-num-block">${num}</div>` : ""}`;
-  if (d === "numbers") return kind === "content" ? `<div class="deco-bignum">${num}</div>` : "";
+  if (d === "blocks") return `<div class="deco-block"></div>`;
   if (d === "grid") return `<div class="deco-grid"></div><div class="deco-frame"></div>`;
   return "";
 }
@@ -135,53 +133,32 @@ function css(th: Theme, ratio: "4:5" | "9:16"): string {
   .bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;filter:saturate(1.12) contrast(1.06)}
   .scrim{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.42) 0%,rgba(0,0,0,0) 16%,rgba(0,0,0,0) 48%,rgba(0,0,0,.62) 82%,rgba(0,0,0,.78) 100%)}
   .slide.hasimg{color:#ffffff}
-  .hasimg .title .acc,.hasimg .foot .cta{color:${imgAccent}}
-  .hasimg .body,.hasimg .foot{color:rgba(255,255,255,.9)}
-  .hasimg .title,.hasimg .body,.hasimg .foot{text-shadow:0 2px 18px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.5)}
-  .hasimg .bars i{background:rgba(255,255,255,.35)}.hasimg .bars i.on{background:#ffffff}
-  .mid,.foot{position:relative;z-index:2}
+  .hasimg .title .acc{color:${imgAccent}}
+  .hasimg .body{color:rgba(255,255,255,.9)}
+  .hasimg .title,.hasimg .body{text-shadow:0 2px 18px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.5)}
+  .mid{position:relative;z-index:2}
   .mid{flex:1;display:flex;flex-direction:column;justify-content:${center || ratio === "9:16" ? "center" : "flex-end"};align-items:${center ? "center" : "flex-start"};text-align:${center ? "center" : "left"};padding:${airy ? 60 : 36}px 0}
   .title{font-family:${dispStack};font-weight:${th.style.visual.display === "serif" ? 700 : 800};line-height:${th.style.visual.upper ? 1.0 : 1.06};letter-spacing:${th.style.visual.upper ? ".01em" : "-.015em"};max-width:${center ? "100%" : "96%"}}
   .title .acc{color:${th.accent};font-style:${th.style.visual.accentItalic ? "italic" : "normal"}}
   .body{margin-top:${airy ? 34 : 26}px;line-height:1.32;color:${th.muted};font-weight:500;max-width:${center ? "92%" : "90%"}}
-  .foot{display:flex;justify-content:flex-end;align-items:center;font-size:24px;font-weight:600;color:${th.muted};letter-spacing:.02em}
-  .foot .cta{color:${th.accent};font-weight:700}
-  .num{display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:${th.style.visual.decor === "blocks" ? "10px" : "999px"};border:3px solid ${th.accent};color:${th.accent};font-family:'${th.displayFont}',serif;font-size:32px;font-weight:700;margin-bottom:34px}
-  .pill{display:inline-block;margin-top:44px;padding:22px 40px;border-radius:999px;background:${th.accent};color:${contrast(th.accent, "#111111") >= 4.5 ? "#111111" : "#ffffff"};font-size:30px;font-weight:700;letter-spacing:.02em}
-  .bars{position:absolute;top:70px;left:${pad}px;right:${pad}px;display:flex;gap:8px;z-index:2}
-  .bars i{flex:1;height:5px;border-radius:3px;background:${alpha(th.fg, 0.28)}}.bars i.on{background:${th.fg}}
   .deco-line{position:absolute;left:${pad - 30}px;right:${pad}px;top:${pad + safeTop + 64}px;height:2px;background:${alpha(th.accent, 0.55)};z-index:1}
   .deco-vline{position:absolute;left:${pad - 30}px;top:${pad + safeTop + 64}px;bottom:${pad + safeBot + 60}px;width:2px;background:${alpha(th.accent, 0.25)};z-index:1}
   .deco-block{position:absolute;left:0;top:0;bottom:0;width:26px;background:${th.accent};z-index:1}
-  .deco-num-block{position:absolute;right:${pad}px;top:${pad + safeTop + 70}px;padding:10px 22px;background:${th.accent};color:${contrast(th.accent, "#111111") >= 4.5 ? "#111111" : "#ffffff"};font-family:'${th.displayFont}',serif;font-size:40px;font-weight:800;z-index:1}
-  .deco-bignum{position:absolute;right:${pad - 20}px;top:${pad + safeTop + 30}px;font-family:'${th.displayFont}',serif;font-size:360px;font-weight:900;line-height:1;color:${alpha(th.accent, 0.13)};z-index:1}
   .deco-grid{position:absolute;inset:0;z-index:1;background-image:linear-gradient(${alpha(th.fg, 0.06)} 1px,transparent 1px),linear-gradient(90deg,${alpha(th.fg, 0.06)} 1px,transparent 1px);background-size:72px 72px}
   .deco-frame{position:absolute;inset:${Math.round(pad * 0.5)}px;border:2px solid ${alpha(th.accent, 0.6)};z-index:1;pointer-events:none}`;
 }
 
 function frameHTML(f: Frame, th: Theme, ratio: "4:5" | "9:16"): string {
-  const { slide, i, total, kind } = f;
+  const { slide, i, kind } = f;
   const cover = kind === "cover" || kind === "post" || (kind === "story" && i === 0);
   const tSize = titleSize(slide.title, ratio, cover);
   const bSize = bodySize(slide.body ?? "", ratio);
-  const showNum = kind === "content" && th.style.visual.decor !== "numbers" && th.style.visual.decor !== "blocks";
-  const foot = kind === "cover" ? `<span class="cta">Glisse →</span>`
-    : kind === "cta" ? `<span class="cta">${esc(f.cta || "Écris-moi en DM")}</span>`
-    : kind === "story" ? `<span class="cta">${i < total - 1 ? "Suite →" : ""}</span>`
-    : kind === "post" ? `<span class="cta">${esc(f.cta || "")}</span>`
-    : `<span>→</span>`;
-  const bars = kind === "story" && total > 1 ? `<div class="bars">${Array.from({ length: total }, (_, k) => `<i class="${k <= i ? "on" : ""}"></i>`).join("")}</div>` : "";
-  const pill = kind === "story" && i === total - 1 && f.cta ? `<div class="pill">${esc(f.cta)}</div>` : "";
   return `<div class="slide ${f.bgImage ? "hasimg" : ""}">
-    ${f.bgImage ? `<img class="bgimg" src="${f.bgImage}"/><div class="scrim"></div>` : decor(th, i, total, kind)}
-    ${bars}
+    ${f.bgImage ? `<img class="bgimg" src="${f.bgImage}"/><div class="scrim"></div>` : decor(th)}
     <div class="mid">
-      ${showNum ? `<span class="num">${i}</span>` : ""}
       <div class="title" style="font-size:${tSize}px">${titleHTML(slide.title, th)}</div>
       ${slide.body ? `<div class="body" style="font-size:${bSize}px">${esc(slide.body)}</div>` : ""}
-      ${pill}
     </div>
-    <div class="foot">${foot}</div>
   </div>`;
 }
 

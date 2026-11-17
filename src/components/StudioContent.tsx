@@ -641,17 +641,13 @@ function CaptionBlock({ res }: { res: Result }) {
 }
 
 /* ============ carousel slide renderer ============ */
-function SlideCard({ slide, i, total, tmpl }: { slide: Slide; i: number; total: number; tmpl: Tmpl }) {
-  const isCover = i === 0, isLast = i === total - 1;
+function SlideCard({ slide, i, tmpl }: { slide: Slide; i: number; tmpl: Tmpl }) {
+  const isCover = i === 0;
   return (
     <div className="relative flex h-full w-full flex-col justify-between p-7" style={{ background: tmpl.bg, color: tmpl.fg, fontFamily: tmpl.font }}>
       <div className="flex-1 flex flex-col justify-center py-4">
-        {!isCover && !isLast && <span className="mb-3 inline-flex h-7 w-7 items-center justify-center rounded-lg text-[13px] font-black" style={{ background: tmpl.accent, color: tmpl.bg.includes("gradient") ? "#F5411C" : tmpl.bg }}>{i}</span>}
         <div className={cn("font-black leading-tight", isCover ? "text-[30px]" : "text-[22px]")} style={{ letterSpacing: "-0.01em" }}>{slide.title}</div>
         {slide.body && <p className={cn("mt-3 leading-snug", isCover ? "text-[15px]" : "text-[14px]")} style={{ color: tmpl.sub }}>{slide.body}</p>}
-      </div>
-      <div className="flex items-center justify-end text-[11px] font-bold" style={{ color: tmpl.sub }}>
-        {isCover ? <span style={{ color: tmpl.accent }}>Swipe →</span> : isLast ? <span style={{ color: tmpl.accent }}>↗ Contactez-nous</span> : <span>→</span>}
       </div>
     </div>
   );
@@ -664,7 +660,7 @@ function Carousel({ slides, tmpl, rounded = true, images, ratio = "1/1" }: { sli
   return (
     <div className="relative w-full" style={{ aspectRatio: ratio }}>
       <div className={cn("h-full w-full overflow-hidden", rounded && "rounded-lg")}>
-        {img ? <img src={withAccess(img)} alt={`slide ${i + 1}`} className="h-full w-full object-cover" /> : <SlideCard slide={slides[i]} i={i} total={total} tmpl={tmpl} />}
+        {img ? <img src={withAccess(img)} alt={`slide ${i + 1}`} className="h-full w-full object-cover" /> : <SlideCard slide={slides[i]} i={i} tmpl={tmpl} />}
       </div>
       {img && <a href={img} download className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70" title="Télécharger ce visuel (PNG)"><Icon name="Download" size={14} /></a>}
       {i > 0 && <NavBtn dir="left" onClick={() => setI(i - 1)} />}
