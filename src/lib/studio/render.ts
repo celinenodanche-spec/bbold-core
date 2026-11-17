@@ -45,18 +45,18 @@ export interface Theme {
 /** Fusion marque + profil d'inspiration + style éditorial → thème de rendu. */
 export function buildTheme(brand: Brand, profile: StyleProfile | null, styleId?: string | null): Theme {
   const style = styleById(styleId);
-  const pal = profile?.palette ?? brand.palette;
   const fonts = profile?.fonts ?? brand.fonts;
-  const wantDark = profile ? profile.layout.dark : style.visual.dark;
-  const palIsDark = lum(pal.bg) < 0.35;
-  let bg = pal.bg, fg = pal.fg;
-  if (wantDark !== palIsDark) [bg, fg] = [fg, bg]; // on inverse fond/texte pour respecter le mode voulu
-  if (contrast(bg, fg) < 4) fg = lum(bg) < 0.35 ? "#faf8fb" : "#111111";
-  // accent lisible sur le fond : on prend le premier candidat suffisamment contrasté
-  const pick = (cands: string[], min: number) => cands.find((c) => contrast(bg, c) >= min) ?? fg;
-  const accent = pick([pal.accent, pal.accent2, pal.muted], 3);
-  const accent2 = pick([pal.accent2, pal.muted, pal.accent].filter((c) => c !== accent), 2.5);
-  const muted = contrast(bg, pal.muted) >= 3 ? pal.muted : alpha(fg, 0.62);
+  // Le fond est TOUJOURS celui de la marque, sur toutes les slides : ni le style
+  // éditorial ni la palette des inspirations ne l'écrasent. Les autres couleurs
+  // viennent de la marque d'abord, des inspirations ensuite, et doivent rester lisibles.
+  const bp = brand.palette, ip = profile?.palette;
+  const bg = bp.bg;
+  const pick = (cands: (string | undefined)[], min: number, fallback: string) =>
+    cands.find((c): c is string => !!c && c.toLowerCase() !== bg.toLowerCase() && contrast(bg, c) >= min) ?? fallback;
+  const fg = pick([bp.fg, ip?.fg], 4.5, lum(bg) < 0.35 ? "#faf8fb" : "#111111");
+  const accent = pick([bp.accent, bp.accent2, ip?.accent, ip?.accent2, bp.muted], 3, fg);
+  const accent2 = pick([bp.accent2, ip?.accent2, bp.muted, bp.accent].filter((c) => c !== accent), 2.5, fg);
+  const muted = pick([bp.muted, ip?.muted], 3, alpha(fg, 0.62));
   const serifWanted = style.visual.display === "serif";
   const displayFont = serifWanted ? fonts.display : fonts.body;
   return { bg, fg, accent, accent2, muted, displayFont, bodyFont: fonts.body, dark: lum(bg) < 0.35, style, brandName: brand.name, handle: brand.handle };
