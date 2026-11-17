@@ -1,7 +1,9 @@
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { generateText, type ModelMessage } from "ai";
+import { generateText, Output, type ModelMessage } from "ai";
+import { z } from "zod";
 import { loadBrand } from "@/lib/studio/brand";
 import { ENABLED_PLATFORMS } from "@/lib/studio/platforms";
+import { briefFromMessage } from "@/lib/studio/briefFallback";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -20,7 +22,7 @@ const FORMAT_HELP: Record<"instagram" | "linkedin" | "twitter", string> = {
   twitter: "image (post avec visuel), tweet, thread",
 };
 
-/** Dernière réponse de Zara, raccourcie : le brief de secours si le résumé échoue. */
+/** Dernière réponse de Zara (récap extrait, sans markdown) : le brief de secours si le résumé échoue. */
 function lastWord(messages: { role: string; content: unknown }[]): string {
   const texts = messages.filter((m) => typeof m.content === "string" && (m.content as string).trim());
   const lastUser = [...texts].reverse().find((m) => m.role === "user");
@@ -28,7 +30,7 @@ function lastWord(messages: { role: string; content: unknown }[]): string {
   // on préfère ce que Zara a proposé (c'est le travail abouti) ; à défaut, la demande de départ
   const hasUser = !!lastUser;
   const pick = hasUser && lastZara ? (lastZara.content as string) : ((lastUser?.content as string) ?? "");
-  return pick.trim().slice(0, 1500);
+  return briefFromMessage(pick);
 }
 
 /**
@@ -59,29 +61,37 @@ Règles :
 - Reprends l'idée retenue en dernier. Si plusieurs pistes ont été évoquées sans choix clair, prends la dernière que l'utilisateur a approuvée ; à défaut, la plus aboutie proposée par Zara.
 - Garde le concret : sujet, angle, cible, accroche(s) formulée(s), points à dérouler, CTA, mots-clés, mentions de compte. Reprends les formulations validées mot pour mot.
 - N'ajoute aucune idée, aucun chiffre, aucun élément absent de la conversation.
-- Texte brut, sans markdown, sans titre, sans phrase d'introduction. 1200 caractères maximum.
+- Texte brut, sans markdown (ni **, ni #), sans titre, sans phrase d'introduction. Une info par ligne si besoin. 2500 caractères maximum : ne coupe jamais une info en route, condense plutôt.
 
-Réponds UNIQUEMENT avec un JSON valide :
-{"idea":"le brief","platform":"${PLATFORMS.join("|")} ou null si non précisé","format":"un format du réseau choisi, ou null si non précisé"}
+Champs à remplir : idea (le brief), platform (${PLATFORMS.join(" | ")}, ou null si non précisé), format (un format du réseau choisi, ou null si non précisé).
 Formats possibles par réseau : ${PLATFORMS.map((p) => `${p} = ${FORMAT_HELP[p]}`).join(" · ")}.`;
 
     const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const { text } = await generateText({
+    // Sortie structurée : le SDK garantit un JSON valide (retours à la ligne et
+    // guillemets du brief compris). Avant, un simple saut de ligne cassait le
+    // JSON et tout partait en secours, tronqué.
+    const { output } = await generateText({
       model: anthropic("claude-sonnet-5"),
       system,
-      messages: [{ role: "user", content: `CONVERSATION :\n\n${transcript}\n\nRends le JSON maintenant.` }] as ModelMessage[],
-      maxOutputTokens: 900,
+      messages: [{ role: "user", content: `CONVERSATION :\n\n${transcript}\n\nRemplis le brief maintenant.` }] as ModelMessage[],
+      output: Output.object({
+        schema: z.object({
+          idea: z.string(),
+          platform: z.string().nullable(),
+          format: z.string().nullable(),
+        }),
+      }),
+      maxOutputTokens: 2000,
     });
-    const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-    let j: { idea?: unknown; platform?: unknown; format?: unknown } = {};
-    try { j = JSON.parse(cleaned.slice(cleaned.indexOf("{"), cleaned.lastIndexOf("}") + 1)); } catch { j = {}; }
-    const idea = typeof j.idea === "string" && j.idea.trim() ? j.idea.trim().slice(0, 2000) : "";
+    const j = output;
+    const idea = j.idea.trim().slice(0, 4000);
     if (!idea) return Response.json({ idea: lastWord(messages), source: "fallback" });
     const platform = PLATFORMS.find((p) => p === j.platform) ?? null;
     // un format n'est retenu que s'il existe sur le réseau annoncé (sinon le studio garderait une combinaison impossible)
     const format = platform && typeof j.format === "string" && FORMATS[platform].includes(j.format) ? j.format : null;
     return Response.json({ idea, platform, format, source: "zara" });
-  } catch {
+  } catch (err) {
+    console.warn("[studio/brief] résumé impossible, secours :", err instanceof Error ? err.message : err);
     return Response.json({ idea: lastWord(messages), source: "fallback" });
   }
 }

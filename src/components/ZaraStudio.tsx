@@ -4,6 +4,7 @@ import { ContentStudio, type Handoff } from "./StudioContent";
 import { ZaraChat, WELCOME, type Msg } from "./ZaraChat";
 import { apiFetch } from "@/lib/access";
 import { isPlatformEnabled } from "@/lib/studio/platforms";
+import { briefFromMessage } from "@/lib/studio/briefFallback";
 
 /**
  * Zara (B.BOLD Core) :
@@ -50,7 +51,7 @@ export default function ZaraStudio({ onClose }: { onClose: () => void }) {
       // Secours : la dernière proposition de Zara, à défaut la dernière demande.
       const lastZara = [...said].reverse().find((m) => m.role === "assistant");
       const lastUser = [...said].reverse().find((m) => m.role === "user");
-      idea = (lastZara?.content ?? lastUser?.content ?? "").trim().slice(0, 1500);
+      idea = briefFromMessage(lastZara?.content ?? lastUser?.content ?? "");
     }
     setPreparing(false);
     if (idea) {
