@@ -180,10 +180,16 @@ async function aiBackground(brand: Brand, profile: StyleProfile | null, th: Them
       `INTERDIT : effet fondu, délavé, pastel, voile, brume, flou, flou artistique, bokeh, lumière diffuse laiteuse, rendu mat ou désaturé, dégradés estompés, vignettage doux, grain de film.`,
       `Si les images de référence sont plus douces ou délavées, garde leur sujet et leur composition mais PAS leur traitement des couleurs.`,
       `Composition : laisse une zone moins chargée en bas pour poser du texte, sans la rendre floue ni la fondre.`,
-      `AUCUN texte, aucune lettre, aucun logo, aucun filigrane, aucune personne identifiable.`,
+      // Pas de paramètre « negative prompt » chez OpenAI : les exclusions vivent dans le texte.
+      // « aucune personne identifiable » poussait le modèle à cacher/flouter/tordre les visages :
+      // on demande plutôt des personnes fictives, entières et anatomiquement justes.
+      `PERSONNES : seulement si le sujet l'exige ; sinon, pas d'humain. S'il y en a : 1 ou 2 personnes fictives au maximum (pas de célébrité ni de personne réelle), photographiées comme par un photographe professionnel, poses naturelles et détendues, corps entiers dans le cadre ou cadrage propre (jamais coupé aux articulations).`,
+      `ANATOMIE OBLIGATOIRE : proportions humaines réalistes, visage symétrique et net avec deux yeux alignés, peau naturelle avec sa texture, exactement cinq doigts par main, bras et jambes en nombre normal et correctement attachés, mains au repos ou tenant un objet de façon crédible.`,
+      `INTERDIT POUR LES HUMAINS : doigts en trop ou fusionnés, mains déformées, membres supplémentaires ou manquants, corps qui fusionnent entre eux ou avec le décor, visage déformé, flouté ou asymétrique, yeux qui louchent, dents irréalistes, peau plastique ou cireuse, cou ou torse étiré, posture impossible.`,
+      `AUCUN texte, aucune lettre, aucun logo, aucun filigrane.`,
     ].join(" ");
     const r = provider.id === "openai"
-      ? await generateImageOpenAI(prompt, { slug: "bg", size: OPENAI_SIZES[ratio], model: fast ? openAIImageModelBatch() : openAIImageModel(), references: refs.map((x) => ({ data: x.buf, mimeType: x.mime, name: x.name })) })
+      ? await generateImageOpenAI(prompt, { slug: "bg", size: OPENAI_SIZES[ratio], model: fast ? openAIImageModelBatch() : openAIImageModel(), quality: fast ? (process.env.OPENAI_IMAGE_QUALITY_BATCH?.trim() || "medium") : undefined, references: refs.map((x) => ({ data: x.buf, mimeType: x.mime, name: x.name })) })
       : await generateImage(prompt, { slug: "bg", references: refs.map((x) => ({ data: x.buf.toString("base64"), mimeType: x.mime })) });
     // data URI : Chrome (Puppeteer) refuse les file:// depuis une page composée en mémoire
     const buf = await fs.readFile(r.absPath);

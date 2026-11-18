@@ -9,7 +9,8 @@ import path from "node:path";
  *   OPENAI_API_KEY      (obligatoire)  https://platform.openai.com/api-keys
  *   OPENAI_IMAGE_MODEL  (optionnel)    gpt-image-2.5-sunburst (défaut, qualité) | gpt-image-2.5-flare (rapide)
  *   OPENAI_IMAGE_MODEL_BATCH (optionnel) modèle utilisé en mode « Série » (défaut : gpt-image-2.5-flare)
- *   OPENAI_IMAGE_QUALITY (optionnel)   low | medium | high | xhigh | max | auto (défaut : medium)
+ *   OPENAI_IMAGE_QUALITY (optionnel)   low | medium | high | xhigh | max | auto (défaut : high)
+ *   OPENAI_IMAGE_QUALITY_BATCH (optionnel) qualité en mode « Série » (défaut : medium, coût maîtrisé)
  *
  * - Sans référence  → POST /v1/images/generations (JSON)
  * - Avec références → POST /v1/images/edits (multipart, champ image[]) : les visuels
@@ -70,7 +71,8 @@ export async function generateImageOpenAI(
   if (!apiKey) throw new Error("OPENAI_API_KEY manquante. Ajoute-la via « Connecter mes outils » (ou dans .env.local).");
   const model = opts?.model ?? openAIImageModel();
   const size = opts?.size ?? OPENAI_SIZES["1:1"];
-  const quality = opts?.quality ?? process.env.OPENAI_IMAGE_QUALITY?.trim() ?? "medium";
+  // "high" par défaut : en "medium", mains, doigts et visages se déforment nettement plus.
+  const quality = opts?.quality ?? (process.env.OPENAI_IMAGE_QUALITY?.trim() || "high");
   const refs = opts?.references ?? [];
 
   let res: Response;
