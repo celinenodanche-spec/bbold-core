@@ -2,19 +2,16 @@
 import ZaraStudio from './ZaraStudio'
 import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '../lib/access'
+import { T, C, RGB, B } from '@/config/tenant'
+import TenantLogo from './TenantLogo'
 
-const B = {
-  violetDeep: '#6b0f6e', magenta: '#c000c0', gold: '#c9a84c',
-  goldLight: '#e8cc7a', black: '#0a0008', lilas: '#d9a0d9',
-  white: '#faf8fb', surface: 'rgba(107,15,110,0.09)', border: 'rgba(201,168,76,0.2)',
-}
 
 const AGENTS = [
   { id:'stratege',     emoji:'🎯', prenom:'Maeva', title:'Stratège & Brief',    model:'OPUS',   color:B.magenta,    accent:B.lilas },
-  { id:'createur',     emoji:'✍️', prenom:'Lola',  title:'Créatrice Contenu',  model:'SONNET', color:B.violetDeep, accent:'#c4b5fd' },
+  { id:'createur',     emoji:'✍️', prenom:'Lola',  title:'Créatrice Contenu',  model:'SONNET', color:B.violetDeep, accent:`${C.softAlt}` },
   { id:'designer',     emoji:'🎨', prenom:'Zara',  title:'Designer',            model:'SONNET', color:B.gold,       accent:B.goldLight },
   { id:'analyste',     emoji:'📊', prenom:'Inès',  title:'Analyste & Plan 3D', model:'OPUS',   color:B.magenta,    accent:B.lilas },
-  { id:'presentateur', emoji:'🎤', prenom:'Naïa',  title:'Présentatrice',       model:'SONNET', color:B.violetDeep, accent:'#c4b5fd' },
+  { id:'presentateur', emoji:'🎤', prenom:'Naïa',  title:'Présentatrice',       model:'SONNET', color:B.violetDeep, accent:`${C.softAlt}` },
 ]
 
 const SUPPORT_AGENTS = [
@@ -26,7 +23,7 @@ const SUPPORT_AGENTS = [
   { id:'calendrier', emoji:'📅', name:'Hermione Granger',  subtitle:'Emploi du temps impossible géré à la perfection — calendrier éditorial 30 jours.',          color:'#4f46e5', accent:'#a5b4fc' },
   { id:'olivia',     emoji:'📡', name:'Olivia Pope',       subtitle:'Veille communicationnelle en temps réel — réseaux, campagnes, canaux digitaux & classiques.', color:'#dc2626', accent:'#fca5a5' },
   { id:'anna',       emoji:'👑', name:'Anna Wintour',      subtitle:'Brand board complet — palette HEX, typographies, logo, ambiance. Téléchargeable en HTML.',    color:'#b45309', accent:'#fde68a' },
-  { id:'script',     emoji:'🎬', name:'Shonda Rhimes',     subtitle:'Elle a écrit Scandal, Grey\'s, Bridgerton. Hook 3s + script complet prêt à tourner.',        color:'#7c3aed', accent:'#c4b5fd' },
+  { id:'script',     emoji:'🎬', name:'Shonda Rhimes',     subtitle:'Elle a écrit Scandal, Grey\'s, Bridgerton. Hook 3s + script complet prêt à tourner.',        color:'#7c3aed', accent:`${C.softAlt}` },
   { id:'influence',  emoji:'🌟', name:'Kris Jenner',       subtitle:'Elle a transformé une famille en empire. Stratégie influenceurs + brief + approche.',         color:'#ec4899', accent:'#f9a8d4' },
   { id:'offre',      emoji:'📋', name:'Oprah Winfrey',     subtitle:'"You get a car." — Proposition commerciale irrésistible prête à envoyer.',                   color:'#059669', accent:'#6ee7b7' },
   { id:'seo',        emoji:'🔎', name:'Ada Lovelace',      subtitle:'Première programmatrice de l\'histoire. Article SEO complet, optimisé pour les algorithmes.', color:'#0891b2', accent:'#67e8f9' },
@@ -48,7 +45,7 @@ const URL_FIELDS = [
   { key:'tiktok',    label:'TikTok',    placeholder:'https://tiktok.com/...' },
 ]
 
-const ORCH_SYSTEM = `Tu es Céline, Orchestratrice de B.BOLD Core, chef de projet multi-agents. Tu reçois un brief de projet pour une marque et tu décides quels agents activer, dans quel ordre, et pourquoi.
+const ORCH_SYSTEM = `Tu es ${T.orchestrator}, Orchestratrice de ${T.productFull}, chef de projet multi-agents. Tu reçois un brief de projet pour une marque et tu décides quels agents activer, dans quel ordre, et pourquoi.
 
 LES 5 AGENTS DISPONIBLES :
 - stratege (Maeva) : Stratège & Brief — positionnement, Value Proposition Canvas, piliers éditoriaux. Indispensable pour tout nouveau client ou nouveau projet de marque.
@@ -177,7 +174,7 @@ async function copierTexte(texte) {
 
 function buildMarkdown(brief, steps) {
   const date = new Date().toISOString().split('T')[0]
-  let md = `# Campagne B.BOLD — ${brief.client || '—'}\n`
+  let md = `# Campagne ${T.name} — ${brief.client || '—'}\n`
   md += `**Date :** ${date}  \n**Objectif :** ${brief.objectif || '—'}  \n**Plateformes :** ${brief.plateformes || '—'}  \n**Budget :** ${brief.budget || '—'}  \n\n---\n\n`
   steps.filter(s => s.status === 'done' && s.output).forEach(s => {
     // Les métadonnées peuvent manquer si l'appelant n'a passé que le statut :
@@ -198,7 +195,7 @@ function downloadMd(brief, steps) {
   const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
-  a.href = url; a.download = `bbold-${slug}-${date}.md`; a.click()
+  a.href = url; a.download = `${T.id}-${slug}-${date}.md`; a.click()
   URL.revokeObjectURL(url)
 }
 
@@ -207,12 +204,12 @@ function downloadMd(brief, steps) {
 const FORMS = {
   stratege: {
     title: 'Brief Stratégique', subtitle: 'Maeva construit ton positionnement, ta VPC et identifie tes 3 concurrents directs.',
-    system: `Tu es Maeva, Stratège & Brief de B.BOLD Agency, experte en brand strategy pour les territoires insulaires français. Tu as une connaissance approfondie du tissu économique local — Martinique, Guadeloupe, Guyane, La Réunion et autres DOM-TOM. Ton style : cash, structuré, bullet points pour les insights.
+    system: `Tu es Maeva, Stratège & Brief de ${T.agency}, experte en brand strategy${T.market.maevaUI}. Ton style : cash, structuré, bullet points pour les insights.
 
 Pour chaque brief, tu identifies OBLIGATOIREMENT 3 concurrents directs réels dans le même département que le client, proposant le même type de produits ou services. Si tu ne connais pas d'acteurs locaux certains, tu identifies les types d'acteurs les plus probables avec leurs caractéristiques générales tout en le précisant. Tu analyses ensuite leurs positionnements pour en déduire le territoire disponible pour le client.`,
     fields: [
       { key:'client',   label:'Nom du client',      type:'text',     placeholder:'Ex: Caraïb Ediprint' },
-      { key:'secteur',  label:"Secteur & territoire", type:'text',    placeholder:'Ex: Imprimerie digitale, Martinique' },
+      { key:'secteur',  label:"Secteur & territoire", type:'text',    placeholder:`Ex: Imprimerie digitale, ${T.examples.lieu}` },
       { key:'objectif', label:'Objectif principal', type:'select',   options:['Notoriété de marque','Génération de leads','Augmenter les ventes','Fidéliser la communauté'] },
       { key:'icp',      label:'Cible / ICP',        type:'textarea', placeholder:'Ex: TPE locales 30-50 ans, budget com < 2k/mois' },
       { key:'budget',   label:'Budget mensuel',     type:'text',     placeholder:'Ex: 1 500€/mois' },
@@ -238,7 +235,7 @@ Mission :
   },
   createur: {
     title: 'Brief Contenu', subtitle: 'Lola rédige tes posts, scripts et captions qui convertissent.',
-    system: `Tu es Lola, Créatrice de Contenu de B.BOLD Agency. Hook = 15 mots max. Jamais de listes à puces dans le corps. Prose fluide, 3 paragraphes max. Style authentique et territorial si pertinent.`,
+    system: `Tu es Lola, Créatrice de Contenu de ${T.agency}. Hook = 15 mots max. Jamais de listes à puces dans le corps. Prose fluide, 3 paragraphes max. Style authentique et territorial si pertinent.`,
     fields: [
       { key:'plateforme', label:'Plateforme cible',    type:'select',   options:['LinkedIn','Instagram','Facebook','YouTube','TikTok'] },
       { key:'thematique', label:'Thématique',          type:'text',     placeholder:'Ex: Lancement nouvelle gamme, conseils impression' },
@@ -250,7 +247,7 @@ Mission :
   },
   designer: {
     title: 'Studio visuel', subtitle: 'Zara crée tes posts, carrousels (4:5) et stories (9:16) prêts à publier — texte + visuels de marque, export en un clic.',
-    system: `Tu es Zara, Designer de B.BOLD Agency, experte en direction artistique, prompts IA et création Canva pour les territoires insulaires français.
+    system: `Tu es Zara, Designer de ${T.agency}, experte en direction artistique, prompts IA et création Canva${T.market.pourZone}.
 
 FORMATS AUTORISÉS (jamais de carré 1:1) :
 - Deck / Présentation 16:9 → Canva : 1920 × 1080 px
@@ -276,7 +273,7 @@ Si une image de référence est fournie, analyse PRÉCISÉMENT : palette dominan
       { key:'format',            label:'Format cible',            type:'select',   options:['Deck / Présentation 16:9','Post Instagram/LinkedIn 4:5','Story & Reel 9:16'] },
       { key:'nombre',            label:'Nombre de visuels',       type:'select',   options:['1 visuel','3 visuels','5 visuels (carrousel)','10 slides (deck)'] },
       { key:'style',             label:'Style visuel',            type:'select',   options:['Minimaliste & épuré','Énergique & contrasté','Luxe & premium','Naturel & organique','Disruptif & bold'] },
-      { key:'palette',           label:'Palette couleurs',        type:'text',     placeholder:'Ex: violet #6b0f6e, or #c9a84c, fond noir #0a0008' },
+      { key:'palette',           label:'Palette couleurs',        type:'text',     placeholder:`Ex: violet ${C.primary}, or ${C.accent}, fond noir ${C.bg}` },
       { key:'police_titre',      label:'Police — Titres',         type:'text',     placeholder:'Ex: Playfair Display Bold' },
       { key:'police_sous_titre', label:'Police — Sous-titres',    type:'text',     placeholder:'Ex: Montserrat SemiBold 600' },
       { key:'police_corps',      label:'Police — Corps de texte', type:'text',     placeholder:'Ex: Inter Regular 400' },
@@ -303,7 +300,7 @@ Mission :
   },
   analyste: {
     title: 'Brief Analytique', subtitle: 'Inès lit tes analytics et construit ton plan 3D sur 4 semaines.',
-    system: `Tu es Inès, Analyste & Architecte du Plan 3D de B.BOLD Agency. Tableaux clairs, bullet points, chiffres précis. Plan 4 semaines x 3 actions SMART par semaine.`,
+    system: `Tu es Inès, Analyste & Architecte du Plan 3D de ${T.agency}. Tableaux clairs, bullet points, chiffres précis. Plan 4 semaines x 3 actions SMART par semaine.`,
     fields: [
       { key:'plateformes', label:'Plateformes',          type:'select',   options:['LinkedIn + Meta','LinkedIn seul','Meta (FB+IG)','YouTube','Tout'] },
       { key:'periode',     label:"Période d'analyse",    type:'select',   options:['30 derniers jours','90 jours','6 mois','12 mois'] },
@@ -315,10 +312,10 @@ Mission :
   },
   presentateur: {
     title: 'Brief Présentation', subtitle: 'Naïa transforme ton brief en deck slide-par-slide.',
-    system: `Tu es Naïa, Présentatrice de B.BOLD Agency, experte en storytelling (SOZA, Pyramide de Minto, Before/After). Structure narrative claire, slide-par-slide.`,
+    system: `Tu es Naïa, Présentatrice de ${T.agency}, experte en storytelling (SOZA, Pyramide de Minto, Before/After). Structure narrative claire, slide-par-slide.`,
     fields: [
       { key:'type_deck', label:'Type de présentation', type:'select',   options:['Pitch commercial','Rapport de performance','Formation équipe','Webinar','Présentation institutionnelle'] },
-      { key:'audience',  label:'Audience cible',       type:'text',     placeholder:'Ex: Dirigeants PME Martinique' },
+      { key:'audience',  label:'Audience cible',       type:'text',     placeholder:`Ex: Dirigeants PME ${T.examples.lieu}` },
       { key:'nb_slides', label:'Volume',               type:'select',   options:['5-8 slides (express)','10-15 slides (standard)','20+ slides (formation)'] },
       { key:'message',   label:'Message clé',          type:'textarea', placeholder:'Ex: Montrer ROI Q1, convaincre de renouveler le contrat' },
       { key:'data',      label:'Données / chiffres',   type:'text',     placeholder:'Ex: +127% engagement, 45 leads mars, ROI x4.2' },
@@ -329,7 +326,7 @@ Mission :
 
 const SUPPORT_FORMS = {
   gmail: {
-    title: 'J.K. Rowling — Email', subtitle: 'Un email B.BOLD percutant — objet + corps + CTA en 30 secondes.',
+    title: 'J.K. Rowling — Email', subtitle: `Un email ${T.name} percutant — objet + corps + CTA en 30 secondes.`,
     fields: [
       { key:'destinataire', label:'Destinataire / Contexte', type:'text',     placeholder:'Ex: Directeur marketing, relance après réunion' },
       { key:'sujet',        label:"Sujet de l'email",        type:'text',     placeholder:'Ex: Bilan campagne mai — vos résultats' },
@@ -355,7 +352,7 @@ const SUPPORT_FORMS = {
     title: 'Maya Angelou — Brand Voice', subtitle: 'La voix, l\'identité, l\'âme d\'une marque. Colle du contenu existant, elle sort le guide brand voice complet.',
     fields: [
       { key:'client',  label:'Client / Marque',             type:'text',     placeholder:'Ex: Debeliou Agency' },
-      { key:'secteur', label:'Secteur',                     type:'text',     placeholder:'Ex: Agence communication, Martinique' },
+      { key:'secteur', label:'Secteur',                     type:'text',     placeholder:`Ex: Agence communication, ${T.examples.lieu}` },
       { key:'contenu', label:'Contenu existant à analyser', type:'textarea', placeholder:'Colle ici 5 à 10 posts, captions, emails ou textes existants de la marque...' },
     ],
   },
@@ -383,9 +380,9 @@ const SUPPORT_FORMS = {
     title: 'Olivia Pope — Veille Com', subtitle: 'Veille communicationnelle en temps réel via Perplexity AI.',
     fields: [
       { key:'focus',      label:'Focus thématique',                     type:'select',   options:['Communication digitale & réseaux sociaux','Campagnes publicitaires notables','Influence marketing','Communication de crise','Tendances brand content','Vue d\'ensemble communication'] },
-      { key:'territoire', label:'Territoire',                            type:'select',   options:['France + Antilles-Guyane','France métropolitaine','Martinique','Guadeloupe','Global'] },
+      { key:'territoire', label:'Territoire',                            type:'select',   options:T.market.territoiresVeille },
       { key:'periode',    label:'Période de veille',                     type:'select',   options:['7 derniers jours','30 derniers jours','Actualité immédiate','3 derniers mois'] },
-      { key:'secteur',    label:'Secteur à surveiller (optionnel)',      type:'text',     placeholder:'Ex: Luxe, food, tourisme insulaire...' },
+      { key:'secteur',    label:'Secteur à surveiller (optionnel)',      type:'text',     placeholder:`${T.examples.secteurVeille}` },
       { key:'profondeur', label:'Profondeur du rapport',                 type:'select',   options:['Vue d\'ensemble','Analyse approfondie','Focus 1 tendance spécifique'] },
     ],
   },
@@ -393,12 +390,12 @@ const SUPPORT_FORMS = {
     title: 'Anna Wintour — Brand Board', subtitle: 'Brand board complet avec palette HEX, typographies, concept logo et ambiance.',
     fields: [
       { key:'client',              label:'Client / Nom de marque',               type:'text',     placeholder:'Ex: Debeliou Agency' },
-      { key:'secteur',             label:'Secteur',                              type:'text',     placeholder:'Ex: Agence communication, Martinique' },
+      { key:'secteur',             label:'Secteur',                              type:'text',     placeholder:`Ex: Agence communication, ${T.examples.lieu}` },
       { key:'valeurs',             label:'Valeurs de la marque',                 type:'text',     placeholder:'Ex: Authenticité, disruption, excellence' },
       { key:'cible',               label:'Cible',                                type:'text',     placeholder:'Ex: Créatifs, entrepreneurs 25-40 ans' },
       { key:'personnalite',        label:'Personnalité souhaitée',               type:'select',   options:['Luxe & premium','Disruptif & bold','Naturel & organique','Tech & moderne','Artisanal & authentique','Énergique & jeune'] },
       { key:'references',          label:'Références visuelles / inspirations',  type:'text',     placeholder:'Ex: Vogue, Glossier, Apple' },
-      { key:'couleurs_existantes', label:'Couleurs existantes (si logo déjà)',   type:'text',     placeholder:'Ex: Violet #6b0f6e, Or #c9a84c — ou "Aucune contrainte"' },
+      { key:'couleurs_existantes', label:'Couleurs existantes (si logo déjà)',   type:'text',     placeholder:`Ex: Violet ${C.primary}, Or ${C.accent} — ou "Aucune contrainte"` },
       { key:'debelvoix_analyse',   label:'Analyse Debelvoix (optionnel)',         type:'textarea', placeholder:'Colle ici le guide brand voice généré par Debelvoix pour enrichir le brand board...' },
     ],
   },
@@ -411,7 +408,7 @@ const SUPPORT_FORMS = {
       { key:'sujet',        label:'Sujet / Message principal',type:'textarea', placeholder:'Ex: Présenter notre nouvelle offre d\'impression eco-responsable, montrer le processus...' },
       { key:'ton',          label:'Ton',                      type:'select',   options:['Dynamique & énergique','Professionnel & rassurant','Storytelling émotionnel','Éducatif & pédagogique','Humoristique & léger'] },
       { key:'cta',          label:"Appel à l'action final",   type:'text',     placeholder:'Ex: Demander un devis gratuit sur le lien en bio' },
-      { key:'infos_marque', label:'Infos marque / contexte',  type:'text',     placeholder:'Ex: Caraïb Ediprint, imprimerie Martinique, cible TPE locales' },
+      { key:'infos_marque', label:'Infos marque / contexte',  type:'text',     placeholder:`${T.examples.marque}` },
     ],
   },
 
@@ -419,8 +416,8 @@ const SUPPORT_FORMS = {
     title: 'Kris Jenner — Influence Marketing', subtitle: 'Elle a créé l\'empire Kardashian avant que le mot influenceur existe. Stratégie + brief + approche.',
     fields: [
       { key:'client',    label:'Client / Marque',                      type:'text',     placeholder:'Ex: Caraïb Ediprint' },
-      { key:'secteur',   label:'Secteur',                              type:'text',     placeholder:'Ex: Imprimerie, Martinique' },
-      { key:'territoire',label:'Territoire',                           type:'select',   options:['Martinique','Guadeloupe','Guyane','La Réunion','Tous DOM-TOM','France + DOM-TOM'] },
+      { key:'secteur',   label:'Secteur',                              type:'text',     placeholder:`Ex: Imprimerie, ${T.examples.lieu}` },
+      { key:'territoire',label:'Territoire',                           type:'select',   options:T.market.territoiresInfluence },
       { key:'objectif',  label:'Objectif de la campagne influence',    type:'select',   options:['Notoriété de marque','Génération de leads','Lancement produit','Drive-to-store','Engagement communauté'] },
       { key:'budget',    label:'Budget collaboration (par influenceur)',type:'select',   options:['Troc / Gifting uniquement','Moins de 500€','500€ — 1 500€','1 500€ — 3 000€','Plus de 3 000€'] },
       { key:'type',      label:'Type de contenu souhaité',             type:'select',   options:['Post Instagram + Story','Reel dédié','TikTok','YouTube mention','Package multi-formats'] },
@@ -431,7 +428,7 @@ const SUPPORT_FORMS = {
     title: 'Oprah Winfrey — Offre Commerciale', subtitle: '"You get a car." L\'offre irrésistible incarnée. Proposition commerciale complète prête à envoyer.',
     fields: [
       { key:'client',   label:'Nom du client / prospect',    type:'text',     placeholder:'Ex: Boutique Mode Tropicale, Fort-de-France' },
-      { key:'secteur',  label:'Secteur',                     type:'text',     placeholder:'Ex: Mode & retail, Martinique' },
+      { key:'secteur',  label:'Secteur',                     type:'text',     placeholder:`Ex: Mode & retail, ${T.examples.lieu}` },
       { key:'besoin',   label:'Besoin / problème identifié', type:'textarea', placeholder:'Ex: Aucune présence Instagram, concurrent qui cartonne sur les réseaux, besoin de visibilité pour l\'ouverture du deuxième magasin...' },
       { key:'services', label:'Services à proposer',         type:'textarea', placeholder:'Ex: Stratégie réseaux sociaux, création de contenu mensuel (12 posts + 4 reels), community management...' },
       { key:'budget',   label:'Budget indicatif',            type:'text',     placeholder:'Ex: 1 500€/mois — ou "à définir"' },
@@ -442,9 +439,9 @@ const SUPPORT_FORMS = {
   seo: {
     title: 'Ada Lovelace — SEO Content', subtitle: 'Première programmatrice de l\'histoire. Article SEO optimisé pour les algorithmes, prêt à publier.',
     fields: [
-      { key:'sujet',          label:'Sujet de l\'article',              type:'text',     placeholder:'Ex: Comment choisir son imprimeur local en Martinique' },
-      { key:'mot_cle',        label:'Mot-clé principal',                type:'text',     placeholder:'Ex: imprimerie Martinique' },
-      { key:'mots_cles_sec',  label:'Mots-clés secondaires (3 à 5)',    type:'text',     placeholder:'Ex: impression numérique, flyer Martinique, devis imprimeur' },
+      { key:'sujet',          label:'Sujet de l\'article',              type:'text',     placeholder:`${T.examples.seoSujet}` },
+      { key:'mot_cle',        label:'Mot-clé principal',                type:'text',     placeholder:`${T.examples.seoMotCle}` },
+      { key:'mots_cles_sec',  label:'Mots-clés secondaires (3 à 5)',    type:'text',     placeholder:`${T.examples.seoSecondaires}` },
       { key:'audience',       label:'Audience cible',                   type:'text',     placeholder:'Ex: TPE et commerçants martiniquais qui cherchent un imprimeur fiable' },
       { key:'type_contenu',   label:'Type de contenu',                  type:'select',   options:['Article de blog informatif','Guide pratique (how-to)','Comparatif / Top X','Landing page service','FAQ optimisée'] },
       { key:'longueur',       label:'Longueur cible',                   type:'select',   options:['800 mots (article court)','1 200 mots (article standard)','2 000 mots (article approfondi)','2 500+ mots (pilier SEO)'] },
@@ -454,7 +451,7 @@ const SUPPORT_FORMS = {
 
 const CAMPAIGN_FIELDS = [
   { key:'client',      label:'Nom du client',        type:'text',     placeholder:'Ex: Caraïb Ediprint' },
-  { key:'secteur',     label:'Secteur & territoire', type:'text',     placeholder:'Ex: Imprimerie digitale, Martinique' },
+  { key:'secteur',     label:'Secteur & territoire', type:'text',     placeholder:`Ex: Imprimerie digitale, ${T.examples.lieu}` },
   { key:'objectif',    label:'Objectif principal',   type:'select',   options:['Notoriété de marque','Génération de leads','Augmenter les ventes','Fidéliser la communauté','Lancement produit/service'] },
   { key:'cible',       label:'Cible / ICP',          type:'textarea', placeholder:'Ex: TPE locales 30-50 ans, budget com < 2k/mois' },
   { key:'budget',      label:'Budget mensuel',       type:'text',     placeholder:'Ex: 1 500€/mois' },
@@ -465,15 +462,7 @@ const CAMPAIGN_FIELDS = [
 // ─── SVG Eye ──────────────────────────────────────────────────────────────────
 
 function Eye({ size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 60 60" fill="none">
-      <polygon points="30,4 56,30 30,56 4,30" stroke={B.gold} strokeWidth="1.5" fill="none"/>
-      <polygon points="30,10 50,30 30,50 10,30" stroke={B.magenta} strokeWidth="1" fill="none" opacity="0.55"/>
-      <ellipse cx="30" cy="30" rx="12" ry="8" stroke={B.gold} strokeWidth="1.5" fill="none"/>
-      <circle cx="30" cy="30" r="4" fill={B.gold}/>
-      <circle cx="30" cy="30" r="2" fill={B.black}/>
-    </svg>
-  )
+  return <TenantLogo size={size} />
 }
 
 // ─── Shared field renderer ────────────────────────────────────────────────────
@@ -481,7 +470,7 @@ function Eye({ size = 28 }) {
 function FieldGroup({ field, value, onChange, accentColor }) {
   const baseStyle = {
     width:'100%', padding:'10px 14px', borderRadius:'10px',
-    background:'rgba(107,15,110,0.15)', border:`1px solid ${accentColor || B.gold}33`,
+    background:`rgba(${RGB.primary},0.15)`, border:`1px solid ${accentColor || B.gold}33`,
     color:B.white, fontSize:'13px', outline:'none',
   }
   return (
@@ -492,8 +481,8 @@ function FieldGroup({ field, value, onChange, accentColor }) {
       </label>
       {field.type === 'select' ? (
         <select value={value||''} onChange={e=>onChange(e.target.value)} style={{ ...baseStyle, cursor:'pointer' }}>
-          <option value="" style={{background:'#120010'}}>Choisir…</option>
-          {field.options.map(o=><option key={o} value={o} style={{background:'#120010'}}>{o}</option>)}
+          <option value="" style={{background:`${C.bgAlt}`}}>Choisir…</option>
+          {field.options.map(o=><option key={o} value={o} style={{background:`${C.bgAlt}`}}>{o}</option>)}
         </select>
       ) : field.type === 'textarea' ? (
         <textarea value={value||''} onChange={e=>onChange(e.target.value)}
@@ -568,22 +557,22 @@ function Modal({ agent, onClose }) {
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(10,0,8,0.9)', backdropFilter:'blur(12px)',
+    <div style={{ position:'fixed', inset:0, zIndex:1000, background:`rgba(${RGB.bg},0.9)`, backdropFilter:'blur(12px)',
       display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background:'linear-gradient(160deg,#120010 0%,#0a0008 60%)',
+      <div style={{ background:`linear-gradient(160deg,${C.bgAlt} 0%,${C.bg} 60%)`,
         border:`1px solid ${agent.color}44`, borderRadius:'20px', padding:'32px',
         width:'100%', maxWidth:'660px', maxHeight:'90vh', overflowY:'auto',
         position:'relative', boxShadow:`0 0 60px ${agent.color}22` }}>
         <button onClick={onClose} style={{ position:'absolute', top:'16px', right:'16px',
-          background:'transparent', border:'1px solid rgba(250,248,251,0.15)', borderRadius:'8px',
-          color:'rgba(250,248,251,0.5)', width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
+          background:'transparent', border:`1px solid rgba(${RGB.text},0.15)`, borderRadius:'8px',
+          color:`rgba(${RGB.text},0.5)`, width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
         <div style={{ display:'flex', alignItems:'center', gap:'16px', marginBottom:'24px' }}>
           <img src={getAvatarPath(agent.id)} alt={agent.prenom}
             style={{ width:'56px', height:'56px', borderRadius:'50%', objectFit:'cover', objectPosition:'top', border:`2px solid ${agent.color}66` }}/>
           <div>
             <div style={{ fontFamily:'Georgia,serif', fontSize:'20px', fontWeight:'900', color:B.white }}>{form.title}</div>
-            <div style={{ fontSize:'12px', color:'rgba(250,248,251,0.45)' }}>{form.subtitle}</div>
+            <div style={{ fontSize:'12px', color:`rgba(${RGB.text},0.45)` }}>{form.subtitle}</div>
           </div>
         </div>
         <div style={{ height:'1px', background:`linear-gradient(90deg,transparent,${agent.color}88,transparent)`, marginBottom:'24px' }}/>
@@ -606,7 +595,7 @@ function Modal({ agent, onClose }) {
                 {!imagePreview ? (
                   <button onClick={() => fileInputRef.current?.click()} style={{
                     width:'100%', padding:'14px',
-                    background:'rgba(201,168,76,0.07)', border:`1px dashed ${B.gold}44`,
+                    background:`rgba(${RGB.accent},0.07)`, border:`1px dashed ${B.gold}44`,
                     borderRadius:'10px', color:B.gold, fontSize:'12px', cursor:'pointer',
                     display:'flex', alignItems:'center', justifyContent:'center', gap:'8px',
                   }}>
@@ -616,7 +605,7 @@ function Modal({ agent, onClose }) {
                 ) : (
                   <div style={{ position:'relative', borderRadius:'10px', overflow:'hidden', border:`1px solid ${B.gold}44` }}>
                     <img src={imagePreview} alt="Référence" style={{ width:'100%', maxHeight:'180px', objectFit:'cover', display:'block' }}/>
-                    <div style={{ position:'absolute', inset:0, background:'rgba(10,0,8,0.55)',
+                    <div style={{ position:'absolute', inset:0, background:`rgba(${RGB.bg},0.55)`,
                       display:'flex', alignItems:'center', justifyContent:'center', gap:'10px' }}>
                       <span style={{ fontSize:'11px', color:B.goldLight, fontWeight:'600' }}>✓ Zara analysera ce style</span>
                       <button onClick={() => { setImagePreview(null); setImageBase64(null); setImageMediaType(null); if(fileInputRef.current) fileInputRef.current.value='' }}
@@ -644,7 +633,7 @@ function Modal({ agent, onClose }) {
             <div style={{ width:'40px', height:'40px', borderRadius:'50%', margin:'0 auto 16px',
               border:`2px solid ${agent.color}22`, borderTop:`2px solid ${agent.color}`,
               animation:'spin 0.8s linear infinite' }}/>
-            <p style={{ color:'rgba(250,248,251,0.5)', fontSize:'13px' }}>{agent.prenom} analyse le brief…</p>
+            <p style={{ color:`rgba(${RGB.text},0.5)`, fontSize:'13px' }}>{agent.prenom} analyse le brief…</p>
           </div>
         )}
         {response && (
@@ -653,8 +642,8 @@ function Modal({ agent, onClose }) {
               <div style={{ fontSize:'11px', fontWeight:'700', color:agent.accent, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'10px' }}>
                 Réponse de {agent.prenom}
               </div>
-              <div style={{ background:'rgba(10,0,8,0.5)', border:`1px solid ${agent.color}33`,
-                borderRadius:'12px', padding:'18px', fontSize:'13px', color:'rgba(250,248,251,0.85)',
+              <div style={{ background:`rgba(${RGB.bg},0.5)`, border:`1px solid ${agent.color}33`,
+                borderRadius:'12px', padding:'18px', fontSize:'13px', color:`rgba(${RGB.text},0.85)`,
                 lineHeight:'1.75', whiteSpace:'pre-wrap', maxHeight:'360px', overflowY:'auto', fontFamily:'system-ui,sans-serif' }}>
                 {response}
               </div>
@@ -662,7 +651,7 @@ function Modal({ agent, onClose }) {
             <div style={{ display:'flex', gap:'10px', marginBottom:'12px', flexWrap:'wrap' }}>
               <button onClick={async () => { const ok = await copierTexte(response); setCopied(ok ? true : 'echec'); setTimeout(()=>setCopied(false),2200) }}
                 style={{ flex:1, minWidth:'140px', padding:'12px',
-                  background: copied ? 'rgba(201,168,76,0.2)' : 'rgba(107,15,110,0.3)',
+                  background: copied ? `rgba(${RGB.accent},0.2)` : `rgba(${RGB.primary},0.3)`,
                   border:`1px solid ${copied ? B.gold : agent.color}55`, borderRadius:'10px',
                   color: copied ? B.goldLight : B.white, fontSize:'13px', fontWeight:'600', cursor:'pointer' }}>
                 {copied === 'echec' ? '✕ Copie refusée' : copied ? '✓ Copié !' : '📋 Copier'}
@@ -680,8 +669,8 @@ function Modal({ agent, onClose }) {
               )}
             </div>
             {isDesigner && (
-              <div style={{ padding:'10px 14px', background:'rgba(201,168,76,0.07)', border:`1px solid ${B.gold}22`,
-                borderRadius:'8px', fontSize:'11px', color:'rgba(250,248,251,0.45)', marginBottom:'10px' }}>
+              <div style={{ padding:'10px 14px', background:`rgba(${RGB.accent},0.07)`, border:`1px solid ${B.gold}22`,
+                borderRadius:'8px', fontSize:'11px', color:`rgba(${RGB.text},0.45)`, marginBottom:'10px' }}>
                 💡 Le brief Canva est copié dans ton presse-papier. Clique "Ouvrir Canva" pour créer ton design avec ces specs.
               </div>
             )}
@@ -694,8 +683,8 @@ function Modal({ agent, onClose }) {
             />
             <button onClick={() => { setResponse(''); setData({}); setImagePreview(null); setImageBase64(null); setImageMediaType(null) }}
               style={{ width:'100%', padding:'10px',
-                background:'transparent', border:'1px solid rgba(250,248,251,0.12)', borderRadius:'10px',
-                color:'rgba(250,248,251,0.4)', fontSize:'12px', cursor:'pointer' }}>
+                background:'transparent', border:`1px solid rgba(${RGB.text},0.12)`, borderRadius:'10px',
+                color:`rgba(${RGB.text},0.4)`, fontSize:'12px', cursor:'pointer' }}>
               ← Nouveau brief
             </button>
           </>
@@ -728,28 +717,28 @@ function downloadResponseAsHtml(responseText, agentId, agentName, agentEmoji, ag
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${agentEmoji} ${agentName} — ${clientName || 'B.BOLD'} — ${date}</title>
+<title>${agentEmoji} ${agentName} — ${clientName || `${T.name}`} — ${date}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Inter',sans-serif;background:#0a0008;color:#faf8fb;min-height:100vh;padding:0}
-  .header{background:linear-gradient(135deg,#120010,#1a001a);border-bottom:1px solid ${agentColor}44;padding:32px 48px;display:flex;align-items:center;gap:20px}
+  body{font-family:'Inter',sans-serif;background:${C.bg};color:${C.text};min-height:100vh;padding:0}
+  .header{background:linear-gradient(135deg,${C.bgAlt},#1a001a);border-bottom:1px solid ${agentColor}44;padding:32px 48px;display:flex;align-items:center;gap:20px}
   .header-emoji{font-size:48px;line-height:1}
-  .header-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:#faf8fb}
-  .header-meta{font-size:13px;color:rgba(250,248,251,0.45);margin-top:4px}
+  .header-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:${C.text}}
+  .header-meta{font-size:13px;color:rgba(${RGB.text},0.45);margin-top:4px}
   .header-badge{background:${agentColor}22;border:1px solid ${agentColor}55;color:${agentColor};font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:0.08em;margin-top:8px;display:inline-block}
   .content{max-width:860px;margin:0 auto;padding:48px 48px 80px}
-  h1{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:#faf8fb;margin:32px 0 14px;border-left:3px solid ${agentColor};padding-left:16px}
-  h2{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#faf8fb;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(250,248,251,0.1)}
-  .body-text{font-size:14px;line-height:1.85;color:rgba(250,248,251,0.82)}
-  .hex-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(250,248,251,0.06);border:1px solid rgba(250,248,251,0.12);border-radius:6px;padding:2px 8px;font-size:12px;font-family:'Inter',sans-serif;font-weight:600;color:#faf8fb;vertical-align:middle;margin:2px 3px}
+  h1{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:${C.text};margin:32px 0 14px;border-left:3px solid ${agentColor};padding-left:16px}
+  h2{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:${C.text};margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(${RGB.text},0.1)}
+  .body-text{font-size:14px;line-height:1.85;color:rgba(${RGB.text},0.82)}
+  .hex-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(${RGB.text},0.06);border:1px solid rgba(${RGB.text},0.12);border-radius:6px;padding:2px 8px;font-size:12px;font-family:'Inter',sans-serif;font-weight:600;color:${C.text};vertical-align:middle;margin:2px 3px}
   .swatch{width:16px;height:16px;border-radius:3px;border:1px solid rgba(255,255,255,0.2);flex-shrink:0;display:inline-block}
-  .divider{border:none;border-top:1px solid rgba(250,248,251,0.12);margin:24px 0}
+  .divider{border:none;border-top:1px solid rgba(${RGB.text},0.12);margin:24px 0}
   hr.divider{border:none;height:2px;background:linear-gradient(90deg,transparent,${agentColor}55,transparent);margin:28px 0}
   a{color:${agentColor};text-decoration:underline;word-break:break-all}
   a:hover{opacity:0.8}
-  strong{font-weight:700;color:#faf8fb}
-  .footer{text-align:center;padding:32px;border-top:1px solid rgba(250,248,251,0.08);font-size:11px;color:rgba(250,248,251,0.25);margin-top:40px}
+  strong{font-weight:700;color:${C.text}}
+  .footer{text-align:center;padding:32px;border-top:1px solid rgba(${RGB.text},0.08);font-size:11px;color:rgba(${RGB.text},0.25);margin-top:40px}
   @media print{body{background:#fff;color:#111}.header{background:#f5f5f5;border-bottom:1px solid #ddd}.content{padding:24px}.header-title,.body-text,h1,h2,strong{color:#111!important}.hex-chip{border:1px solid #ccc;background:#f9f9f9;color:#111!important}}
 </style>
 </head>
@@ -758,14 +747,14 @@ function downloadResponseAsHtml(responseText, agentId, agentName, agentEmoji, ag
   <div class="header-emoji">${agentEmoji}</div>
   <div>
     <div class="header-title">${agentName}</div>
-    <div class="header-meta">B.BOLD Agency · ${clientName || ''} · ${date}</div>
-    <div class="header-badge">B.BOLD CORE</div>
+    <div class="header-meta">${T.agency} · ${clientName || ''} · ${date}</div>
+    <div class="header-badge">${T.productFull.toUpperCase()}</div>
   </div>
 </div>
 <div class="content">
   <div class="body-text">${styledContent}</div>
 </div>
-<div class="footer">Généré par B.BOLD Core · ${agentEmoji} ${agentName} · ${date}</div>
+<div class="footer">Généré par ${T.productFull} · ${agentEmoji} ${agentName} · ${date}</div>
 </body>
 </html>`
 
@@ -773,7 +762,7 @@ function downloadResponseAsHtml(responseText, agentId, agentName, agentEmoji, ag
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `bbold-${agentId}-${slug}-${Date.now()}.html`
+  a.download = `${T.id}-${agentId}-${slug}-${Date.now()}.html`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -804,15 +793,15 @@ function NotionSaveWidget({ response, agentEmoji, agentName, clientName, accentC
     finally { setSaving(false) }
   }
 
-  const color = accentColor || '#6b0f6e'
+  const color = accentColor || `${C.primary}`
 
   return (
     <div style={{ marginBottom:'8px' }}>
       {!open && !saved && (
         <button onClick={() => setOpen(true)} style={{
           width:'100%', padding:'11px', display:'flex', alignItems:'center', justifyContent:'center', gap:'7px',
-          background:'rgba(0,0,0,0)', border:'1px solid rgba(250,248,251,0.15)', borderRadius:'10px',
-          color:'rgba(250,248,251,0.55)', fontSize:'12px', fontWeight:'600', cursor:'pointer',
+          background:'rgba(0,0,0,0)', border:`1px solid rgba(${RGB.text},0.15)`, borderRadius:'10px',
+          color:`rgba(${RGB.text},0.55)`, fontSize:'12px', fontWeight:'600', cursor:'pointer',
         }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           → Sauvegarder dans Notion
@@ -826,8 +815,8 @@ function NotionSaveWidget({ response, agentEmoji, agentName, clientName, accentC
         </div>
       )}
       {open && (
-        <div style={{ background:'rgba(10,0,8,0.6)', border:`1px solid ${color}33`, borderRadius:'12px', padding:'16px' }}>
-          <div style={{ fontSize:'10px', fontWeight:'700', color:'rgba(250,248,251,0.4)',
+        <div style={{ background:`rgba(${RGB.bg},0.6)`, border:`1px solid ${color}33`, borderRadius:'12px', padding:'16px' }}>
+          <div style={{ fontSize:'10px', fontWeight:'700', color:`rgba(${RGB.text},0.4)`,
             letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'8px' }}>
             URL de la page Notion du client
           </div>
@@ -835,7 +824,7 @@ function NotionSaveWidget({ response, agentEmoji, agentName, clientName, accentC
             type="text" value={url} onChange={e => { setUrl(e.target.value); setErr('') }}
             placeholder="https://notion.so/..."
             style={{ width:'100%', padding:'9px 12px', borderRadius:'8px',
-              background:'rgba(107,15,110,0.15)', border:`1px solid ${color}44`,
+              background:`rgba(${RGB.primary},0.15)`, border:`1px solid ${color}44`,
               color:B.white, fontSize:'12px', outline:'none', marginBottom:'8px',
               fontFamily:'system-ui,sans-serif' }}
           />
@@ -843,14 +832,14 @@ function NotionSaveWidget({ response, agentEmoji, agentName, clientName, accentC
           <div style={{ display:'flex', gap:'8px' }}>
             <button onClick={save} disabled={saving} style={{
               flex:1, padding:'9px', borderRadius:'8px', fontSize:'12px', fontWeight:'700', cursor:'pointer',
-              background: saving ? 'rgba(107,15,110,0.3)' : `linear-gradient(135deg,${color}cc,${color}77)`,
+              background: saving ? `rgba(${RGB.primary},0.3)` : `linear-gradient(135deg,${color}cc,${color}77)`,
               border:`1px solid ${color}66`, color:B.white,
             }}>
               {saving ? '⏳ Envoi…' : '✓ Confirmer'}
             </button>
             <button onClick={() => { setOpen(false); setErr('') }} style={{
               padding:'9px 14px', borderRadius:'8px', fontSize:'12px', cursor:'pointer',
-              background:'transparent', border:'1px solid rgba(250,248,251,0.12)', color:'rgba(250,248,251,0.4)',
+              background:'transparent', border:`1px solid rgba(${RGB.text},0.12)`, color:`rgba(${RGB.text},0.4)`,
             }}>
               Annuler
             </button>
@@ -887,7 +876,7 @@ function BlocRetouche({ accent, onRetoucher, enCours, historiqueRetouches = [] }
             <span key={i} title={r} style={{
               fontSize:'10px', padding:'3px 9px', borderRadius:'20px',
               background:`${accent}12`, border:`1px solid ${accent}33`,
-              color:'rgba(250,248,251,0.55)', maxWidth:'260px',
+              color:`rgba(${RGB.text},0.55)`, maxWidth:'260px',
               overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
             }}>
               retouche {i + 1} · {r}
@@ -903,7 +892,7 @@ function BlocRetouche({ accent, onRetoucher, enCours, historiqueRetouches = [] }
           style={{
             width:'100%', padding:'11px', borderRadius:'10px',
             background:'transparent', border:`1px dashed ${accent}55`,
-            color: enCours ? 'rgba(250,248,251,0.25)' : accent,
+            color: enCours ? `rgba(${RGB.text},0.25)` : accent,
             fontSize:'12.5px', fontWeight:'600',
             cursor: enCours ? 'not-allowed' : 'pointer',
           }}
@@ -927,8 +916,8 @@ function BlocRetouche({ accent, onRetoucher, enCours, historiqueRetouches = [] }
             placeholder="Ex : raccourcis les hooks, enlève les emojis, ajoute un CTA à la fin, ton plus direct…"
             style={{
               width:'100%', padding:'10px 13px', boxSizing:'border-box',
-              background:'rgba(0,0,0,0.3)', border:'1px solid rgba(250,248,251,0.12)',
-              borderRadius:'8px', color:'rgba(250,248,251,0.9)',
+              background:'rgba(0,0,0,0.3)', border:`1px solid rgba(${RGB.text},0.12)`,
+              borderRadius:'8px', color:`rgba(${RGB.text},0.9)`,
               fontSize:'13px', lineHeight:'1.6', outline:'none', resize:'vertical',
             }}
           />
@@ -938,8 +927,8 @@ function BlocRetouche({ accent, onRetoucher, enCours, historiqueRetouches = [] }
               disabled={!demande.trim()}
               style={{
                 flex:1, padding:'10px', borderRadius:'8px', border:'none',
-                background: demande.trim() ? accent : 'rgba(250,248,251,0.06)',
-                color: demande.trim() ? '#0a0008' : 'rgba(250,248,251,0.25)',
+                background: demande.trim() ? accent : `rgba(${RGB.text},0.06)`,
+                color: demande.trim() ? `${C.bg}` : `rgba(${RGB.text},0.25)`,
                 fontSize:'12.5px', fontWeight:'700',
                 cursor: demande.trim() ? 'pointer' : 'not-allowed',
               }}
@@ -950,8 +939,8 @@ function BlocRetouche({ accent, onRetoucher, enCours, historiqueRetouches = [] }
               onClick={() => { setOuvert(false); setDemande('') }}
               style={{
                 padding:'10px 18px', borderRadius:'8px',
-                background:'transparent', border:'1px solid rgba(250,248,251,0.12)',
-                color:'rgba(250,248,251,0.4)', fontSize:'12.5px', cursor:'pointer',
+                background:'transparent', border:`1px solid rgba(${RGB.text},0.12)`,
+                color:`rgba(${RGB.text},0.4)`, fontSize:'12.5px', cursor:'pointer',
               }}
             >
               Annuler
@@ -1078,16 +1067,16 @@ function SupportModal({ agent, onClose, entreeExistante = null, onSaved }) {
     : `Agent ${agent.name} en cours…`
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(10,0,8,0.9)', backdropFilter:'blur(12px)',
+    <div style={{ position:'fixed', inset:0, zIndex:1000, background:`rgba(${RGB.bg},0.9)`, backdropFilter:'blur(12px)',
       display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background:'linear-gradient(160deg,#120010 0%,#0a0008 60%)',
+      <div style={{ background:`linear-gradient(160deg,${C.bgAlt} 0%,${C.bg} 60%)`,
         border:`1px solid ${agent.color}55`, borderRadius:'20px', padding:'32px',
         width:'100%', maxWidth:'660px', maxHeight:'90vh', overflowY:'auto',
         position:'relative', boxShadow:`0 0 60px ${agent.color}18` }}>
         <button onClick={onClose} style={{ position:'absolute', top:'16px', right:'16px',
-          background:'transparent', border:'1px solid rgba(250,248,251,0.15)', borderRadius:'8px',
-          color:'rgba(250,248,251,0.5)', width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
+          background:'transparent', border:`1px solid rgba(${RGB.text},0.15)`, borderRadius:'8px',
+          color:`rgba(${RGB.text},0.5)`, width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
         <div style={{ display:'flex', alignItems:'center', gap:'16px', marginBottom:'24px' }}>
           <div style={{ width:'56px', height:'56px', borderRadius:'50%', display:'flex', alignItems:'center',
             justifyContent:'center', fontSize:'26px', background:`${agent.color}18`, border:`2px solid ${agent.color}55`, flexShrink:0 }}>
@@ -1095,7 +1084,7 @@ function SupportModal({ agent, onClose, entreeExistante = null, onSaved }) {
           </div>
           <div>
             <div style={{ fontFamily:'Georgia,serif', fontSize:'20px', fontWeight:'900', color:B.white }}>{form.title}</div>
-            <div style={{ fontSize:'12px', color:'rgba(250,248,251,0.45)' }}>{form.subtitle}</div>
+            <div style={{ fontSize:'12px', color:`rgba(${RGB.text},0.45)` }}>{form.subtitle}</div>
           </div>
         </div>
         <div style={{ height:'1px', background:`linear-gradient(90deg,transparent,${agent.color}88,transparent)`, marginBottom:'24px' }}/>
@@ -1109,7 +1098,7 @@ function SupportModal({ agent, onClose, entreeExistante = null, onSaved }) {
             ))}
             {isOlivia && (
               <div style={{ padding:'10px 14px', background:'rgba(220,38,38,0.06)', border:'1px solid rgba(220,38,38,0.2)',
-                borderRadius:'8px', fontSize:'11px', color:'rgba(250,248,251,0.45)', marginBottom:'14px' }}>
+                borderRadius:'8px', fontSize:'11px', color:`rgba(${RGB.text},0.45)`, marginBottom:'14px' }}>
                 📡 Olivia synthétise la veille comm via Claude Opus — campagnes réelles, tendances plateformes, insights actionnables.
               </div>
             )}
@@ -1129,7 +1118,7 @@ function SupportModal({ agent, onClose, entreeExistante = null, onSaved }) {
             <div style={{ width:'40px', height:'40px', borderRadius:'50%', margin:'0 auto 16px',
               border:`2px solid ${agent.color}22`, borderTop:`2px solid ${agent.color}`,
               animation:'spin 0.8s linear infinite' }}/>
-            <p style={{ color:'rgba(250,248,251,0.5)', fontSize:'13px' }}>{loadingMsg}</p>
+            <p style={{ color:`rgba(${RGB.text},0.5)`, fontSize:'13px' }}>{loadingMsg}</p>
           </div>
         )}
 
@@ -1140,8 +1129,8 @@ function SupportModal({ agent, onClose, entreeExistante = null, onSaved }) {
               <div style={{ fontSize:'11px', fontWeight:'700', color:agent.accent, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:'10px' }}>
                 {isOlivia ? '📡 Rapport de veille' : isAnna ? '👑 Brand Board' : `Résultat — ${agent.name}`}
               </div>
-              <div style={{ background:'rgba(10,0,8,0.5)', border:`1px solid ${agent.color}33`,
-                borderRadius:'12px', padding:'18px', fontSize:'13px', color:'rgba(250,248,251,0.85)',
+              <div style={{ background:`rgba(${RGB.bg},0.5)`, border:`1px solid ${agent.color}33`,
+                borderRadius:'12px', padding:'18px', fontSize:'13px', color:`rgba(${RGB.text},0.85)`,
                 lineHeight:'1.75', whiteSpace:'pre-wrap', maxHeight:'420px', overflowY:'auto', fontFamily:'system-ui,sans-serif' }}>
                 {response}
               </div>
@@ -1155,7 +1144,7 @@ function SupportModal({ agent, onClose, entreeExistante = null, onSaved }) {
               historiqueRetouches={retouches}
             />
 
-            <div style={{ fontSize:'10.5px', color:'rgba(250,248,251,0.3)', margin:'10px 0 14px' }}>
+            <div style={{ fontSize:'10.5px', color:`rgba(${RGB.text},0.3)`, margin:'10px 0 14px' }}>
               Ce livrable est enregistré dans l'onglet Historique — tu le retrouveras
               après avoir fermé cette fenêtre.
             </div>
@@ -1164,7 +1153,7 @@ function SupportModal({ agent, onClose, entreeExistante = null, onSaved }) {
             <div style={{ display:'flex', gap:'10px', marginBottom:'12px', flexWrap:'wrap' }}>
               <button onClick={async () => { const ok = await copierTexte(response); setCopied(ok ? true : 'echec'); setTimeout(()=>setCopied(false),2200) }}
                 style={{ flex:1, minWidth:'120px', padding:'12px',
-                  background: copied ? `${agent.color}22` : 'rgba(107,15,110,0.3)',
+                  background: copied ? `${agent.color}22` : `rgba(${RGB.primary},0.3)`,
                   border:`1px solid ${agent.color}55`, borderRadius:'10px',
                   color: copied ? agent.accent : B.white, fontSize:'13px', fontWeight:'600', cursor:'pointer' }}>
                 {copied === 'echec' ? '✕ Copie refusée' : copied ? '✓ Copié !' : '📋 Copier'}
@@ -1188,13 +1177,13 @@ function SupportModal({ agent, onClose, entreeExistante = null, onSaved }) {
 
             {isAnna && (
               <div style={{ padding:'10px 14px', background:'rgba(180,83,9,0.07)', border:'1px solid rgba(180,83,9,0.25)',
-                borderRadius:'8px', fontSize:'11px', color:'rgba(250,248,251,0.45)', marginBottom:'10px' }}>
+                borderRadius:'8px', fontSize:'11px', color:`rgba(${RGB.text},0.45)`, marginBottom:'10px' }}>
                 👑 Le brand board HTML s'ouvre dans ton navigateur. Tu peux l'imprimer ou le partager directement au client.
               </div>
             )}
             {isOlivia && (
               <div style={{ padding:'10px 14px', background:'rgba(220,38,38,0.06)', border:'1px solid rgba(220,38,38,0.2)',
-                borderRadius:'8px', fontSize:'11px', color:'rgba(250,248,251,0.45)', marginBottom:'10px' }}>
+                borderRadius:'8px', fontSize:'11px', color:`rgba(${RGB.text},0.45)`, marginBottom:'10px' }}>
                 📡 Rapport avec sources cliquables. Le fichier HTML s'ouvre dans ton navigateur.
               </div>
             )}
@@ -1208,8 +1197,8 @@ function SupportModal({ agent, onClose, entreeExistante = null, onSaved }) {
             />
 
             <button onClick={() => { setResponse(''); setData({}) }} style={{ width:'100%', padding:'10px',
-              background:'transparent', border:'1px solid rgba(250,248,251,0.12)', borderRadius:'10px',
-              color:'rgba(250,248,251,0.4)', fontSize:'12px', cursor:'pointer' }}>
+              background:'transparent', border:`1px solid rgba(${RGB.text},0.12)`, borderRadius:'10px',
+              color:`rgba(${RGB.text},0.4)`, fontSize:'12px', cursor:'pointer' }}>
               ← Nouvelle requête
             </button>
           </>
@@ -1231,9 +1220,9 @@ function HistoryModal({ campaign, onClose }) {
   }))
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(10,0,8,0.96)', backdropFilter:'blur(16px)',
+    <div style={{ position:'fixed', inset:0, zIndex:1000, background:`rgba(${RGB.bg},0.96)`, backdropFilter:'blur(16px)',
       display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
-      <div style={{ background:'linear-gradient(160deg,#120010 0%,#0a0008 60%)', border:`1px solid ${B.gold}44`,
+      <div style={{ background:`linear-gradient(160deg,${C.bgAlt} 0%,${C.bg} 60%)`, border:`1px solid ${B.gold}44`,
         borderRadius:'20px', width:'100%', maxWidth:'900px', maxHeight:'92vh', overflow:'hidden',
         display:'flex', flexDirection:'column', boxShadow:`0 0 80px ${B.magenta}10` }}>
         <div style={{ padding:'20px 24px 0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
@@ -1246,8 +1235,8 @@ function HistoryModal({ campaign, onClose }) {
               </div>
             </div>
           </div>
-          <button onClick={onClose} style={{ background:'transparent', border:'1px solid rgba(250,248,251,0.15)',
-            borderRadius:'8px', color:'rgba(250,248,251,0.5)', width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
+          <button onClick={onClose} style={{ background:'transparent', border:`1px solid rgba(${RGB.text},0.15)`,
+            borderRadius:'8px', color:`rgba(${RGB.text},0.5)`, width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
         </div>
         <div style={{ height:'1px', background:`linear-gradient(90deg,transparent,${B.gold}66,transparent)`, margin:'16px 0 0' }}/>
         <div style={{ flex:1, overflowY:'auto', padding:'16px 24px 24px', display:'flex', flexDirection:'column', gap:'10px' }}>
@@ -1265,17 +1254,17 @@ function HistoryModal({ campaign, onClose }) {
                     <span style={{ fontSize:'10px', color:step.color, marginLeft:'8px' }}>→ {step.folder}</span>
                   </div>
                   <span style={{ fontSize:'9px', color:B.gold, opacity:0.7 }}>✓ {wordCount} mots</span>
-                  <span style={{ fontSize:'11px', color:'rgba(250,248,251,0.25)', marginLeft:'6px' }}>{isOpen ? '▲' : '▼'}</span>
+                  <span style={{ fontSize:'11px', color:`rgba(${RGB.text},0.25)`, marginLeft:'6px' }}>{isOpen ? '▲' : '▼'}</span>
                 </div>
                 {isOpen && (
                   <div style={{ padding:'0 16px 14px' }}>
-                    <div style={{ background:'rgba(10,0,8,0.45)', borderRadius:'10px', padding:'14px',
-                      fontSize:'12px', color:'rgba(250,248,251,0.8)', lineHeight:'1.78',
+                    <div style={{ background:`rgba(${RGB.bg},0.45)`, borderRadius:'10px', padding:'14px',
+                      fontSize:'12px', color:`rgba(${RGB.text},0.8)`, lineHeight:'1.78',
                       whiteSpace:'pre-wrap', maxHeight:'340px', overflowY:'auto', marginBottom:'8px', fontFamily:'system-ui,sans-serif' }}>
                       {step.output}
                     </div>
                     <button onClick={async () => { const ok = await copierTexte(step.output); setCopied(ok ? idx : 'echec'); setTimeout(()=>setCopied(null),2200) }}
-                      style={{ padding:'7px 14px', background: copied===idx ? `${step.color}18` : 'rgba(107,15,110,0.2)',
+                      style={{ padding:'7px 14px', background: copied===idx ? `${step.color}18` : `rgba(${RGB.primary},0.2)`,
                         border:`1px solid ${step.color}44`, borderRadius:'8px',
                         color: copied===idx ? step.color : B.white, fontSize:'11px', cursor:'pointer' }}>
                       {copied === 'echec' ? '✕ Refusé' : copied===idx ? '✓ Copié' : '📋 Copier'}
@@ -1293,7 +1282,7 @@ function HistoryModal({ campaign, onClose }) {
             </button>
             <button onClick={async () => { const md = buildMarkdown(campaign, stepsWithOutput); const ok = await copierTexte(md); setCopiedAll(ok ? true : 'echec'); setTimeout(()=>setCopiedAll(false),2200) }}
               style={{ flex:1, minWidth:'180px', padding:'10px 20px',
-                background: copiedAll ? `${B.gold}18` : 'rgba(107,15,110,0.25)',
+                background: copiedAll ? `${B.gold}18` : `rgba(${RGB.primary},0.25)`,
                 border:`1px solid ${copiedAll ? B.gold : B.border}`, borderRadius:'10px',
                 color: copiedAll ? B.goldLight : B.white, fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>
               {copiedAll === 'echec' ? '✕ Copie refusée' : copiedAll === 'vide' ? '✕ Rien à copier' : copiedAll ? '✓ Copié !' : '📋 Copier tout (.md)'}
@@ -1333,7 +1322,7 @@ OBJECTIF : ${data.objectif || '—'}
 BUDGET : ${data.budget || '—'}
 URGENCE : ${data.urgence || '—'}
 
-Analyse ce projet et sélectionne les agents B.BOLD les plus adaptés.`
+Analyse ce projet et sélectionne les agents ${T.name} les plus adaptés.`
 
     try {
       const res = await apiFetch('/api/brief', {
@@ -1370,29 +1359,29 @@ Analyse ce projet et sélectionne les agents B.BOLD les plus adaptés.`
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(10,0,8,0.95)', backdropFilter:'blur(16px)',
+    <div style={{ position:'fixed', inset:0, zIndex:1000, background:`rgba(${RGB.bg},0.95)`, backdropFilter:'blur(16px)',
       display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}
       onClick={e => e.target === e.currentTarget && !loading && onClose()}>
-      <div style={{ background:'linear-gradient(160deg,#120010 0%,#0a0008 60%)',
+      <div style={{ background:`linear-gradient(160deg,${C.bgAlt} 0%,${C.bg} 60%)`,
         border:`1px solid ${B.gold}55`, borderRadius:'20px', padding:'32px',
         width:'100%', maxWidth:'700px', maxHeight:'92vh', overflowY:'auto',
         position:'relative', boxShadow:`0 0 80px ${B.gold}18` }}>
 
         {!loading && (
           <button onClick={onClose} style={{ position:'absolute', top:'16px', right:'16px',
-            background:'transparent', border:'1px solid rgba(250,248,251,0.15)', borderRadius:'8px',
-            color:'rgba(250,248,251,0.5)', width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
+            background:'transparent', border:`1px solid rgba(${RGB.text},0.15)`, borderRadius:'8px',
+            color:`rgba(${RGB.text},0.5)`, width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
         )}
 
         <div style={{ display:'flex', alignItems:'center', gap:'16px', marginBottom:'8px' }}>
           <Eye size={44}/>
           <div>
-            <div style={{ fontFamily:'Georgia,serif', fontSize:'22px', fontWeight:'900', color:B.white }}>Céline</div>
+            <div style={{ fontFamily:'Georgia,serif', fontSize:'22px', fontWeight:'900', color:B.white }}>{T.orchestrator}</div>
             <div style={{ fontSize:'11px', color:B.gold, letterSpacing:'0.12em' }}>ORCHESTRATRICE · CLAUDE OPUS</div>
           </div>
         </div>
-        <p style={{ fontSize:'12px', color:'rgba(250,248,251,0.45)', marginBottom:'24px', lineHeight:'1.6' }}>
-          Décris ton projet. Céline analyse le brief et sélectionne les agents les plus adaptés.
+        <p style={{ fontSize:'12px', color:`rgba(${RGB.text},0.45)`, marginBottom:'24px', lineHeight:'1.6' }}>
+          Décris ton projet. {T.orchestrator} analyse le brief et sélectionne les agents les plus adaptés.
         </p>
         <div style={{ height:'1px', background:`linear-gradient(90deg,transparent,${B.gold}77,transparent)`, marginBottom:'24px' }}/>
 
@@ -1405,9 +1394,9 @@ Analyse ce projet et sélectionne les agents B.BOLD les plus adaptés.`
             {error && <div style={{ color:'#ff6b6b', fontSize:'12px', marginBottom:'12px' }}>⚠ {error}</div>}
             <button onClick={analyse} disabled={!data.client || !data.projet} style={{
               width:'100%', padding:'15px',
-              background: (data.client && data.projet) ? `linear-gradient(135deg,${B.gold}cc,${B.goldLight}88)` : 'rgba(201,168,76,0.1)',
-              border:`1px solid ${(data.client && data.projet) ? B.gold+'88' : 'rgba(201,168,76,0.15)'}`,
-              borderRadius:'12px', color: (data.client && data.projet) ? B.black : 'rgba(250,248,251,0.25)',
+              background: (data.client && data.projet) ? `linear-gradient(135deg,${B.gold}cc,${B.goldLight}88)` : `rgba(${RGB.accent},0.1)`,
+              border:`1px solid ${(data.client && data.projet) ? B.gold+'88' : `rgba(${RGB.accent},0.15)`}`,
+              borderRadius:'12px', color: (data.client && data.projet) ? B.black : `rgba(${RGB.text},0.25)`,
               fontSize:'14px', fontWeight:'800', cursor: (data.client && data.projet) ? 'pointer' : 'not-allowed',
             }}>
               ✦ Analyser le projet →
@@ -1420,14 +1409,14 @@ Analyse ce projet et sélectionne les agents B.BOLD les plus adaptés.`
             <div style={{ width:'44px', height:'44px', borderRadius:'50%', margin:'0 auto 16px',
               border:`2px solid ${B.gold}22`, borderTop:`2px solid ${B.gold}`,
               animation:'spin 0.8s linear infinite' }}/>
-            <p style={{ color:'rgba(250,248,251,0.5)', fontSize:'13px' }}>L'Orchestrateur analyse le projet…</p>
+            <p style={{ color:`rgba(${RGB.text},0.5)`, fontSize:'13px' }}>L'Orchestrateur analyse le projet…</p>
           </div>
         )}
 
         {response && !loading && (
           <>
-            <div style={{ background:'rgba(10,0,8,0.5)', border:`1px solid ${B.gold}28`,
-              borderRadius:'12px', padding:'16px', fontSize:'12.5px', color:'rgba(250,248,251,0.82)',
+            <div style={{ background:`rgba(${RGB.bg},0.5)`, border:`1px solid ${B.gold}28`,
+              borderRadius:'12px', padding:'16px', fontSize:'12.5px', color:`rgba(${RGB.text},0.82)`,
               lineHeight:'1.78', whiteSpace:'pre-wrap', maxHeight:'260px', overflowY:'auto',
               fontFamily:'system-ui,sans-serif', marginBottom:'20px' }}>
               {displayText || <span style={{opacity:0.3}}>Analyse en cours…</span>}
@@ -1444,9 +1433,9 @@ Analyse ce projet et sélectionne les agents B.BOLD les plus adaptés.`
                     return (
                       <div key={step.id} style={{
                         padding:'7px 14px', borderRadius:'20px', fontSize:'12px', fontWeight:'700',
-                        background: selected ? `${step.color}28` : 'rgba(250,248,251,0.04)',
-                        border:`1px solid ${selected ? step.color+'77' : 'rgba(250,248,251,0.1)'}`,
-                        color: selected ? B.white : 'rgba(250,248,251,0.25)',
+                        background: selected ? `${step.color}28` : `rgba(${RGB.text},0.04)`,
+                        border:`1px solid ${selected ? step.color+'77' : `rgba(${RGB.text},0.1)`}`,
+                        color: selected ? B.white : `rgba(${RGB.text},0.25)`,
                         display:'flex', alignItems:'center', gap:'6px',
                       }}>
                         {selected && <span style={{ color:step.color, fontSize:'14px' }}>{step.emoji}</span>}
@@ -1459,7 +1448,7 @@ Analyse ce projet et sélectionne les agents B.BOLD les plus adaptés.`
 
                 {rationale && (
                   <div style={{ padding:'10px 14px', background:`${B.gold}0a`, border:`1px solid ${B.gold}22`,
-                    borderRadius:'10px', fontSize:'12px', color:'rgba(250,248,251,0.6)', marginBottom:'20px', lineHeight:'1.6' }}>
+                    borderRadius:'10px', fontSize:'12px', color:`rgba(${RGB.text},0.6)`, marginBottom:'20px', lineHeight:'1.6' }}>
                     💡 {rationale}
                   </div>
                 )}
@@ -1478,8 +1467,8 @@ Analyse ce projet et sélectionne les agents B.BOLD les plus adaptés.`
 
             <button onClick={() => { setResponse(''); setParsedAgents(null); setRationale('') }}
               style={{ width:'100%', padding:'10px', marginTop:'10px',
-                background:'transparent', border:'1px solid rgba(250,248,251,0.1)', borderRadius:'10px',
-                color:'rgba(250,248,251,0.35)', fontSize:'12px', cursor:'pointer' }}>
+                background:'transparent', border:`1px solid rgba(${RGB.text},0.1)`, borderRadius:'10px',
+                color:`rgba(${RGB.text},0.35)`, fontSize:'12px', cursor:'pointer' }}>
               ← Modifier le brief
             </button>
           </>
@@ -1802,10 +1791,10 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(10,0,8,0.96)', backdropFilter:'blur(16px)',
+    <div style={{ position:'fixed', inset:0, zIndex:1000, background:`rgba(${RGB.bg},0.96)`, backdropFilter:'blur(16px)',
       display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
       <div style={{
-        background:'linear-gradient(160deg,#120010 0%,#0a0008 60%)',
+        background:`linear-gradient(160deg,${C.bgAlt} 0%,${C.bg} 60%)`,
         border:`1px solid ${B.gold}44`, borderRadius:'20px',
         width:'100%', maxWidth: phase === 'form' ? '640px' : '1060px',
         maxHeight:'92vh', overflow:'hidden', display:'flex', flexDirection:'column',
@@ -1829,8 +1818,8 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
             </div>
           </div>
           {phase !== 'running' && (
-            <button onClick={onClose} style={{ background:'transparent', border:'1px solid rgba(250,248,251,0.15)',
-              borderRadius:'8px', color:'rgba(250,248,251,0.5)', width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
+            <button onClick={onClose} style={{ background:'transparent', border:`1px solid rgba(${RGB.text},0.15)`,
+              borderRadius:'8px', color:`rgba(${RGB.text},0.5)`, width:'32px', height:'32px', cursor:'pointer', fontSize:'16px' }}>×</button>
           )}
         </div>
         <div style={{ height:'1px', background:`linear-gradient(90deg,transparent,${B.gold}66,transparent)`, margin:'16px 0 0' }}/>
@@ -1847,7 +1836,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                   <span style={{ fontSize:'9px', letterSpacing:'0.16em', color:B.gold, fontWeight:'700' }}>
                     COMPOSITION DU PIPELINE
                   </span>
-                  <span style={{ fontSize:'10px', color:'rgba(250,248,251,0.3)' }}>
+                  <span style={{ fontSize:'10px', color:`rgba(${RGB.text},0.3)` }}>
                     clique pour retirer ou remettre une agente
                   </span>
                   {activeSelectedAgents && initialSelectedAgents && (
@@ -1870,8 +1859,8 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                         style={{
                           padding:'5px 11px', borderRadius:'20px', fontSize:'10.5px', fontWeight:'700',
                           background: actif ? `${step.color}22` : 'transparent',
-                          border:`1px solid ${actif ? step.color + '77' : 'rgba(250,248,251,0.12)'}`,
-                          color: actif ? B.white : 'rgba(250,248,251,0.3)',
+                          border:`1px solid ${actif ? step.color + '77' : `rgba(${RGB.text},0.12)`}`,
+                          color: actif ? B.white : `rgba(${RGB.text},0.3)`,
                           cursor: seule ? 'not-allowed' : 'pointer',
                           textDecoration: actif ? 'none' : 'line-through',
                         }}
@@ -1882,7 +1871,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                   })}
                 </div>
 
-                <div style={{ fontSize:'10px', color:'rgba(250,248,251,0.35)', marginTop:'9px' }}>
+                <div style={{ fontSize:'10px', color:`rgba(${RGB.text},0.35)`, marginTop:'9px' }}>
                   {effectiveSteps.length} agente{effectiveSteps.length > 1 ? 's' : ''} ·{' '}
                   {effectiveSteps.map(x => x.prenom).join(' → ')}
                 </div>
@@ -1910,7 +1899,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                             style={{
                               padding:'4px 7px', borderRadius:'0 20px 20px 0', fontSize:'10px',
                               background:`${B.gold}08`, border:`1px solid ${B.gold}33`,
-                              color:'rgba(250,248,251,0.3)', cursor:'pointer',
+                              color:`rgba(${RGB.text},0.3)`, cursor:'pointer',
                             }}
                           >×</button>
                         </span>
@@ -1925,8 +1914,8 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                       placeholder={brief.client ? `Mémoriser pour ${brief.client}` : 'Nom du client…'}
                       style={{
                         flex:1, padding:'7px 11px', boxSizing:'border-box',
-                        background:'rgba(0,0,0,0.25)', border:'1px solid rgba(250,248,251,0.1)',
-                        borderRadius:'8px', color:'rgba(250,248,251,0.85)', fontSize:'11.5px', outline:'none',
+                        background:'rgba(0,0,0,0.25)', border:`1px solid rgba(${RGB.text},0.1)`,
+                        borderRadius:'8px', color:`rgba(${RGB.text},0.85)`, fontSize:'11.5px', outline:'none',
                       }}
                     />
                     <button
@@ -1936,7 +1925,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                         padding:'7px 14px', borderRadius:'8px', fontSize:'11.5px', fontWeight:'600',
                         background: (nomPreset || brief.client) ? `${B.gold}18` : 'transparent',
                         border:`1px solid ${B.gold}33`,
-                        color: (nomPreset || brief.client) ? B.goldLight : 'rgba(250,248,251,0.2)',
+                        color: (nomPreset || brief.client) ? B.goldLight : `rgba(${RGB.text},0.2)`,
                         cursor: (nomPreset || brief.client) ? 'pointer' : 'not-allowed',
                         whiteSpace:'nowrap',
                       }}
@@ -1986,8 +1975,8 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
 
               <button onClick={launch} disabled={!brief.client} style={{
                 width:'100%', padding:'15px',
-                background: brief.client ? `linear-gradient(135deg,${B.magenta},${B.violetDeep})` : 'rgba(107,15,110,0.15)',
-                border:`1px solid ${brief.client ? B.magenta+'88' : 'rgba(250,248,251,0.08)'}`,
+                background: brief.client ? `linear-gradient(135deg,${B.magenta},${B.violetDeep})` : `rgba(${RGB.primary},0.15)`,
+                border:`1px solid ${brief.client ? B.magenta+'88' : `rgba(${RGB.text},0.08)`}`,
                 borderRadius:'12px', color:B.white, fontSize:'15px', fontWeight:'800',
                 cursor: brief.client ? 'pointer' : 'not-allowed', opacity: brief.client ? 1 : 0.45,
               }}>
@@ -2009,7 +1998,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                   <div onClick={() => preStepStatus === 'done' && setPreStepExpanded(!preStepExpanded)}
                     style={{ padding:'10px 11px', borderRadius:'10px', marginBottom:'2px',
                       background: preStepStatus === 'active' ? 'rgba(13,148,136,0.18)' : preStepStatus === 'done' ? 'rgba(13,148,136,0.1)' : 'transparent',
-                      border:`1px solid ${preStepStatus === 'active' ? '#0d948866' : preStepStatus === 'done' ? '#0d948833' : 'rgba(250,248,251,0.05)'}`,
+                      border:`1px solid ${preStepStatus === 'active' ? '#0d948866' : preStepStatus === 'done' ? '#0d948833' : `rgba(${RGB.text},0.05)`}`,
                       cursor: preStepStatus === 'done' ? 'pointer' : 'default',
                     }}>
                     <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
@@ -2038,7 +2027,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                       onClick={() => isDone && setExpandedStep(expandedStep === step.id ? null : step.id)}
                       style={{ padding:'10px 11px', borderRadius:'10px',
                         background: isActive ? `${step.color}22` : isDone ? `${step.color}10` : 'transparent',
-                        border:`1px solid ${isActive ? step.color+'66' : isDone ? step.color+'28' : 'rgba(250,248,251,0.05)'}`,
+                        border:`1px solid ${isActive ? step.color+'66' : isDone ? step.color+'28' : `rgba(${RGB.text},0.05)`}`,
                         cursor: isDone ? 'pointer' : 'default', transition:'all 0.2s',
                       }}>
                       <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
@@ -2047,10 +2036,10 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                             border:`1.5px solid ${step.color}${isActive ? '' : '55'}`,
                             opacity: isPending ? 0.3 : 1, flexShrink:0 }}/>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:'12px', fontWeight:'700', color: isPending ? 'rgba(250,248,251,0.25)' : B.white, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{step.prenom}</div>
+                          <div style={{ fontSize:'12px', fontWeight:'700', color: isPending ? `rgba(${RGB.text},0.25)` : B.white, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{step.prenom}</div>
                           <div style={{ fontSize:'8px', color:step.color, opacity: isPending ? 0.3 : 0.8, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{step.folder}</div>
                         </div>
-                        <div style={{ fontSize:'11px', flexShrink:0, color: isDone ? '#4ade80' : isError ? '#f87171' : isActive ? step.color : 'rgba(250,248,251,0.15)' }}>
+                        <div style={{ fontSize:'11px', flexShrink:0, color: isDone ? '#4ade80' : isError ? '#f87171' : isActive ? step.color : `rgba(${RGB.text},0.15)` }}>
                           {isDone ? '✓' : isError ? '✕' : isActive ? <span style={{ animation:'bpulse 1s infinite', display:'inline-block' }}>●</span> : '○'}
                         </div>
                       </div>
@@ -2067,7 +2056,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                     allOutputsRef.current = {}
                   }} style={{ marginTop:'10px', padding:'9px 11px', background:'transparent',
                     border:`1px solid ${B.border}`, borderRadius:'10px',
-                    color:'rgba(250,248,251,0.35)', fontSize:'11px', cursor:'pointer' }}>
+                    color:`rgba(${RGB.text},0.35)`, fontSize:'11px', cursor:'pointer' }}>
                     ← Nouvelle campagne
                   </button>
                 )}
@@ -2091,9 +2080,9 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                         border:'2px solid #0d948822', borderTop:'2px solid #0d9488',
                         animation:'spin 0.8s linear infinite' }}/>
                     </div>
-                    <div style={{ background:'rgba(10,0,8,0.5)', border:'1px solid #0d948833',
+                    <div style={{ background:`rgba(${RGB.bg},0.5)`, border:'1px solid #0d948833',
                       borderRadius:'12px', padding:'16px', fontSize:'12.5px',
-                      color:'rgba(250,248,251,0.82)', lineHeight:'1.78', whiteSpace:'pre-wrap',
+                      color:`rgba(${RGB.text},0.82)`, lineHeight:'1.78', whiteSpace:'pre-wrap',
                       fontFamily:'system-ui,sans-serif', minHeight:'140px' }} ref={preStepRef}>
                       {preStepText || <span style={{opacity:0.25}}>Initialisation…</span>}
                     </div>
@@ -2114,9 +2103,9 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                         border:`2px solid ${activeStepInfo.color}22`, borderTop:`2px solid ${activeStepInfo.color}`,
                         animation:'spin 0.8s linear infinite' }}/>
                     </div>
-                    <div style={{ background:'rgba(10,0,8,0.5)', border:`1px solid ${activeStepInfo.color}33`,
+                    <div style={{ background:`rgba(${RGB.bg},0.5)`, border:`1px solid ${activeStepInfo.color}33`,
                       borderRadius:'12px', padding:'16px', fontSize:'12.5px',
-                      color:'rgba(250,248,251,0.82)', lineHeight:'1.78', whiteSpace:'pre-wrap',
+                      color:`rgba(${RGB.text},0.82)`, lineHeight:'1.78', whiteSpace:'pre-wrap',
                       fontFamily:'system-ui,sans-serif', minHeight:'180px' }}>
                       {currentStreamText || <span style={{opacity:0.25}}>Initialisation…</span>}
                     </div>
@@ -2144,17 +2133,17 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                             <span style={{ fontSize:'10px', color:'#0d9488', marginLeft:'8px' }}>brand analysis</span>
                           </div>
                           <span style={{ fontSize:'9px', color:'#0d9488', opacity:0.7 }}>✓ analyse complète</span>
-                          <span style={{ fontSize:'11px', color:'rgba(250,248,251,0.25)', marginLeft:'6px' }}>{preStepExpanded ? '▲' : '▼'}</span>
+                          <span style={{ fontSize:'11px', color:`rgba(${RGB.text},0.25)`, marginLeft:'6px' }}>{preStepExpanded ? '▲' : '▼'}</span>
                         </div>
                         {preStepExpanded && (
                           <div style={{ padding:'0 16px 14px' }}>
-                            <div style={{ background:'rgba(10,0,8,0.45)', borderRadius:'10px', padding:'14px',
-                              fontSize:'12px', color:'rgba(250,248,251,0.8)', lineHeight:'1.78',
+                            <div style={{ background:`rgba(${RGB.bg},0.45)`, borderRadius:'10px', padding:'14px',
+                              fontSize:'12px', color:`rgba(${RGB.text},0.8)`, lineHeight:'1.78',
                               whiteSpace:'pre-wrap', maxHeight:'340px', overflowY:'auto', marginBottom:'8px', fontFamily:'system-ui,sans-serif' }}>
                               {preStepOutput}
                             </div>
                             <button onClick={async () => { const ok = await copierTexte(preStepOutput); setCopied(ok ? 'debelvoix' : 'echec'); setTimeout(()=>setCopied(null),2200) }}
-                              style={{ padding:'7px 14px', background: copied==='debelvoix' ? 'rgba(13,148,136,0.18)' : 'rgba(107,15,110,0.2)',
+                              style={{ padding:'7px 14px', background: copied==='debelvoix' ? 'rgba(13,148,136,0.18)' : `rgba(${RGB.primary},0.2)`,
                                 border:`1px solid ${copied==='debelvoix' ? '#0d948877' : '#0d948844'}`, borderRadius:'8px',
                                 color: copied==='debelvoix' ? '#5eead4' : B.white, fontSize:'11px', cursor:'pointer' }}>
                               {copied === 'echec' ? '✕ Refusé' : copied==='debelvoix' ? '✓ Copié' : '📋 Copier'}
@@ -2179,17 +2168,17 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                               <span style={{ fontSize:'10px', color:step.color, marginLeft:'8px' }}>→ {step.folder}</span>
                             </div>
                             <span style={{ fontSize:'9px', color:B.gold, opacity:0.7 }}>✓ {wordCount} mots</span>
-                            <span style={{ fontSize:'11px', color:'rgba(250,248,251,0.25)', marginLeft:'6px' }}>{isOpen ? '▲' : '▼'}</span>
+                            <span style={{ fontSize:'11px', color:`rgba(${RGB.text},0.25)`, marginLeft:'6px' }}>{isOpen ? '▲' : '▼'}</span>
                           </div>
                           {isOpen && (
                             <div style={{ padding:'0 16px 14px' }}>
-                              <div style={{ background:'rgba(10,0,8,0.45)', borderRadius:'10px', padding:'14px',
-                                fontSize:'12px', color:'rgba(250,248,251,0.8)', lineHeight:'1.78',
+                              <div style={{ background:`rgba(${RGB.bg},0.45)`, borderRadius:'10px', padding:'14px',
+                                fontSize:'12px', color:`rgba(${RGB.text},0.8)`, lineHeight:'1.78',
                                 whiteSpace:'pre-wrap', maxHeight:'340px', overflowY:'auto', marginBottom:'8px', fontFamily:'system-ui,sans-serif' }}>
                                 {s.output}
                               </div>
                               <button onClick={async () => { const ok = await copierTexte(s.output); setCopied(ok ? step.id : 'echec'); setTimeout(()=>setCopied(null),2200) }}
-                                style={{ padding:'7px 14px', background: copied===step.id ? `${step.color}18` : 'rgba(107,15,110,0.2)',
+                                style={{ padding:'7px 14px', background: copied===step.id ? `${step.color}18` : `rgba(${RGB.primary},0.2)`,
                                   border:`1px solid ${step.color}44`, borderRadius:'8px',
                                   color: copied===step.id ? step.color : B.white, fontSize:'11px', cursor:'pointer' }}>
                                 {copied === 'echec' ? '✕ Refusé' : copied===step.id ? '✓ Copié' : '📋 Copier'}
@@ -2216,7 +2205,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                       <div style={{ textAlign:'center', padding:'18px', background:`${B.gold}07`, border:`1px solid ${B.gold}28`, borderRadius:'12px' }}>
                         <div style={{ fontSize:'22px', marginBottom:'6px' }}>✦</div>
                         <div style={{ fontSize:'13px', fontWeight:'700', color:B.goldLight }}>Pipeline complet · Sauvegardé dans l'historique</div>
-                        <div style={{ fontSize:'11px', color:'rgba(250,248,251,0.4)', marginTop:'4px', marginBottom:'14px' }}>
+                        <div style={{ fontSize:'11px', color:`rgba(${RGB.text},0.4)`, marginTop:'4px', marginBottom:'14px' }}>
                           Clique sur chaque agente pour lire et copier son output
                         </div>
                         {copiedAll === 'echec' && (
@@ -2235,7 +2224,7 @@ function CampaignModal({ onClose, onSaved, initialBrief, initialSelectedAgents }
                             ⬇ Télécharger (.md)
                           </button>
                           <button onClick={handleCopyAll} style={{ padding:'10px 24px',
-                            background: copiedAll ? `${B.gold}18` : 'rgba(107,15,110,0.3)',
+                            background: copiedAll ? `${B.gold}18` : `rgba(${RGB.primary},0.3)`,
                             border:`1px solid ${copiedAll ? B.gold : B.border}`, borderRadius:'10px',
                             color: copiedAll ? B.goldLight : B.white, fontSize:'13px', fontWeight:'700', cursor:'pointer' }}>
                             {copiedAll === 'echec' ? '✕ Copie refusée' : copiedAll === 'vide' ? '✕ Rien à copier' : copiedAll ? '✓ Copié !' : '📋 Copier tout'}
@@ -2260,7 +2249,7 @@ function AgentCard({ agent, onActivate }) {
   const [hovered, setHovered] = useState(false)
   return (
     <div onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}
-      style={{ background: hovered ? `linear-gradient(135deg,${agent.color}20,rgba(107,15,110,0.15))` : B.surface,
+      style={{ background: hovered ? `linear-gradient(135deg,${agent.color}20,rgba(${RGB.primary},0.15))` : B.surface,
         border:`1px solid ${hovered ? agent.color+'66' : B.border}`, borderRadius:'16px', padding:'20px',
         cursor:'default', transition:'all 0.25s', position:'relative', overflow:'hidden',
         boxShadow: hovered ? `0 8px 28px ${agent.color}20` : 'none', display:'flex', flexDirection:'column' }}>
@@ -2282,7 +2271,7 @@ function AgentCard({ agent, onActivate }) {
             border:`1px solid ${agent.color}30`, borderRadius:'10px', fontSize:'8px', color:agent.accent, fontWeight:'600' }}>{agent.model}</div>
         </div>
       </div>
-      <p style={{ fontSize:'11.5px', color:'rgba(250,248,251,0.5)', lineHeight:'1.65', margin:'0 0 14px', flex:1 }}>
+      <p style={{ fontSize:'11.5px', color:`rgba(${RGB.text},0.5)`, lineHeight:'1.65', margin:'0 0 14px', flex:1 }}>
         {FORMS[agent.id].subtitle}
       </p>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end' }}>
@@ -2318,7 +2307,7 @@ function SupportCard({ agent, onActivate }) {
           <div style={{ fontSize:'9px', color:agent.color, fontWeight:'600', letterSpacing:'0.1em' }}>AGENT SUPPORT</div>
         </div>
       </div>
-      <p style={{ fontSize:'11px', color:'rgba(250,248,251,0.45)', lineHeight:'1.6', margin:'0 0 12px', flex:1 }}>
+      <p style={{ fontSize:'11px', color:`rgba(${RGB.text},0.45)`, lineHeight:'1.6', margin:'0 0 12px', flex:1 }}>
         {agent.subtitle}
       </p>
       <div style={{ display:'flex', justifyContent:'flex-end' }}>
@@ -2348,7 +2337,7 @@ export default function BBoldCore() {
   const [historyItems, setHistoryItems] = useState([])
   const [viewingHistory, setViewingHistory] = useState(null)
 
-  useEffect(() => { document.title = 'B.BOLD Core — Multi-Agent Platform' }, [])
+  useEffect(() => { document.title = `${T.title}` }, [])
   useEffect(() => { if (tab === 'historique') setHistoryItems(loadHistory()) }, [tab])
 
   function refreshHistory() { setHistoryItems(loadHistory()) }
@@ -2371,7 +2360,7 @@ export default function BBoldCore() {
   }
 
   return (
-    <div style={{ minHeight:'100vh', background:`linear-gradient(160deg,#120010 0%,#0a0008 55%,#0f000e 100%)`,
+    <div style={{ minHeight:'100vh', background:`linear-gradient(160deg,${C.bgAlt} 0%,${C.bg} 55%,${C.bgDeep} 100%)`,
       color:B.white, fontFamily:'system-ui,sans-serif' }}>
       {/* Remise à zéro globale, SAUF dans le studio de Zara (.zara-studio).
           Le studio a sa propre feuille Tailwind, rangée en couches CSS. Or une règle hors couche
@@ -2383,10 +2372,10 @@ export default function BBoldCore() {
         :where(:not(.zara-studio, .zara-studio *)) { box-sizing:border-box; margin:0; padding:0; }
         ::-webkit-scrollbar { width:4px; }
         ::-webkit-scrollbar-thumb { background:${B.gold}44; border-radius:2px; }
-        input::placeholder, textarea::placeholder { color:rgba(250,248,251,0.22); }
-        input:focus, textarea:focus, select:focus { border-color:rgba(201,168,76,0.5) !important; }
+        input::placeholder, textarea::placeholder { color:rgba(${RGB.text},0.22); }
+        input:focus, textarea:focus, select:focus { border-color:rgba(${RGB.accent},0.5) !important; }
         button:hover { opacity:0.87; }
-        select option { background:#120010; }
+        select option { background:${C.bgAlt}; }
         @keyframes bfadein { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         @keyframes bpulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.8)} }
         @keyframes spin    { to{transform:rotate(360deg)} }
@@ -2423,14 +2412,14 @@ export default function BBoldCore() {
       {/* Header */}
       <header style={{ borderBottom:`1px solid ${B.border}`, padding:'0 28px', height:'68px',
         display:'flex', alignItems:'center', justifyContent:'space-between',
-        background:'rgba(10,0,8,0.88)', backdropFilter:'blur(16px)', position:'sticky', top:0, zIndex:100 }}>
+        background:`rgba(${RGB.bg},0.88)`, backdropFilter:'blur(16px)', position:'sticky', top:0, zIndex:100 }}>
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
           <Eye size={36}/>
           <div>
             <div style={{ fontSize:'18px', fontWeight:'900', fontFamily:'Georgia,serif',
               background:`linear-gradient(90deg,${B.white},${B.lilas})`,
               WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
-              B.BOLD <span style={{ fontWeight:'300', fontSize:'14px', WebkitTextFillColor:B.gold }}>Core</span>
+              {T.name} <span style={{ fontWeight:'300', fontSize:'14px', WebkitTextFillColor:B.gold }}>{T.product}</span>
             </div>
             <div style={{ fontSize:'8px', color:B.gold, letterSpacing:'0.22em', fontWeight:'600' }}>MULTI-AGENT PLATFORM</div>
           </div>
@@ -2441,7 +2430,7 @@ export default function BBoldCore() {
               padding:'7px 16px',
               background: tab===t.id ? `linear-gradient(135deg,${B.magenta}22,${B.violetDeep}22)` : 'transparent',
               border:`1px solid ${tab===t.id ? B.gold+'55' : 'transparent'}`,
-              borderRadius:'8px', color: tab===t.id ? B.goldLight : 'rgba(250,248,251,0.4)',
+              borderRadius:'8px', color: tab===t.id ? B.goldLight : `rgba(${RGB.text},0.4)`,
               fontSize:'12px', fontWeight:'600', cursor:'pointer' }}>
               {t.label}
             </button>
@@ -2457,14 +2446,14 @@ export default function BBoldCore() {
           <div style={{ animation:'bfadein 0.35s ease' }}>
 
             {/* Orchestrateur banner */}
-            <div style={{ background:`linear-gradient(135deg,rgba(201,168,76,0.1),rgba(107,15,110,0.18))`,
+            <div style={{ background:`linear-gradient(135deg,rgba(${RGB.accent},0.1),rgba(${RGB.primary},0.18))`,
               border:`1px solid ${B.gold}55`, borderRadius:'18px', padding:'22px 28px', marginBottom:'24px',
               display:'flex', alignItems:'center', justifyContent:'space-between', gap:'20px', flexWrap:'wrap' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'20px', flex:1, minWidth:'220px' }}>
                 <Eye size={44}/>
                 <div>
                   <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'6px', flexWrap:'wrap' }}>
-                    <span style={{ fontFamily:'Georgia,serif', fontSize:'20px', fontWeight:'900', color:B.white }}>Céline</span>
+                    <span style={{ fontFamily:'Georgia,serif', fontSize:'20px', fontWeight:'900', color:B.white }}>{T.orchestrator}</span>
                     <span style={{ padding:'2px 9px', background:`${B.gold}18`, border:`1px solid ${B.gold}50`,
                       borderRadius:'20px', fontSize:'9px', color:B.goldLight, fontWeight:'600', letterSpacing:'0.12em' }}>
                       CLAUDE OPUS
@@ -2475,7 +2464,7 @@ export default function BBoldCore() {
                       <span style={{ fontSize:'9px', color:B.gold, fontWeight:'600' }}>ACTIF</span>
                     </div>
                   </div>
-                  <p style={{ fontSize:'12px', color:'rgba(250,248,251,0.55)', lineHeight:'1.65', margin:0 }}>
+                  <p style={{ fontSize:'12px', color:`rgba(${RGB.text},0.55)`, lineHeight:'1.65', margin:0 }}>
                     Chef de projet. Soumets ton projet, elle sélectionne les agents adaptés et déclenche le pipeline sur mesure.
                   </p>
                 </div>
@@ -2500,7 +2489,7 @@ export default function BBoldCore() {
               {AGENTS.map(agent => <AgentCard key={agent.id} agent={agent} onActivate={setActiveAgent}/>)}
             </div>
 
-            <div style={{ background:`linear-gradient(135deg,rgba(192,0,192,0.12),rgba(107,15,110,0.18))`,
+            <div style={{ background:`linear-gradient(135deg,rgba(${RGB.secondary},0.12),rgba(${RGB.primary},0.18))`,
               border:`1px solid ${B.magenta}44`, borderRadius:'18px', padding:'22px 28px', marginBottom:'28px',
               display:'flex', alignItems:'center', justifyContent:'space-between', gap:'20px', flexWrap:'wrap' }}>
               <div>
@@ -2510,7 +2499,7 @@ export default function BBoldCore() {
                   <span style={{ padding:'2px 8px', background:`${B.magenta}18`, border:`1px solid ${B.magenta}44`,
                     borderRadius:'20px', fontSize:'8px', color:B.lilas, fontWeight:'600' }}>PIPELINE 5 AGENTS</span>
                 </div>
-                <p style={{ fontSize:'12px', color:'rgba(250,248,251,0.5)', margin:0 }}>
+                <p style={{ fontSize:'12px', color:`rgba(${RGB.text},0.5)`, margin:0 }}>
                   Un brief → 5 agents en séquence → 5 livrables · Analyse brand voice optionnelle via Debelvoix
                 </p>
               </div>
@@ -2526,9 +2515,9 @@ export default function BBoldCore() {
             </div>
 
             <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'14px' }}>
-              <div style={{ height:'1px', flex:1, background:`linear-gradient(90deg,transparent,rgba(250,248,251,0.15))` }}/>
-              <span style={{ fontSize:'9px', color:'rgba(250,248,251,0.4)', fontWeight:'600', letterSpacing:'0.2em' }}>AGENTS SUPPORT</span>
-              <div style={{ height:'1px', flex:1, background:`linear-gradient(90deg,rgba(250,248,251,0.15),transparent)` }}/>
+              <div style={{ height:'1px', flex:1, background:`linear-gradient(90deg,transparent,rgba(${RGB.text},0.15))` }}/>
+              <span style={{ fontSize:'9px', color:`rgba(${RGB.text},0.4)`, fontWeight:'600', letterSpacing:'0.2em' }}>AGENTS SUPPORT</span>
+              <div style={{ height:'1px', flex:1, background:`linear-gradient(90deg,rgba(${RGB.text},0.15),transparent)` }}/>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:'12px' }}>
               {SUPPORT_AGENTS.map(agent => <SupportCard key={agent.id} agent={agent} onActivate={setActiveSupportAgent}/>)}
@@ -2544,7 +2533,7 @@ export default function BBoldCore() {
                 <h2 style={{ fontFamily:'Georgia,serif', fontSize:'22px', fontWeight:'900', color:B.white, marginBottom:'4px' }}>
                   Historique
                 </h2>
-                <p style={{ fontSize:'12px', color:'rgba(250,248,251,0.4)' }}>
+                <p style={{ fontSize:'12px', color:`rgba(${RGB.text},0.4)` }}>
                   {historyItems.length === 0
                     ? 'Rien d\'enregistré pour l\'instant.'
                     : `${historyItems.filter(i => i.type !== 'agent').length} campagne(s) · ` +
@@ -2561,7 +2550,7 @@ export default function BBoldCore() {
               )}
             </div>
             {historyItems.length === 0 && (
-              <div style={{ textAlign:'center', padding:'60px 0', color:'rgba(250,248,251,0.2)', fontSize:'14px' }}>
+              <div style={{ textAlign:'center', padding:'60px 0', color:`rgba(${RGB.text},0.2)`, fontSize:'14px' }}>
                 <div style={{ fontSize:'36px', marginBottom:'12px' }}>📭</div>
                 Lance une campagne ou un agent : tout ce qui est produit atterrit ici.
               </div>
@@ -2579,7 +2568,7 @@ export default function BBoldCore() {
                       </span>
                       {item.type === 'agent' && (
                         <span style={{ padding:'2px 8px', borderRadius:'20px', fontSize:'9px', fontWeight:'700',
-                          background:`${B.violetDeep}33`, border:`1px solid ${B.violetDeep}66`, color:'rgba(250,248,251,0.7)' }}>
+                          background:`${B.violetDeep}33`, border:`1px solid ${B.violetDeep}66`, color:`rgba(${RGB.text},0.7)` }}>
                           AGENT SEUL
                         </span>
                       )}
@@ -2596,14 +2585,14 @@ export default function BBoldCore() {
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize:'11px', color:'rgba(250,248,251,0.4)' }}>
+                    <div style={{ fontSize:'11px', color:`rgba(${RGB.text},0.4)` }}>
                       {item.date}
                       {item.type === 'agent' && item.client && <span style={{ marginLeft:'10px', color:B.gold }}>{item.client}</span>}
                       {item.objectif   && <span style={{ marginLeft:'10px', color:B.gold }}>{item.objectif}</span>}
-                      {item.plateformes && <span style={{ marginLeft:'10px', color:'rgba(250,248,251,0.3)' }}>{item.plateformes}</span>}
-                      {item.secteur    && <span style={{ marginLeft:'10px', color:'rgba(250,248,251,0.25)' }}>{item.secteur}</span>}
+                      {item.plateformes && <span style={{ marginLeft:'10px', color:`rgba(${RGB.text},0.3)` }}>{item.plateformes}</span>}
+                      {item.secteur    && <span style={{ marginLeft:'10px', color:`rgba(${RGB.text},0.25)` }}>{item.secteur}</span>}
                       {item.type === 'agent' && item.output && (
-                        <span style={{ marginLeft:'10px', color:'rgba(250,248,251,0.25)' }}>
+                        <span style={{ marginLeft:'10px', color:`rgba(${RGB.text},0.25)` }}>
                           {item.output.trim().split(/\s+/).length} mots
                         </span>
                       )}
@@ -2615,7 +2604,7 @@ export default function BBoldCore() {
                         {PIPELINE_STEPS.map(step => (
                           <div key={step.id} title={step.prenom}
                             style={{ width:'22px', height:'22px', borderRadius:'50%', overflow:'hidden',
-                              border:`1.5px solid ${item.outputs?.[step.id] ? step.color+'88' : 'rgba(250,248,251,0.1)'}`,
+                              border:`1.5px solid ${item.outputs?.[step.id] ? step.color+'88' : `rgba(${RGB.text},0.1)`}`,
                               opacity: item.outputs?.[step.id] ? 1 : 0.25 }}>
                             <img src={getAvatarPath(step.id)} alt={step.prenom}
                               style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top' }}/>
@@ -2647,7 +2636,7 @@ export default function BBoldCore() {
             <h2 style={{ fontFamily:'Georgia,serif', fontSize:'26px', fontWeight:'900', margin:'0 0 8px', color:B.white }}>
               Stack <code style={{ fontFamily:'monospace', fontSize:'18px', color:B.gold, background:`${B.gold}10`, padding:'2px 9px', borderRadius:'5px' }}>naïom-platform</code>
             </h2>
-            <p style={{ fontSize:'13px', color:'rgba(250,248,251,0.45)', margin:'0 0 24px' }}>
+            <p style={{ fontSize:'13px', color:`rgba(${RGB.text},0.45)`, margin:'0 0 24px' }}>
               13 agents · 3 API routes · streaming NDJSON · pipeline orchestré · Debelvoix pre-step · historique localStorage
             </p>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:'12px' }}>
@@ -2662,7 +2651,7 @@ export default function BBoldCore() {
               ].map((s,i)=>(
                 <div key={i} style={{ background:B.surface, border:`1px solid ${B.border}`, borderRadius:'12px', padding:'16px 18px' }}>
                   <div style={{ fontSize:'13px', fontWeight:'700', color:B.goldLight, marginBottom:'5px' }}>{s.n}</div>
-                  <div style={{ fontSize:'11.5px', color:'rgba(250,248,251,0.42)', lineHeight:'1.55' }}>{s.r}</div>
+                  <div style={{ fontSize:'11.5px', color:`rgba(${RGB.text},0.42)`, lineHeight:'1.55' }}>{s.r}</div>
                 </div>
               ))}
             </div>

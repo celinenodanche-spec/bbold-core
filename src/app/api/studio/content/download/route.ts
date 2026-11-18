@@ -1,6 +1,7 @@
 import { launchBrowser } from "@/lib/studio/browser";
 import { readBytes } from "@/lib/studio/storage";
 import { getPost } from "@/lib/studio/store";
+import { T } from "@/config/tenant";
 
 export const runtime = "nodejs";
 export const maxDuration = 90;
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
       await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 30000 });
       await new Promise((r) => setTimeout(r, 300));
       const pdf = Buffer.from(await page.pdf({ width: `${w}px`, height: `${h}px`, printBackground: true }));
-      return new Response(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="bbold-${post.format}-${post.id}.pdf"` } });
+      return new Response(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${T.id}-${post.format}-${post.id}.pdf"` } });
     } finally { await browser.close(); }
   } catch (err) {
     return Response.json({ error: err instanceof Error ? err.message : "Erreur" }, { status: 500 });

@@ -16,6 +16,7 @@
  */
 import { getData, putData, listData, delData, readEntry, type DataEntry } from "./storage";
 import type { ContentResult, Platform, Format } from "./generate";
+import { T } from "@/config/tenant";
 
 const LEGACY_KEY = "content/store.json";
 const DIR = "posts";
@@ -103,7 +104,8 @@ async function readLegacy(): Promise<ContentPost[]> {
 
 /* ---------- API ---------- */
 
-const brandOf = (p: ContentPost) => p.brandSlug ?? "bbold-core";
+// posts créés avant le multi-marques : rattachés à la marque par défaut du tenant
+const brandOf = (p: ContentPost) => p.brandSlug ?? T.studio.defaultBrand.slug;
 
 export async function listPosts(brandSlug?: string): Promise<ContentPost[]> {
   const [entries, legacy] = await Promise.all([listData(DIR).catch(() => [] as DataEntry[]), readLegacy()]);

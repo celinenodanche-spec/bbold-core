@@ -393,3 +393,51 @@ Un contenu LinkedIn ou X déjà créé reste visible dans la Bibliothèque.
 | X | post avec visuel | tweet, thread |
 
 Tout se règle dans un seul fichier : `src/lib/studio/platforms.ts`.
+
+---
+
+# Installer la plateforme pour un client
+
+Un seul code, une installation Vercel par client. Chaque correctif poussé sur
+`main` arrive chez tout le monde ; chaque client a son nom, ses couleurs, son
+logo, son code d'accès et ses données, séparés des tiens.
+
+## 1. Son identité (dans le repo)
+1. Copie `src/config/tenants/_modele.js` en `src/config/tenants/<id>.js`
+   (`<id>` : minuscules, sans espace, ex. `lumen`) et remplis chaque « À REMPLIR ».
+2. Logo : `public/tenants/<id>/logo.svg` (ou .png, carré de préférence), puis
+   `logo: '/tenants/<id>/logo.svg'`. Sans logo, le losange est redessiné à ses couleurs.
+3. Enregistre-le dans `src/config/tenant.js` :
+   ```js
+   import lumen from './tenants/lumen'
+   const TENANTS = { bbold, lumen }
+   ```
+4. Pousse sur `main`. Ton installation ne bouge pas (elle reste sur `bbold`).
+
+Garde-fous : un `NEXT_PUBLIC_TENANT` inconnu ou un champ oublié fait échouer le
+build en nommant le problème. Le client ne verra jamais l'identité B.BOLD par erreur.
+
+## 2. Son installation (Vercel)
+1. Vercel → **Add New Project** → même repo `bbold-core`.
+2. Variables d'environnement (Production **et** Preview) :
+   - `NEXT_PUBLIC_TENANT` = `<id>`
+   - `ACCESS_CODE` = son code à lui, différent du tien
+   - `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` : **des clés dédiées à ce client** (voir 3)
+   - `PUPPETEER_SKIP_DOWNLOAD` = `true`
+   - `NEXT_PUBLIC_STUDIO_PLATFORMS` si besoin
+3. Stockage : un **store Blob dédié** (Storage → Create → Blob → connecté à CE projet).
+   Ses posts, marques et visuels n'atterrissent jamais dans les tiens.
+4. Deploy. Son URL : `https://<projet>.vercel.app` (ou son domaine).
+
+## 3. Refacturer les crédits IA
+Mêmes comptes, **une clé par client** : la consommation se lit clé par clé.
+- Anthropic : console.anthropic.com → Workspaces → un workspace par client → sa clé.
+  Usage et coûts filtrables par workspace.
+- OpenAI : platform.openai.com → Projects → un projet par client → sa clé.
+  Usage filtrable par projet.
+
+Une clé révoquée coupe ce client seul, sans toucher aux autres.
+
+## Ce qui reste commun à toutes les installations
+Les prénoms, rôles et avatars des agents (Maeva, Lola, Zara, Inès, Naïa et les
+agents support), leurs méthodes de travail, et l'interface. Ce sont le produit.

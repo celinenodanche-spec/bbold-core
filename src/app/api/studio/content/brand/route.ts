@@ -1,4 +1,4 @@
-import { loadBrand, listBrands, BBOLD_BRAND, type Brand } from "@/lib/studio/brand";
+import { loadBrand, listBrands, DEFAULT_BRAND, type Brand } from "@/lib/studio/brand";
 import { loadStyleProfile, listInspirations, MIN_INSPIRATIONS } from "@/lib/studio/inspirations";
 import { STYLES } from "@/lib/studio/styles";
 import { aiBackgroundProvider } from "@/lib/studio/providers";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 const info = (b: Brand) => ({ slug: b.slug, name: b.name, handle: b.handle, palette: b.palette, fonts: b.fonts, markdown: b.markdown, isTemplate: b.isTemplate });
 
-/** GET ?brand=slug → marque active + liste. Ne renvoie JAMAIS une marque vide (filet B.BOLD). */
+/** GET ?brand=slug → marque active + liste. Ne renvoie JAMAIS une marque vide (filet : marque par défaut du tenant). */
 export async function GET(req: Request) {
   const slug = new URL(req.url).searchParams.get("brand");
   let provider = null, providerFast = null;
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     try { brands = await listBrands(); } catch { brands = []; }
     let active: Brand | null = null;
     if (slug) { try { active = await loadBrand(slug); } catch { active = null; } }
-    if (!active) active = brands[0] ?? BBOLD_BRAND;
+    if (!active) active = brands[0] ?? DEFAULT_BRAND;
     if (!brands.length) brands = [active];
     let profile = null, inspirations: unknown[] = [];
     try { profile = await loadStyleProfile(active); } catch { profile = null; }
@@ -28,6 +28,6 @@ export async function GET(req: Request) {
     return Response.json({ brand: info(active), brands: brands.map(info), profile, inspirations, ...base });
   } catch {
     // filet ultime : le studio doit toujours avoir une marque
-    return Response.json({ brand: info(BBOLD_BRAND), brands: [info(BBOLD_BRAND)], profile: null, inspirations: [], ...base });
+    return Response.json({ brand: info(DEFAULT_BRAND), brands: [info(DEFAULT_BRAND)], profile: null, inspirations: [], ...base });
   }
 }

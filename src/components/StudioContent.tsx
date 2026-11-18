@@ -7,6 +7,7 @@ import { Icon } from "./Icon";
 import { cn } from "@/lib/studio/utils";
 import { STYLES, DEFAULT_STYLE, type EditorialStyle } from "@/lib/studio/styles";
 import { ENABLED_PLATFORMS, isPlatformEnabled } from "@/lib/studio/platforms";
+import { T } from "@/config/tenant";
 
 /* ============ types ============ */
 type Platform = "instagram" | "linkedin" | "twitter";
@@ -1030,7 +1031,7 @@ function BrandBar({ bs, active, onPick, onChanged }: { bs: BrandState; active: s
 function BrandForm({ brand, onClose, onSaved, onDeleted, canDelete }: { brand: BrandInfo | null; onClose: () => void; onSaved: (slug: string) => void; onDeleted: (slug: string) => void; canDelete: boolean }) {
   const [name, setName] = useState(brand?.name ?? "");
   const [handle, setHandle] = useState(brand?.handle ?? "");
-  const [pal, setPal] = useState(brand?.palette ?? { bg: "#0a0008", fg: "#faf8fb", accent: "#c9a84c", accent2: "#7c3aed", muted: "#c4b5fd" });
+  const [pal, setPal] = useState(brand?.palette ?? { ...T.studio.defaultBrand.palette });
   const [fonts, setFonts] = useState(brand?.fonts ?? { display: "Playfair Display", body: "Inter" });
   const [markdown, setMarkdown] = useState(brand?.markdown ?? "");
   const [busy, setBusy] = useState(false);
@@ -1090,7 +1091,7 @@ function BrandForm({ brand, onClose, onSaved, onDeleted, canDelete }: { brand: B
               <select value={fonts.body} onChange={(e) => setFonts({ ...fonts, body: e.target.value })} className="cinput2 mt-1">{FONTS.map((f) => <option key={f} value={f}>{f}</option>)}</select></div>
           </div>
           <div><Label>Ton / cible / interdictions (optionnel)</Label>
-            <textarea value={markdown} onChange={(e) => setMarkdown(e.target.value)} rows={4} placeholder="Ex. Ton chaleureux et premium. Cible : mariées aux Antilles. Éviter le jargon." className="cinput2 mt-1 resize-none" /></div>
+            <textarea value={markdown} onChange={(e) => setMarkdown(e.target.value)} rows={4} placeholder={`${T.examples.studioMarque}`} className="cinput2 mt-1 resize-none" /></div>
           {err && <div className="rounded-lg border border-red-300 bg-red-50 p-2 text-[12px] text-red-600">{err}</div>}
         </div>
         <div className="mt-4 flex items-center justify-between gap-2">

@@ -1,11 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { lireCode, ecrireCode, EVENEMENT_REFUS } from '../lib/access'
+import { T, C, RGB, B } from '@/config/tenant'
+import TenantLogo from './TenantLogo'
 
-const B = {
-  violetDeep: '#6b0f6e', magenta: '#c000c0', gold: '#c9a84c',
-  goldLight: '#e8cc7a', black: '#0a0008', white: '#faf8fb',
-}
 
 /**
  * Porte d'entrée. Tant que le code n'est pas saisi, un voile couvre l'app.
@@ -62,27 +60,21 @@ export default function AccessGate({ children }) {
       {etat !== 'ouvert' && (
         <div style={{
           position:'fixed', inset:0, zIndex:9999,
-          background:'linear-gradient(160deg,#120010 0%,#0a0008 55%,#0f000e 100%)',
+          background:`linear-gradient(160deg,${C.bgAlt} 0%,${C.bg} 55%,${C.bgDeep} 100%)`,
           display:'flex', alignItems:'center', justifyContent:'center', padding:20,
         }}>
           <div style={{ width:'100%', maxWidth:380, textAlign:'center' }}>
-            <svg width="52" height="52" viewBox="0 0 60 60" fill="none" style={{ marginBottom:18 }}>
-              <polygon points="30,4 56,30 30,56 4,30" stroke={B.gold} strokeWidth="1.5" fill="none" />
-              <polygon points="30,10 50,30 30,50 10,30" stroke={B.magenta} strokeWidth="1" fill="none" opacity="0.55" />
-              <ellipse cx="30" cy="30" rx="12" ry="8" stroke={B.gold} strokeWidth="1.5" fill="none" />
-              <circle cx="30" cy="30" r="4" fill={B.gold} />
-              <circle cx="30" cy="30" r="2" fill={B.black} />
-            </svg>
+            <TenantLogo size={52} style={{ marginBottom:18 }} />
 
             <div style={{
               fontFamily:'Georgia,serif', fontSize:22, fontWeight:900, color:B.white, marginBottom:6,
-            }}>B.BOLD <span style={{ fontWeight:300, fontSize:16, color:B.gold }}>Core</span></div>
+            }}>{T.name} <span style={{ fontWeight:300, fontSize:16, color:B.gold }}>{T.product}</span></div>
 
             {etat === 'verif' ? (
-              <div style={{ fontSize:12, color:'rgba(250,248,251,0.4)' }}>Vérification…</div>
+              <div style={{ fontSize:12, color:`rgba(${RGB.text},0.4)` }}>Vérification…</div>
             ) : (
               <form onSubmit={valider}>
-                <p style={{ fontSize:12.5, color:'rgba(250,248,251,0.5)', lineHeight:1.65, margin:'0 0 22px' }}>
+                <p style={{ fontSize:12.5, color:`rgba(${RGB.text},0.5)`, lineHeight:1.65, margin:'0 0 22px' }}>
                   Cet espace est privé. Entre ton code d'accès.
                 </p>
 
@@ -95,8 +87,8 @@ export default function AccessGate({ children }) {
                   autoComplete="current-password"
                   style={{
                     width:'100%', padding:'13px 16px', textAlign:'center',
-                    background:'rgba(107,15,110,0.12)',
-                    border:`1px solid ${erreur ? '#dc2626' : 'rgba(201,168,76,0.3)'}`,
+                    background:`rgba(${RGB.primary},0.12)`,
+                    border:`1px solid ${erreur ? '#dc2626' : `rgba(${RGB.accent},0.3)`}`,
                     borderRadius:12, color:B.white, fontSize:15, letterSpacing:'0.1em',
                     outline:'none', marginBottom:12,
                   }}
@@ -108,10 +100,10 @@ export default function AccessGate({ children }) {
                   style={{
                     width:'100%', padding:'13px 20px',
                     background: envoi || !code.trim()
-                      ? 'rgba(201,168,76,0.25)'
+                      ? `rgba(${RGB.accent},0.25)`
                       : `linear-gradient(135deg,${B.gold}cc,${B.goldLight}88)`,
                     border:`1px solid ${B.gold}88`, borderRadius:12,
-                    color: envoi || !code.trim() ? 'rgba(250,248,251,0.4)' : B.black,
+                    color: envoi || !code.trim() ? `rgba(${RGB.text},0.4)` : B.black,
                     fontSize:13, fontWeight:800,
                     cursor: envoi || !code.trim() ? 'default' : 'pointer',
                   }}

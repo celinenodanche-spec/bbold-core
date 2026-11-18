@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { T } from '@/config/tenant'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -10,12 +11,12 @@ export const runtime = 'edge'
 // est inutilisable.
 function blocDate() {
   const maintenant = new Date()
-  const fmt = (opts) => maintenant.toLocaleDateString('fr-FR', { timeZone: 'America/Martinique', ...opts })
+  const fmt = (opts) => maintenant.toLocaleDateString('fr-FR', { timeZone: `${T.market.timeZone}`, ...opts })
   return `=== DATE DU JOUR ===
 Nous sommes le ${fmt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.
 Format court : ${fmt({ day: '2-digit', month: '2-digit', year: 'numeric' })}
 Année en cours : ${fmt({ year: 'numeric' })}
-Fuseau : Martinique (UTC-4)
+Fuseau : ${T.market.timeZoneLabel}
 
 Toute date, tout calendrier, toute échéance et toute référence temporelle que tu
 produis part de cette date. Tu n'utilises jamais une autre année que celle-ci
@@ -58,7 +59,7 @@ const PIPELINE = [
     model: 'claude-opus-4-5',
     max_tokens: 14000,
     folder: 'briefs/',
-    system: `Tu es Maeva, Stratège & Brief de B.BOLD Agency, experte en brand strategy pour les territoires insulaires français (Martinique, Guadeloupe, Guyane). Style : cash, structuré, bullet points pour les insights. Sois précise et directe.`,
+    system: `Tu es Maeva, Stratège & Brief de ${T.agency}, experte en brand strategy${T.market.maevaApi}. Style : cash, structuré, bullet points pour les insights. Sois précise et directe.`,
     buildPrompt: (b, ctx) => {
       const urls = [
         b.site_web  ? `Site web : ${b.site_web}` : '',
@@ -92,7 +93,7 @@ Mission :
     model: 'claude-sonnet-4-5',
     max_tokens: 12000,
     folder: 'content/',
-    system: `Tu es Lola, Créatrice de Contenu de B.BOLD Agency. Hook = 15 mots max. Jamais de listes à puces dans le corps des posts. Prose fluide, 3 paragraphes max. Style authentique et territorial si pertinent. Pas de clichés.`,
+    system: `Tu es Lola, Créatrice de Contenu de ${T.agency}. Hook = 15 mots max. Jamais de listes à puces dans le corps des posts. Prose fluide, 3 paragraphes max. Style authentique et territorial si pertinent. Pas de clichés.`,
     buildPrompt: (b, ctx) =>
       `STRATÉGIE DE MAEVA :
 ${ctx.strategie || ''}
@@ -110,7 +111,7 @@ Mission :
     model: 'claude-sonnet-4-5',
     max_tokens: 12000,
     folder: 'prompts-images/',
-    system: `Tu es Zara, Designer de B.BOLD Agency, experte en direction artistique et prompts génératifs (Midjourney v6, Flux, DALL-E 3). Fournis des prompts techniques précis avec tous les paramètres.`,
+    system: `Tu es Zara, Designer de ${T.agency}, experte en direction artistique et prompts génératifs (Midjourney v6, Flux, DALL-E 3). Fournis des prompts techniques précis avec tous les paramètres.`,
     buildPrompt: (b, ctx) =>
       `CONTENU CRÉÉ PAR LOLA :
 ${ctx.contenu || ''}
@@ -128,7 +129,7 @@ Mission : Pour chacun des 3 posts de Lola :
     model: 'claude-opus-4-5',
     max_tokens: 14000,
     folder: 'analytics/',
-    system: `Tu es Inès, Analyste & Architecte du Plan 3D de B.BOLD Agency. Tableaux clairs, chiffres précis, actions SMART. Plan 4 semaines avec 3 actions par semaine.`,
+    system: `Tu es Inès, Analyste & Architecte du Plan 3D de ${T.agency}. Tableaux clairs, chiffres précis, actions SMART. Plan 4 semaines avec 3 actions par semaine.`,
     buildPrompt: (b, ctx) =>
       `STRATÉGIE (extrait) : ${(ctx.strategie || '').slice(0, 500)}
 
@@ -148,7 +149,7 @@ Mission :
     model: 'claude-sonnet-4-5',
     max_tokens: 12000,
     folder: 'decks/',
-    system: `Tu es Naïa, Présentatrice de B.BOLD Agency. Experte en storytelling (SOZA, Pyramide de Minto, Before/After). Structure narrative claire, slide-par-slide avec notes speaker.`,
+    system: `Tu es Naïa, Présentatrice de ${T.agency}. Experte en storytelling (SOZA, Pyramide de Minto, Before/After). Structure narrative claire, slide-par-slide avec notes speaker.`,
     buildPrompt: (b, ctx) =>
       `LIVRABLES DE LA CAMPAGNE :
 - Stratégie Maeva : ${(ctx.strategie || '').slice(0, 400)}...
@@ -165,7 +166,7 @@ Framework narratif à préciser en introduction.`,
   },
 ]
 
-const DEBELVOIX_SYSTEM = `Tu es Debelvoix, expert en analyse de brand voice pour les territoires insulaires français. Tu analyses la présence digitale existante d'une marque à partir des URLs et du contenu extrait. Tu fournis une analyse actionnable qui servira de contexte stratégique.`
+const DEBELVOIX_SYSTEM = `Tu es Debelvoix, expert en analyse de brand voice${T.market.pourZone}. Tu analyses la présence digitale existante d'une marque à partir des URLs et du contenu extrait. Tu fournis une analyse actionnable qui servira de contexte stratégique.`
 
 export async function POST(request) {
   const corps = await request.json()

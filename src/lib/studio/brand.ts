@@ -1,9 +1,10 @@
 /**
  * Marques du studio (multi-clients). Chaque marque est stockée en JSON
  * (brands/<slug>.json) via la couche storage (local en dev, Vercel Blob en prod).
- * B.BOLD est semée par défaut au premier lancement.
+ * La marque par défaut du tenant (src/config/tenants/<id>.js) est semée au premier lancement.
  */
 import { getData, putData, listData, delData } from "./storage";
+import { T } from "@/config/tenant";
 
 export interface BrandPalette { bg: string; fg: string; accent: string; accent2: string; muted: string }
 export interface BrandFonts { display: string; body: string }
@@ -17,30 +18,15 @@ export interface Brand {
   isTemplate: boolean;
 }
 
-const BBOLD_MARKDOWN = `# B.BOLD Agency — contexte de marque
-
-## Positionnement
-Agence de brand strategy et création de contenu pour les entrepreneurs et marques
-des territoires insulaires français (Martinique, Guadeloupe, Guyane, La Réunion).
-
-## Ton de voix
-Cash, chaleureux, professionnel, jamais de clichés. Tutoiement, direct. Hook ≤ 15 mots.
-Corps en prose fluide, 3 paragraphes max, jamais de listes à puces dans le corps.
-Territorial quand c'est pertinent, sans folklore. CTA clair en fin.
-
-## Interdictions
-Pas de jargon creux, pas de clichés sur les îles, pas de promesses chiffrées non vérifiables.
-
-## Cible
-Entrepreneur·e / dirigeant·e de TPE-PME aux Antilles-Guyane / Réunion, 28–50 ans, ambitieux·se.`;
-
-export const BBOLD_BRAND: Brand = {
-  slug: "bbold-core",
-  name: "B.BOLD Agency",
-  handle: "@bboldagency",
-  palette: { bg: "#0a0008", fg: "#faf8fb", accent: "#c9a84c", accent2: "#7c3aed", muted: "#c4b5fd" },
-  fonts: { display: "Playfair Display", body: "Inter" },
-  markdown: BBOLD_MARKDOWN,
+/** Marque semée au premier lancement : celle du tenant (B.BOLD Agency pour B.BOLD). */
+const D = T.studio.defaultBrand;
+export const DEFAULT_BRAND: Brand = {
+  slug: D.slug,
+  name: D.name,
+  handle: D.handle,
+  palette: { ...D.palette },
+  fonts: { ...D.fonts },
+  markdown: D.markdown,
   isTemplate: false,
 };
 
@@ -61,10 +47,10 @@ function normalize(raw: unknown): Brand | null {
     slug: b.slug, name: b.name,
     handle: str(b.handle, "@" + b.slug),
     palette: {
-      bg: hex(p.bg, "#0a0008"), fg: hex(p.fg, "#faf8fb"), accent: hex(p.accent, "#c9a84c"),
-      accent2: hex(p.accent2, "#7c3aed"), muted: hex(p.muted, "#c4b5fd"),
+      bg: hex(p.bg, D.palette.bg), fg: hex(p.fg, D.palette.fg), accent: hex(p.accent, D.palette.accent),
+      accent2: hex(p.accent2, D.palette.accent2), muted: hex(p.muted, D.palette.muted),
     },
-    fonts: { display: str(f.display, "Playfair Display"), body: str(f.body, "Inter") },
+    fonts: { display: str(f.display, D.fonts.display), body: str(f.body, D.fonts.body) },
     markdown: str(b.markdown, ""),
     isTemplate: false,
   };
@@ -78,11 +64,11 @@ export async function listBrands(): Promise<Brand[]> {
       const buf = await getData(`brands/${e.name}`);
       if (buf) { try { const b = normalize(JSON.parse(buf.toString("utf-8"))); if (b) out.push(b); } catch { /* ignore */ } }
     }
-  } catch { /* stockage indisponible : on retombe sur B.BOLD ci-dessous */ }
+  } catch { /* stockage indisponible : on retombe sur la marque par défaut ci-dessous */ }
   if (!out.length) {
-    // première utilisation (ou stockage muet) : on sème B.BOLD, persisté si possible.
-    try { await saveBrand(BBOLD_BRAND); } catch { /* stockage non prêt */ }
-    return [BBOLD_BRAND];
+    // première utilisation (ou stockage muet) : on sème la marque par défaut, persistée si possible.
+    try { await saveBrand(DEFAULT_BRAND); } catch { /* stockage non prêt */ }
+    return [DEFAULT_BRAND];
   }
   return out.sort((a, b) => (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1));
 }
@@ -90,7 +76,7 @@ export async function listBrands(): Promise<Brand[]> {
 export async function getBrand(slug: string): Promise<Brand | null> {
   const buf = await getData(brandKey(slug));
   if (buf) { try { return normalize(JSON.parse(buf.toString("utf-8"))); } catch { return null; } }
-  if (slug === BBOLD_BRAND.slug) return BBOLD_BRAND;
+  if (slug === DEFAULT_BRAND.slug) return DEFAULT_BRAND;
   return null;
 }
 
@@ -106,7 +92,7 @@ export async function deleteBrand(slug: string): Promise<void> {
 export async function loadBrand(slug?: string | null): Promise<Brand | null> {
   if (slug) { const b = await getBrand(slug); if (b) return b; }
   const all = await listBrands();
-  return all[0] ?? BBOLD_BRAND;
+  return all[0] ?? DEFAULT_BRAND;
 }
 
 /** Bloc à coller dans un system prompt : la marque, non négociable. */

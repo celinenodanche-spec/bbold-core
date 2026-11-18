@@ -1,3 +1,4 @@
+import { T } from '@/config/tenant'
 // ─── Notion Save — append agent output to a client page ──────────────────────
 
 const NOTION_VERSION = '2022-06-28'
@@ -29,7 +30,7 @@ function textToNotionBlocks(content, agentEmoji, agentName, clientName) {
     callout: {
       rich_text: [{
         type: 'text',
-        text: { content: `${agentEmoji} ${agentName} — ${clientName || 'B.BOLD'} · ${date}` },
+        text: { content: `${agentEmoji} ${agentName} — ${clientName || `${T.name}`} · ${date}` },
         annotations: { bold: true },
       }],
       icon: { type: 'emoji', emoji: agentEmoji || '✦' },
@@ -148,10 +149,10 @@ export async function POST(request) {
         return Response.json({
           error:
             `Notion ne trouve pas cette page (id ${pageId}). Deux causes possibles :\n` +
-            `1. L'intégration B.BOLD Core n'a pas accès à la page — ouvre-la dans Notion, ` +
-            `menu ⋯ > Connexions > ajoute B.BOLD Core.\n` +
+            `1. L'intégration ${T.productFull} n'a pas accès à la page — ouvre-la dans Notion, ` +
+            `menu ⋯ > Connexions > ajoute ${T.productFull}.\n` +
             `2. La page appartient à un autre espace de travail que celui de l'intégration. ` +
-            `Si B.BOLD Core n'apparaît pas dans la liste des connexions, c'est ce cas.`,
+            `Si ${T.productFull} n'apparaît pas dans la liste des connexions, c'est ce cas.`,
           pageId,
           notion: msg,
         }, { status: 404 })

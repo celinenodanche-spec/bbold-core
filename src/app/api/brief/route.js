@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { T } from '@/config/tenant'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -10,12 +11,12 @@ export const runtime = 'edge'
 // est inutilisable.
 function blocDate() {
   const maintenant = new Date()
-  const fmt = (opts) => maintenant.toLocaleDateString('fr-FR', { timeZone: 'America/Martinique', ...opts })
+  const fmt = (opts) => maintenant.toLocaleDateString('fr-FR', { timeZone: `${T.market.timeZone}`, ...opts })
   return `=== DATE DU JOUR ===
 Nous sommes le ${fmt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.
 Format court : ${fmt({ day: '2-digit', month: '2-digit', year: 'numeric' })}
 Année en cours : ${fmt({ year: 'numeric' })}
-Fuseau : Martinique (UTC-4)
+Fuseau : ${T.market.timeZoneLabel}
 
 Toute date, tout calendrier, toute échéance et toute référence temporelle que tu
 produis part de cette date. Tu n'utilises jamais une autre année que celle-ci

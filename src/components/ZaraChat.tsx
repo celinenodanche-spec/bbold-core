@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { apiFetch } from "@/lib/access";
+import { C } from "@/config/tenant";
 
 export interface Msg { role: "user" | "assistant"; content: string }
 
@@ -80,7 +81,7 @@ export function ZaraChat({ messages, setMessages, onGoStudio, preparing = false 
       </div>
       {onGoStudio && (
         <button onClick={onGoStudio} disabled={busy || preparing}
-          style={{ marginTop: 10, alignSelf: "center", padding: "8px 18px", borderRadius: 999, border: "1px solid #c9a84c", background: hasBrief ? "#c9a84c" : "#fff", color: hasBrief ? "#1a1400" : "#8a6d1a", fontSize: 12.5, fontWeight: 700, cursor: busy || preparing ? "default" : "pointer", opacity: busy || preparing ? 0.6 : 1 }}>
+          style={{ marginTop: 10, alignSelf: "center", padding: "8px 18px", borderRadius: 999, border: `1px solid ${C.accent}`, background: hasBrief ? `${C.accent}` : "#fff", color: hasBrief ? "#1a1400" : "#8a6d1a", fontSize: 12.5, fontWeight: 700, cursor: busy || preparing ? "default" : "pointer", opacity: busy || preparing ? 0.6 : 1 }}>
           {preparing ? "Zara prépare le brief pour le Studio…" : hasBrief ? "🎨 Envoyer ce brief au Studio →" : "🎨 Passer au Studio →"}
         </button>
       )}

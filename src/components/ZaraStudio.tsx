@@ -5,6 +5,7 @@ import { ZaraChat, WELCOME, type Msg } from "./ZaraChat";
 import { apiFetch } from "@/lib/access";
 import { isPlatformEnabled } from "@/lib/studio/platforms";
 import { briefFromMessage } from "@/lib/studio/briefFallback";
+import { T, C, RGB } from "@/config/tenant";
 
 /**
  * Zara (B.BOLD Core) :
@@ -62,18 +63,18 @@ export default function ZaraStudio({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="zara-studio" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#0a0008", overflowY: "auto" }}>
+    <div className="zara-studio" style={{ position: "fixed", inset: 0, zIndex: 1000, background: `${C.bg}`, overflowY: "auto" }}>
       {/* En-tête + onglets */}
-      <div style={{ position: "sticky", top: 0, zIndex: 5, background: "linear-gradient(180deg,#120010,#0a0008)", borderBottom: "1px solid rgba(201,168,76,0.25)" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 5, background: `linear-gradient(180deg,${C.bgAlt},${C.bg})`, borderBottom: `1px solid rgba(${RGB.accent},0.25)` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "13px 24px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 22 }}>🎨</span>
             <div>
-              <div style={{ fontFamily: "Georgia,serif", fontSize: 17, fontWeight: 900, color: "#faf8fb", lineHeight: 1 }}>Zara</div>
-              <div style={{ fontSize: 11, color: "#c9a84c", fontWeight: 600, letterSpacing: "0.08em", marginTop: 3 }}>B.BOLD · discussion & studio de contenu</div>
+              <div style={{ fontFamily: "Georgia,serif", fontSize: 17, fontWeight: 900, color: `${C.text}`, lineHeight: 1 }}>Zara</div>
+              <div style={{ fontSize: 11, color: `${C.accent}`, fontWeight: 600, letterSpacing: "0.08em", marginTop: 3 }}>{T.name} · discussion & studio de contenu</div>
             </div>
           </div>
-          <button onClick={onClose} style={{ padding: "9px 18px", background: "rgba(250,248,251,0.06)", border: "1px solid rgba(250,248,251,0.15)", borderRadius: 12, color: "#faf8fb", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          <button onClick={onClose} style={{ padding: "9px 18px", background: `rgba(${RGB.text},0.06)`, border: `1px solid rgba(${RGB.text},0.15)`, borderRadius: 12, color: `${C.text}`, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             ← Retour aux agents
           </button>
         </div>
@@ -81,8 +82,8 @@ export default function ZaraStudio({ onClose }: { onClose: () => void }) {
           {([["chat", "💬 Discussion"], ["studio", "🎨 Studio"]] as const).map(([k, label]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               padding: "10px 20px", border: 0, cursor: "pointer", fontSize: 13.5, fontWeight: 800,
-              background: "transparent", color: tab === k ? "#c9a84c" : "rgba(250,248,251,0.55)",
-              borderBottom: tab === k ? "2px solid #c9a84c" : "2px solid transparent",
+              background: "transparent", color: tab === k ? `${C.accent}` : `rgba(${RGB.text},0.55)`,
+              borderBottom: tab === k ? `2px solid ${C.accent}` : "2px solid transparent",
             }}>{label}</button>
           ))}
         </div>
@@ -95,7 +96,7 @@ export default function ZaraStudio({ onClose }: { onClose: () => void }) {
         </div>
         <div style={{ display: tab === "studio" ? "block" : "none" }}>
           {notice && (
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14, padding: "10px 14px", borderRadius: 12, border: "1px solid #c9a84c", background: "#fdf8ea", color: "#6b5413", fontSize: 12.5, fontWeight: 600 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14, padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.accent}`, background: "#fdf8ea", color: "#6b5413", fontSize: 12.5, fontWeight: 600 }}>
               <span>✨ {notice}</span>
               <button onClick={() => setNotice(null)} aria-label="Fermer" style={{ border: 0, background: "transparent", color: "#6b5413", cursor: "pointer", fontSize: 14, fontWeight: 800, lineHeight: 1 }}>×</button>
             </div>

@@ -14,6 +14,7 @@
  * Sur Vercel Blob, chaque list() est une « opération avancée » facturée,
  * et c'est ce qui épuise le quota gratuit puis suspend le store.
  */
+import { T } from "@/config/tenant";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { put, list, del, head, BlobNotFoundError } from "@vercel/blob";
@@ -85,7 +86,8 @@ export const storageStatus = () => {
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 const DATA_DIR = path.join(process.cwd(), "studio-data");
-const PREFIX = "bbold-studio";
+// Dossier de stockage du tenant : ne jamais le changer sur une installation existante.
+const PREFIX: string = T.studio.storagePrefix;
 
 const NO_STORE = "Stockage non configuré sur Vercel : ajoute S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_ENDPOINT et S3_PUBLIC_URL (Cloudflare R2 conseillé), puis redéploie.";
 

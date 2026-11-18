@@ -1,4 +1,4 @@
-import { listBrands, saveBrand, deleteBrand, getBrand, slugify, type Brand } from "@/lib/studio/brand";
+import { listBrands, saveBrand, deleteBrand, getBrand, slugify, DEFAULT_BRAND, type Brand } from "@/lib/studio/brand";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,11 +28,11 @@ export async function POST(req: Request) {
       slug, name,
       handle: str(b.handle, existing?.handle ?? "@" + slug.replace(/[^a-z0-9]/gi, "")),
       palette: {
-        bg: hex(p.bg, existing?.palette.bg ?? "#0a0008"), fg: hex(p.fg, existing?.palette.fg ?? "#faf8fb"),
-        accent: hex(p.accent, existing?.palette.accent ?? "#c9a84c"), accent2: hex(p.accent2, existing?.palette.accent2 ?? "#7c3aed"),
-        muted: hex(p.muted, existing?.palette.muted ?? "#c4b5fd"),
+        bg: hex(p.bg, existing?.palette.bg ?? DEFAULT_BRAND.palette.bg), fg: hex(p.fg, existing?.palette.fg ?? DEFAULT_BRAND.palette.fg),
+        accent: hex(p.accent, existing?.palette.accent ?? DEFAULT_BRAND.palette.accent), accent2: hex(p.accent2, existing?.palette.accent2 ?? DEFAULT_BRAND.palette.accent2),
+        muted: hex(p.muted, existing?.palette.muted ?? DEFAULT_BRAND.palette.muted),
       },
-      fonts: { display: str(f.display, existing?.fonts.display ?? "Playfair Display"), body: str(f.body, existing?.fonts.body ?? "Inter") },
+      fonts: { display: str(f.display, existing?.fonts.display ?? DEFAULT_BRAND.fonts.display), body: str(f.body, existing?.fonts.body ?? DEFAULT_BRAND.fonts.body) },
       markdown: str(b.markdown, existing?.markdown ?? ""),
       isTemplate: false,
     };
